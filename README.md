@@ -1,5 +1,5 @@
 # py-hla-match
-
+![tests](https://github.com/tiadams/py-hla-match/actions/workflows/tests.yaml/badge.svg)
 ## Poetry Setup
 
 ```bash
