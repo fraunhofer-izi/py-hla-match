@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "py-hla-match"
+version = "0.1.0"
+description = "A Python package for HLA matching"
+authors = ["Tim Adams <tim.adams@scai.fraunhofer.de>, Georg Popp <georg.popp@izi.fraunhofer.de>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "py_hla_match"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
+pytest-cov = "^4.0"
+
+[build-system]
+requires = ["poetry>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
