@@ -6,6 +6,10 @@
 curl -sSL https://install.python-poetry.org | python3 -
 ```
 
+```powershell
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+```
+
 ## Installation
 
 ```bash
