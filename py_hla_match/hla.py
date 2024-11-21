@@ -5,12 +5,13 @@ from py_hla_match.exceptions import MalformedHLAStringError
 
 logger = logging.getLogger(__name__)
 
+
 class HLA:
     def __init__(self, allele_string: str) -> None:
         """
         Initializes an HLA object by parsing the HLA allele string.
 
-        :param allele_string: The HLA allele string to be parsed (e.g., 'A*32:11Q').
+        :param allele_string: The HLA allele string to be parsed
         """
         self.allele_string = allele_string
         self.locus = None
@@ -19,6 +20,7 @@ class HLA:
         self.synonymous_variant = None
         self.non_coding_variant = None
         self.suffix = None
+        self.group_code = None
 
         self._parse_allele()
 
@@ -26,24 +28,17 @@ class HLA:
         """
         Parses the HLA allele string and populates the attributes.
         """
-        self._validate_nomenclature()
+        # validate the allele string
+        match = self._validate_nomenclature()
 
-        # Remove 'HLA-' prefix if present
-        allele_string_no_prefix = re.sub(r"^HLA-", "", self.allele_string, count=1)
+        # extract locus, allele fields, suffix or group code
+        self.locus = match.group('locus')
+        allele_fields = match.group('allele_fields')
+        self.suffix = match.group('suffix')
+        self.group_code = match.group('group_code')
 
-        # Split at '*' to separate locus and fields
-        allele_string_split = allele_string_no_prefix.split('*')
-        self.locus = allele_string_split[0]
-        fields_string = allele_string_split[1]
-
-        # Extract suffix if present (e.g., 'Q', 'N', 'L')
-        suffix_match = re.search(r'[A-Z]$', fields_string)
-        if suffix_match:
-            self.suffix = suffix_match.group(0)
-            fields_string = fields_string[:-1]
-
-        # Split fields string at ':' to extract allele components
-        field_contents = fields_string.split(':')
+        # extract detailes from allele fields
+        field_contents = allele_fields.split(':')
         if len(field_contents) > 0:
             self.allele_group = field_contents[0]
         if len(field_contents) > 1:
@@ -53,18 +48,40 @@ class HLA:
         if len(field_contents) > 3:
             self.non_coding_variant = field_contents[3]
 
-    def _validate_nomenclature(self) -> None:
+    def _validate_nomenclature(self) -> re.Match:
         """
         Validates the HLA allele string format.
         """
-        pattern = r"^(HLA-)?[A-Z0-9]+[*]\d+(:\d+)*[A-Z]?$"
-        if not re.match(pattern, self.allele_string):
-            raise MalformedHLAStringError(f"Invalid HLA allele string: {self.allele_string}")
+        pattern = re.compile(
+            r"""
+            ^(?:HLA-)?
+            (?P<locus>[A-Z0-9]+)
+            \*
+            (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+            (?P<suffix>[NLSCAQ])?
+            (?P<group_code>[GP])?$
+            """,
+            re.VERBOSE
+        )
+        match = pattern.match(self.allele_string)
+        if not match:
+            raise MalformedHLAStringError(
+                f"Invalid HLA allele string: {self.allele_string}"
+            )
+        # TODO: Return additional details on specific error occurence
+        # TODO: verify locus is part of named genes within the HLA region
+        # TODO: potentially validate the allele string is known allele with
+        # ref. to https://hla.alleles.org/alleles/index.html)
+        return match
 
     def __repr__(self):
         return (
-            f"HLA(allele_string='{self.allele_string}', locus='{self.locus}', "
-            f"allele_group='{self.allele_group}', allele='{self.allele}', "
-            f"synonymous_variant={self.synonymous_variant}, "
-            f"non_coding_variant={self.non_coding_variant}, suffix='{self.suffix}')"
+            f"HLA(allele_string={repr(self.allele_string)}, "
+            f"locus={repr(self.locus)}, "
+            f"allele_group={repr(self.allele_group)}, "
+            f"allele={repr(self.allele)}, "
+            f"synonymous_variant={repr(self.synonymous_variant)}, "
+            f"non_coding_variant={repr(self.non_coding_variant)}, "
+            f"suffix={repr(self.suffix)}, "
+            f"group_code={repr(self.group_code)})"
         )
