@@ -11,5 +11,7 @@ from .exceptions import MalformedHLAStringError
 
 __all__ = [
     'hla',
-    'exceptions'
+    'exceptions',
+    'matching'
+
 ]
