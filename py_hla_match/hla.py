@@ -74,6 +74,31 @@ class HLA:
         # ref. to https://hla.alleles.org/alleles/index.html)
         return match
 
+    def __eq__(self, other):
+        if not isinstance(other, HLA):
+            return NotImplemented
+        return (
+            self.locus == other.locus and
+            self.allele_group == other.allele_group and
+            self.allele == other.allele and
+            self.synonymous_variant == other.synonymous_variant and
+            self.non_coding_variant == other.non_coding_variant and
+            self.suffix == other.suffix and
+            self.group_code == other.group_code
+            # TODO: or (self.reduced = other.reduced )
+        )
+
+    def __hash__(self):
+        return hash((
+            self.locus,
+            self.allele_group,
+            self.allele,
+            self.synonymous_variant,
+            self.non_coding_variant,
+            self.suffix,
+            self.group_code
+        ))
+
     def __repr__(self):
         return (
             f"HLA(allele_string={repr(self.allele_string)}, "
