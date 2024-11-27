@@ -1,4 +1,4 @@
-from py_hla_match.models import Patient, Donor
+from py_hla_match import Patient, Donor
 
 
 class MatchResult():

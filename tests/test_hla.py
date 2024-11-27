@@ -1,6 +1,6 @@
 import unittest
 from py_hla_match.exceptions import MalformedHLAStringError
-from py_hla_match import HLA
+from py_hla_match.hla import HLA
 
 
 class TestHLA(unittest.TestCase):
