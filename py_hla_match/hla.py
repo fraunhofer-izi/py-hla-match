@@ -1,5 +1,6 @@
 import logging
 import re
+import pyard
 
 from py_hla_match.exceptions import MalformedHLAStringError
 
@@ -21,8 +22,12 @@ class HLA:
         self.non_coding_variant = None
         self.suffix = None
         self.group_code = None
+        self.ard_redux_allele_string = None
+        self.ard_redux_allele_group = None
+        self.ard_redux_allele = None
 
         self._parse_allele()
+        self._ard_redux()
 
     def _parse_allele(self) -> None:
         """
@@ -74,6 +79,33 @@ class HLA:
         # ref. to https://hla.alleles.org/alleles/index.html)
         return match
 
+    def _ard_redux(self):
+        """
+        Reduce Allele to 2 field ARD level using the wonderful py-ard python package
+        For further information visit https://github.com/nmdp-bioinformatics/py-ard
+        """
+        ard = pyard.init()
+        redux_type = 'lgx'
+        self.ard_redux_allele_string = ard.redux(self.allele_string, redux_type)
+        pattern = re.compile(
+            r"""
+            ^(?:HLA-)?                 # Optional 'HLA-' prefix
+            (?P<locus>[A-Z0-9]+)       # Locus
+            \*                         # Asterisk separator
+            (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})  # Allele fields
+            """,
+            re.VERBOSE
+        )
+        match = pattern.match(self.ard_redux_allele_string)
+        if match:
+            allele_fields = match.group('allele_fields')
+            field_contents = allele_fields.split(':')
+            if len(field_contents) > 0:
+                self.ard_redux_allele_group = field_contents[0]
+            if len(field_contents) > 1:
+                self.ard_redux_allele = field_contents[1]
+
+    
     def __eq__(self, other):
         if not isinstance(other, HLA):
             return NotImplemented
@@ -108,5 +140,13 @@ class HLA:
             f"synonymous_variant={repr(self.synonymous_variant)}, "
             f"non_coding_variant={repr(self.non_coding_variant)}, "
             f"suffix={repr(self.suffix)}, "
-            f"group_code={repr(self.group_code)})"
+            f"group_code={repr(self.group_code)}, "
+            f"ard_redux_allele_string={repr(self.ard_redux_allele_string)}, "
+            f"ard_redux_allele_group={repr(self.ard_redux_allele_group)}, "
+            f"ard_redux_allele={repr(self.ard_redux_allele)})"
         )
+
+
+if __name__ == "__main__":
+    hla = HLA('A*02:6300:02')
+    print(hla)
