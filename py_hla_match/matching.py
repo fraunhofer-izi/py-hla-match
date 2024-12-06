@@ -171,7 +171,7 @@ def get_correct_allele_pairing(
             1. (patient_hla1, donor_hla1) and (patient_hla2, donor_hla2)
             2. (patient_hla1, donor_hla2) and (patient_hla2, donor_hla1)
         - Pairing with the highest score is returned.
-        - If both pairings return the same score, the first pairing is 
+        - If both pairings return the same score, the first pairing is
         returned.
     """
     pairings = [
