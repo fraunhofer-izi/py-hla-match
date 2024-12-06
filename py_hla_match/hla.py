@@ -81,12 +81,14 @@ class HLA:
 
     def _ard_redux(self):
         """
-        Reduce Allele to 2 field ARD level using the wonderful py-ard python package
-        For further information visit https://github.com/nmdp-bioinformatics/py-ard
+        Reduce Allele to 2 field ARD level using the wonderful py-ard package
+        For further information: https://github.com/nmdp-bioinformatics/py-ard
         """
         ard = pyard.init()
         redux_type = 'lgx'
-        self.ard_redux_allele_string = ard.redux(self.allele_string, redux_type)
+        self.ard_redux_allele_string = ard.redux(
+            self.allele_string, redux_type
+        )
         pattern = re.compile(
             r"""
             ^(?:HLA-)?                 # Optional 'HLA-' prefix
