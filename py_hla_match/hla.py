@@ -105,7 +105,6 @@ class HLA:
             if len(field_contents) > 1:
                 self.ard_redux_allele = field_contents[1]
 
-    
     def __eq__(self, other):
         if not isinstance(other, HLA):
             return NotImplemented
@@ -148,5 +147,5 @@ class HLA:
 
 
 if __name__ == "__main__":
-    hla = HLA('A*02:6300:02')
+    hla = HLA('A*02:01:02')
     print(hla)
