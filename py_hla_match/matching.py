@@ -245,22 +245,3 @@ def allele_pair_match(patient: Patient, donor: Donor) -> MatchResult:
         score=score,
         allele_match_levels=correct_pairing,
     )
-
-
-if __name__ == "__main__":
-    # Create HLA alleles for patient and donor
-    patient_hla1 = HLA("A*07:02")
-    patient_hla2 = HLA("B*44:02:01")
-    patient = Patient(hla1=patient_hla1, hla2=patient_hla2)
-
-    donor_hla1 = HLA("B*45:02:01G")
-    donor_hla2 = HLA("B*18:01:01G")
-    donor = Donor(hla1=donor_hla1, hla2=donor_hla2)
-
-    # Perform gene matching
-    match_result = allele_pair_match(patient, donor)
-
-    # Access stored information
-    print(f"Match Score: {match_result.allele_score}")
-    print(f"Allele Match Levels: {match_result.allele_match_levels}")
-    print(f"Is the patient homozygous? {match_result.is_homozygous_patient}")
