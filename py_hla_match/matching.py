@@ -57,7 +57,7 @@ class MatchResult():
         return None
 
 
-def allele_match(hla1, hla2) -> AlleleMatchLevel:
+def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     """
     Compares two HLA alleles and returns a MatchLevel.
 
@@ -68,7 +68,19 @@ def allele_match(hla1, hla2) -> AlleleMatchLevel:
     Returns:
         MatchLevel enum value indicating position of matches and mismatch
         (cf. HLA nomenclature).
+    Raises:
+        TypeError: If hla1 or hla2 is not an instance of HLA.
+        InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci.
     """
+
+    if not isinstance(hla1, HLA):
+        raise TypeError(
+            f"hla1 must be an instance of HLA, not {type(hla1).__name__}."
+        )
+    if not isinstance(hla2, HLA):
+        raise TypeError(
+            f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
+        )
 
     if hla1.locus != hla2.locus:
         if (
@@ -88,43 +100,56 @@ def allele_match(hla1, hla2) -> AlleleMatchLevel:
     # from here on we have at least an ARD level match
 
     # Check for group code
-    if hla1.group_code != hla2.group_code:
-        return AlleleMatchLevel.ARD_MATCH  # TODO: handle 'G' groups
+    if (
+            hla1.group_code is not None
+            or
+            hla2.group_code is not None
+    ):
+        # If group_code is provided, we will not exceed ARD level match
+        return AlleleMatchLevel.ARD_MATCH
 
     # Check for suffix
-    if hla1.suffix != hla2.suffix:
-        return AlleleMatchLevel.ARD_MATCH  # TODO: handle suffixes
+    if (
+            hla1.suffix is not None
+            or
+            hla2.suffix is not None
+    ):
+        # TODO: implement logic for suffixes
+        # for now, skip these alleles
+        return AlleleMatchLevel.ARD_MATCH
 
     # Compare specific allele
     if hla1.allele != hla2.allele:
         return AlleleMatchLevel.ARD_MATCH  # ARD level match remains
 
-    # Continue with synonymous variant only if available
+    # To save some time continue with synonymous variant+ only if available
     if (
         hla1.synonymous_variant is not None
         and
         hla2.synonymous_variant is not None
     ):
-        if hla1.synonymous_variant != hla2.synonymous_variant:
+        if hla1.synonymous_variant == hla2.synonymous_variant:
+            # continue with non coding variant
+            if (
+                    hla1.non_coding_variant is not None
+                    and
+                    hla2.non_coding_variant is not None
+            ):
+                if hla1.non_coding_variant == hla2.non_coding_variant:
+                    # highest resulution match
+                    return AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+                else:
+                    # synonymous variant match remains
+                    return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+            else:
+                # synonymous variant match remains
+                return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        else:
+            # ARD level match remains, if synonymous variant(s) are not equal
             return AlleleMatchLevel.ARD_MATCH
-        else:
-            return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-
-    # Continue with non coding variant only if available
-    if (
-            hla1.non_coding_variant is not None
-            and
-            hla2.non_coding_variant is not None
-    ):
-        if hla1.non_coding_variant != hla2.non_coding_variant:
-            return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        else:
-            return AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-
-        # we arrived at highest resolution
-        return AlleleMatchLevel.NON_CODING_VARIANT_MATCH
     else:
-        return AlleleMatchLevel.ARD_MATCH  # ARD level match remains
+        # If no information on synonymous variant, ARD level match remains
+        return AlleleMatchLevel.ARD_MATCH
 
 
 def compare_allele_pairs(
