@@ -3,6 +3,8 @@ from py_hla_match.hla import HLA
 from enum import IntEnum
 from typing import List, Tuple
 
+from py_hla_match.exceptions import InvalidLocusComparisonError
+
 
 class AlleleMatchLevel(IntEnum):
     LOCUS_MISMATCH = 0
@@ -69,7 +71,13 @@ def allele_match(hla1, hla2) -> AlleleMatchLevel:
     """
 
     if hla1.locus != hla2.locus:
-        return AlleleMatchLevel.LOCUS_MISMATCH
+        if (
+            'DRB' in hla1.locus and 'DRB' in hla2.locus and
+            'DRB1' not in hla1.locus and 'DRB1' not in hla2.locus
+        ):
+            return AlleleMatchLevel.LOCUS_MISMATCH
+        else:
+            raise InvalidLocusComparisonError(hla1.locus, hla2.locus)
 
     if hla1.ard_redux_allele_group != hla2.ard_redux_allele_group:
         return AlleleMatchLevel.ALLELE_GROUP_MISMATCH
@@ -91,7 +99,7 @@ def allele_match(hla1, hla2) -> AlleleMatchLevel:
     if hla1.allele != hla2.allele:
         return AlleleMatchLevel.ARD_MATCH  # ARD level match remains
 
-    # Continue with variants only if available
+    # Continue with synonymous variant only if available
     if (
         hla1.synonymous_variant is not None
         and
@@ -99,9 +107,19 @@ def allele_match(hla1, hla2) -> AlleleMatchLevel:
     ):
         if hla1.synonymous_variant != hla2.synonymous_variant:
             return AlleleMatchLevel.ARD_MATCH
+        else:
+            return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
 
+    # Continue with non coding variant only if available
+    if (
+            hla1.non_coding_variant is not None
+            and
+            hla2.non_coding_variant is not None
+    ):
         if hla1.non_coding_variant != hla2.non_coding_variant:
             return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        else:
+            return AlleleMatchLevel.NON_CODING_VARIANT_MATCH
 
         # we arrived at highest resolution
         return AlleleMatchLevel.NON_CODING_VARIANT_MATCH
