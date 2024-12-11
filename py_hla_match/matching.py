@@ -152,43 +152,7 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
         return AlleleMatchLevel.ARD_MATCH
 
 
-def compare_allele_pairs(
-        alleles: Tuple[HLA, HLA, HLA, HLA]
-) -> Tuple[int, AlleleMatchLevel, AlleleMatchLevel]:
-    """
-    Compares pairs of HLA alleles between patient and donor and calculatess a
-    score based on thier compatibility.
-
-    Args:
-        alleles (tuple): A tuple containing patient and donor HLA alleles in
-        the following order:
-            - alleles[0]: patient_hla1 (HLA)
-            - alleles[1]: donor_hla1 (HLA)
-            - alleles[2]: patient_hla2 (HLA)
-            - alleles[3]: donor_hla2 (HLA)
-
-    Returns:
-        tuple:
-            - total_score (int): The sum of the match levels for both allele
-            pairs.
-            - allele_match1 (AlleleMatchLevel): The match level for the first
-            allele pair.
-            - allele_match2 (AlleleMatchLevel): The match level for the second
-            allele pair.
-    """
-    patient_hla1, donor_hla1, patient_hla2, donor_hla2 = alleles
-
-    # matching
-    allele_match1 = allele_match(patient_hla1, donor_hla1)
-    allele_match2 = allele_match(patient_hla2, donor_hla2)
-
-    # Calculate score
-    total_score = allele_match1 + allele_match2
-
-    return total_score, allele_match1, allele_match2
-
-
-def get_correct_allele_pairing(
+def _get_correct_allele_pairing(
     patient_alleles: List[HLA], donor_alleles: List[HLA]
 ) -> Tuple[int, List[AlleleMatchLevel]]:
     """
@@ -270,7 +234,7 @@ def allele_pair_match(patient: Patient, donor: Donor) -> MatchResult:
     donor_alleles = [donor.hla1, donor.hla2]
 
     # Get correct allele pairing and its score
-    score, correct_pairing = get_correct_allele_pairing(
+    score, correct_pairing = _get_correct_allele_pairing(
         patient_alleles, donor_alleles
     )
 
@@ -285,7 +249,7 @@ def allele_pair_match(patient: Patient, donor: Donor) -> MatchResult:
 
 if __name__ == "__main__":
     # Create HLA alleles for patient and donor
-    patient_hla1 = HLA("B*07:02")
+    patient_hla1 = HLA("A*07:02")
     patient_hla2 = HLA("B*44:02:01")
     patient = Patient(hla1=patient_hla1, hla2=patient_hla2)
 
