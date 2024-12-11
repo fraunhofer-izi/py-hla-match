@@ -146,8 +146,3 @@ class HLA:
             f"ard_redux_allele_group={repr(self.ard_redux_allele_group)}, "
             f"ard_redux_allele={repr(self.ard_redux_allele)})"
         )
-
-
-if __name__ == "__main__":
-    hla = HLA('A*02:01:02')
-    print(hla)
