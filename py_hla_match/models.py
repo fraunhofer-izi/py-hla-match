@@ -13,7 +13,6 @@ class HLAPair:
 
         :param hla1: The first HLA object
         :param hla2: The second HLA object
-        :param locus: The locus of the HLA pair
         """
 
         self.hla1 = hla1
@@ -30,16 +29,13 @@ class HLAPair:
 
 
 class Individual:
-    def __init__(self, hla1: HLA, hla2: HLA) -> None:
+    def __init__(self, hla_data: [HLAPair]) -> None:
         """
-        Initializes an individual with two HLA objects.
+        Represents an individual with HLA data.
 
-        :param hla1: The first HLA object
-        :param hla2: The second HLA object
+        :param hla_data: List of HLAPair objects
         """
-
-        self.hla1 = hla1
-        self.hla2 = hla2
+        self.hla_data = hla_data
 
 
 class Patient(Individual):
@@ -47,8 +43,20 @@ class Patient(Individual):
     Represents a patient, inheriting from Individual.
     """
 
-    def __init__(self, hla1: HLA, hla2: HLA) -> None:
-        super().__init__(hla1, hla2)
+    def __init__(self,  hla_data: [HLAPair]) -> None:
+        super().__init__(hla_data)
+
+    def match(self, donor: 'Donor') -> None:
+        """
+        Match the patient with a donor and get compatibility.
+        """
+        pass
+
+    def get_best_match(self, donors: ['Donor']) -> 'Donor':
+        """
+        Get the best match from a list of donors.
+        """
+        pass
 
 
 class Donor(Individual):
@@ -56,5 +64,5 @@ class Donor(Individual):
     Represents a donor, inheriting from Individual.
     """
 
-    def __init__(self, hla1: HLA, hla2: HLA) -> None:
-        super().__init__(hla1, hla2)
+    def __init__(self,  hla_data: [HLAPair]) -> None:
+        super().__init__(hla_data)
