@@ -152,6 +152,8 @@ class TestHLA(unittest.TestCase):
         expected_repr = (
             "HLA(allele_string='HLA-A*32:11Q', locus='A', allele_group='32', "
             "allele='11', synonymous_variant=None, non_coding_variant=None, "
-            "suffix='Q', group_code=None)"
+            "suffix='Q', group_code=None, "
+            "ard_redux_allele_string='HLA-A*32:11Q', "
+            "ard_redux_allele_group='32', ard_redux_allele='11')"
         )
         self.assertEqual(repr(hla), expected_repr)
