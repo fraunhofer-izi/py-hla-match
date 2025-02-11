@@ -368,10 +368,11 @@ class TestAllelePairMatch(unittest.TestCase):
         patient_allele2 = HLA("A*02:01:01")
         donor_allele1 = HLA("B*07:02:01")
         donor_allele2 = HLA("A*02:01:01")
-        donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
 
         with self.assertRaises(MalformedHLAStringError):
+            # this should already throw error
             patient = HLAPair(hla1=HLA("a"), hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
         # Test 2: InvalidAlleleError
