@@ -9,6 +9,7 @@ packages = [{include = "py_hla_match"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
+pandas = "^1.3.0"
 py-ard = "^1.5.3"
 
 [tool.poetry.dev-dependencies]
