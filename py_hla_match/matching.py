@@ -25,7 +25,7 @@ class AlleleMatchLevel(IntEnum):
     NON_CODING_VARIANT_MATCH = 5
 
 
-class MatchResult():
+class MatchResult:
     """
     Report class on patient/donor compatibility for an HLA locus
 
