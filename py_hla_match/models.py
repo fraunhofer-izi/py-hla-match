@@ -23,9 +23,14 @@ class HLAPair:
         """
         Returns the locus of the HLA pair.
         """
-        if self.hla1.locus != self.hla2.locus:
+        if self.hla1 is None or self.hla2 is None:
+            return None
+        elif self.hla1.locus is None or self.hla2.locus is None:
+            return None
+        elif self.hla1.locus != self.hla2.locus:
             raise InvalidLocusComparisonError("HLA alleles must be from the same locus.")
-        return self.hla1.locus
+        else:
+            return self.hla1.locus
 
 
 class Individual:
