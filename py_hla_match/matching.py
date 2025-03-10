@@ -238,13 +238,8 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
         - Uses `get_correct_allele_pairing` function to evaluate all possible
         allele pairings and selects the one with the highest score
     """
-    patient_alleles = [patient.hla1, patient.hla2]
-    donor_alleles = [donor.hla1, donor.hla2]
-
     # Get correct allele pairing and its score
-    score, correct_pairing = _get_correct_allele_pairing(
-        patient_alleles, donor_alleles
-    )
+    score, correct_pairing = _get_correct_allele_pairing(patient, donor)
 
     # Return match result
     return MatchResult(
