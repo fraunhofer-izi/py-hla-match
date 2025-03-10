@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
 from py_hla_match.hla import HLA
@@ -29,7 +30,7 @@ class HLAPair:
         self.hla2 = hla2
         self.locus = self._get_locus()
 
-    def _get_locus(self) -> str:
+    def _get_locus(self) -> Optional[str]:
         """
         Returns the locus of the HLA pair.
         """
@@ -44,7 +45,7 @@ class HLAPair:
 
 
 class Individual:
-    def __init__(self, hla_data: [HLAPair]) -> None:
+    def __init__(self, hla_data: list[HLAPair]) -> None:
         """
         Represents an individual with HLA data.
 
@@ -58,7 +59,7 @@ class Patient(Individual):
     Represents a patient, inheriting from Individual.
     """
 
-    def __init__(self,  hla_data: [HLAPair]) -> None:
+    def __init__(self,  hla_data: list[HLAPair]) -> None:
         super().__init__(hla_data)
 
     def match(self, donor: 'Donor') -> None:
@@ -67,7 +68,7 @@ class Patient(Individual):
         """
         pass
 
-    def get_best_match(self, donors: ['Donor']) -> 'Donor':
+    def get_best_match(self, donors: list['Donor']) -> 'Donor':
         """
         Get the best match from a list of donors.
         """
@@ -79,5 +80,5 @@ class Donor(Individual):
     Represents a donor, inheriting from Individual.
     """
 
-    def __init__(self,  hla_data: [HLAPair]) -> None:
+    def __init__(self,  hla_data: list[HLAPair]) -> None:
         super().__init__(hla_data)
