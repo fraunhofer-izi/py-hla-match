@@ -378,12 +378,14 @@ class TestAllelePairMatch(unittest.TestCase):
         # Test 2: InvalidAlleleError
         with self.assertRaises(InvalidAlleleError):
             patient = HLAPair(hla1=HLA("A*07:01"), hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
         # Test 3: TypeError
         patient_allele1 = 1  # Not an HLA object
         with self.assertRaises(TypeError):
             patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
         # Test 4: InvalidLocusComparisonError
@@ -391,6 +393,7 @@ class TestAllelePairMatch(unittest.TestCase):
         patient_allele2 = HLA("A*02:01:01")
         with self.assertRaises(InvalidLocusComparisonError):
             patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
 

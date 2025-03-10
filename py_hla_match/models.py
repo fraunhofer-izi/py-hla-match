@@ -15,6 +15,16 @@ class HLAPair:
         :param hla2: The second HLA object
         """
 
+        # check for object validity -> hla1 and hla2 must be hla objects
+        if not isinstance(hla1, HLA):
+            raise TypeError(
+                f"hla1 must be an instance of HLA, not {type(hla1).__name__}."
+            )
+        if not isinstance(hla2, HLA):
+            raise TypeError(
+                f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
+            )
+
         self.hla1 = hla1
         self.hla2 = hla2
         self.locus = self._get_locus()
@@ -28,7 +38,7 @@ class HLAPair:
         elif self.hla1.locus is None or self.hla2.locus is None:
             return None
         elif self.hla1.locus != self.hla2.locus:
-            raise InvalidLocusComparisonError("HLA alleles must be from the same locus.")
+            raise InvalidLocusComparisonError(self.hla1.locus, self.hla2.locus)
         else:
             return self.hla1.locus
 
