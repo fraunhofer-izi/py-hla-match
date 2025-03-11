@@ -54,7 +54,6 @@ class MatchResult:
                    == self.patient.hla2.ard_redux_allele_string
                )
 
-
     @property
     def loci_match_basic_resolution(self):
         if not hasattr(self, '_locus_match_basic_resolution'):
@@ -104,12 +103,23 @@ class MatchResult:
             self, match_level_1, match_level_2
     ):
         """
+        TODO: base on clinician feedback
         Determines the basic resolution match status based on the allele match
         levels.
 
         Returns:
             str: "ARD_MATCH", "PARTIAL_ARD_MISMATCH", or "ARD_MISMATCH"
         """
+        # type check
+        if not all(
+            isinstance(level, AlleleMatchLevel) for
+            level in [match_level_1, match_level_2]
+        ):
+            raise TypeError(
+                f"match_level_1 and match_level_2 must be instances of "
+                f"{AlleleMatchLevel}, not {type(match_level_1)} and "
+                f"{type(match_level_2)}."
+            )
         # Group AlleleMatchLevels into basic resolution match and mismatch
         # levels
         match_levels = {
@@ -144,6 +154,7 @@ class MatchResult:
             self, match_level_1, match_level_2
     ):
         """
+        TODO: base on clinician feedback
         Determines the high resolution match status with detailed mismatch
         types.
 
@@ -157,8 +168,8 @@ class MatchResult:
             level in [match_level_1, match_level_2]
         ):
             raise TypeError(
-                "match_level_1 and match_level_2 must be instances of "
-                f"AlleleMatchLevel, not {type(match_level_1)} and "
+                f"match_level_1 and match_level_2 must be instances of "
+                f"{AlleleMatchLevel}, not {type(match_level_1)} and "
                 f"{type(match_level_2)}."
             )
 
@@ -417,7 +428,8 @@ if __name__ == "__main__":
     # List all possible AlleleMatchLevel values
     allele_match_levels = list(AlleleMatchLevel)
 
-    # Loop over all combinations of AlleleMatchLevel for allele_match_1 and allele_match_2
+    # Loop over all combinations of AlleleMatchLevel for allele_match_1 and
+    # allele_match_2
     for level1, level2 in product(allele_match_levels, repeat=2):
         # Create dummy patient and donor
         patient = DummyPatient()
@@ -433,4 +445,8 @@ if __name__ == "__main__":
 
         # Call loci_match_basic_resolution and print the result
         result = match_result.loci_match_high_resolution
-        print(f"allele_match_1: {level1.name}, allele_match_2: {level2.name} => loci_match_basic_resolution: {result}")
+        print(
+            f"allele_match_1: {level1.name}, "
+            f"allele_match_2: {level2.name} => loci_match_basic_resolution:"
+            f"{result}"
+        )
