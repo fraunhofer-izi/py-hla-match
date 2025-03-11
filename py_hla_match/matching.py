@@ -14,7 +14,7 @@ class AlleleMatchLevel(IntEnum):
     ALLELE_MISMATCH = 2
     ARD_MATCH = 3
     SYNONYMOUS_VARIANT_MATCH = 4
-    NON_CODING_VARIANT_MATCH = 5    
+    NON_CODING_VARIANT_MATCH = 5
     cf.https://hla.alleles.org/nomenclature/naming.html
     """
     LOCUS_MISMATCH = 0
