@@ -9,12 +9,12 @@ from py_hla_match.exceptions import InvalidLocusComparisonError
 class AlleleMatchLevel(IntEnum):
     """
     Following hla nomenclature:
-    LOCUS_MISMATCH: Mismatch of a particular HLA locus i.e. DRB1
-    ALLELE_GROUP_MISMATCH:
-    ALLELE_MISMATCH = 2
-    ARD_MATCH = 3
-    SYNONYMOUS_VARIANT_MATCH = 4
-    NON_CODING_VARIANT_MATCH = 5
+    LOCUS_MISMATCH: Mismatch at a particular HLA locus
+    ALLELE_GROUP_MISMATCH: Mismatch at the goup code
+    ALLELE_MISMATCH: Mismatch at the allele level
+    ARD_MATCH: ARD level match
+    SYNONYMOUS_VARIANT_MATCH: Synonymous variant match
+    NON_CODING_VARIANT_MATCH: Non-coding variant match
     cf.https://hla.alleles.org/nomenclature/naming.html
     """
     LOCUS_MISMATCH = 0
@@ -54,19 +54,169 @@ class MatchResult:
                    == self.patient.hla2.ard_redux_allele_string
                )
 
-    @staticmethod
-    def _get_details() -> str:
+
+    @property
+    def loci_match_basic_resolution(self):
+        if not hasattr(self, '_locus_match_basic_resolution'):
+            self._locus_match_basic_resolution = \
+                self._loci_level_match('basic_resolution')
+        return self._locus_match_basic_resolution
+
+    @property
+    def loci_match_high_resolution(self):
+        if not hasattr(self, '_locus_match_high_resolution'):
+            self._locus_match_high_resolution = \
+                self._loci_level_match('high_resolution')
+        return self._locus_match_high_resolution
+
+    @property
+    def loci_match_full_resolution(self):
+        if not hasattr(self, '_locus_match_high_resolution'):
+            self._locus_match_high_resolution = \
+                self._loci_level_match('high_resolution')
+        return self._locus_match_high_resolution
+
+    def _get_details(self) -> str:
         """
         TODO: not implemented yet
         """
         return None
 
-    @staticmethod
-    def _loci_level_match():
+    def _loci_level_match(self, resolution):
         """
         TODO: base on clinician feedback
         """
-        return None
+        match_level_1, match_level_2 = self.allele_match_levels
+        if resolution == 'basic_resolution':
+            return self._calculate_loci_match_basic_resolution(
+                match_level_1, match_level_2
+            )
+
+        elif resolution == 'high_resolution':
+            return self._calculate_loci_match_high_resolution(
+                match_level_1, match_level_2
+            )
+
+        else:
+            raise ValueError(f"Unknown resolution level: {resolution}")
+
+    def _calculate_loci_match_basic_resolution(
+            self, match_level_1, match_level_2
+    ):
+        """
+        Determines the basic resolution match status based on the allele match
+        levels.
+
+        Returns:
+            str: "ARD_MATCH", "PARTIAL_ARD_MISMATCH", or "ARD_MISMATCH"
+        """
+        # Group AlleleMatchLevels into basic resolution match and mismatch
+        # levels
+        match_levels = {
+            AlleleMatchLevel.ARD_MATCH,
+            AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+            AlleleMatchLevel.NON_CODING_VARIANT_MATCH,
+        }
+        mismatch_levels = {
+            AlleleMatchLevel.LOCUS_MISMATCH,
+            AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
+            AlleleMatchLevel.ALLELE_MISMATCH,
+        }
+
+        # Combine grouped basic resolution match level to "MATCH"
+        if match_level_1 in match_levels and match_level_2 in match_levels:
+            return "ARD_MATCH"
+        # Partial mismatch if one allele is basic resolution match level and
+        # the other is basic resolution mismatch level
+        elif (
+            match_level_1 in match_levels and
+            match_level_2 in mismatch_levels
+        ) or (
+            match_level_1 in mismatch_levels and
+            match_level_2 in match_levels
+        ):
+            return "PARTIAL_ARD_MISMATCH"
+        # Both alleles are basic mismatch level
+        else:
+            return "ARD_MISMATCH"
+
+    def _calculate_loci_match_high_resolution(
+            self, match_level_1, match_level_2
+    ):
+        """
+        Determines the high resolution match status with detailed mismatch
+        types.
+
+        Returns:
+            str: A string indicating the match status with high resolution
+            mismatches.
+        """
+        # type check
+        if not all(
+            isinstance(level, AlleleMatchLevel) for
+            level in [match_level_1, match_level_2]
+        ):
+            raise TypeError(
+                "match_level_1 and match_level_2 must be instances of "
+                f"AlleleMatchLevel, not {type(match_level_1)} and "
+                f"{type(match_level_2)}."
+            )
+
+        # Group AlleleMatchLevels into high resolution match and mismatch
+        # levels
+        match_levels = {
+            AlleleMatchLevel.ARD_MATCH,
+            AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+            AlleleMatchLevel.NON_CODING_VARIANT_MATCH,
+        }
+        mismatch_levels = {
+            AlleleMatchLevel.LOCUS_MISMATCH,
+            AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
+            AlleleMatchLevel.ALLELE_MISMATCH,
+        }
+
+        # Combine grouped high resolution match level to "MATCH"
+        if match_level_1 in match_levels and match_level_2 in match_levels:
+            return "ARD_MATCH"
+        # Partial mismatch if one allele is high resolution match level and
+        # the other is high resolution mismatch level
+        elif (
+            match_level_1 in match_levels and
+            match_level_2 in mismatch_levels
+        ):
+            # resolve high resolution mismatch level
+            return f"PARTIAL_{match_level_2.name}"
+        elif (
+            match_level_1 in mismatch_levels and
+            match_level_2 in match_levels
+        ):
+            # resolve high resolution mismatch level
+            return f"PARTIAL_{match_level_1.name}"
+        # Both alleles are high resolution mismatch level
+        elif (
+            match_level_1 in mismatch_levels and
+            match_level_2 in mismatch_levels and
+            match_level_1 < match_level_2  # Order of mismatch "severity"
+        ):
+            return f"{match_level_1.name}_AND_{match_level_2.name}"
+        elif (
+            match_level_1 in mismatch_levels and
+            match_level_2 in mismatch_levels and
+            match_level_1 > match_level_2  # Order of mismatch "severity"
+        ):
+            return f"{match_level_2.name}_AND_{match_level_1.name}"
+        # Additional sanity check
+        elif (
+            match_level_1 in mismatch_levels and
+            match_level_2 in mismatch_levels and
+            match_level_1 is match_level_2
+        ):
+            return f"DOUBLE_{match_level_1.name}"  # TODO: discuss terminology
+        else:
+            raise ValueError(
+                f"Unexpected match levels {match_level_1.name}"
+                f"and {match_level_2.name}"
+            )
 
 
 def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
@@ -248,3 +398,39 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
         score=score,
         allele_match_levels=correct_pairing,
     )
+
+
+if __name__ == "__main__":
+    from itertools import product
+
+    # Create dummy Patient and Donor classes with minimal attributes
+    class DummyPatient:
+        def __init__(self):
+            self.hla1 = HLA("HLA-A*01:01:01:01")
+            self.hla2 = HLA("HLA-A*01:02:01:01")
+
+    class DummyDonor:
+        def __init__(self):
+            self.hla1 = HLA("HLA-A*01:01:01:01")
+            self.hla2 = HLA("HLA-A*01:02:01:01")
+
+    # List all possible AlleleMatchLevel values
+    allele_match_levels = list(AlleleMatchLevel)
+
+    # Loop over all combinations of AlleleMatchLevel for allele_match_1 and allele_match_2
+    for level1, level2 in product(allele_match_levels, repeat=2):
+        # Create dummy patient and donor
+        patient = DummyPatient()
+        donor = DummyDonor()
+
+        # Create MatchResult instance with the current allele match levels
+        match_result = MatchResult(
+            patient=patient,
+            donor=donor,
+            score=0,
+            allele_match_levels=(level1, level2)
+        )
+
+        # Call loci_match_basic_resolution and print the result
+        result = match_result.loci_match_high_resolution
+        print(f"allele_match_1: {level1.name}, allele_match_2: {level2.name} => loci_match_basic_resolution: {result}")
