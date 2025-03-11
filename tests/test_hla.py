@@ -157,3 +157,7 @@ class TestHLA(unittest.TestCase):
             "ard_redux_allele_group='32', ard_redux_allele='11')"
         )
         self.assertEqual(repr(hla), expected_repr)
+
+
+if __name__ == "__main__":
+    unittest.main()

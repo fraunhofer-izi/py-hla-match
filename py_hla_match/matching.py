@@ -1,4 +1,4 @@
-from py_hla_match.models import Patient, Donor
+from py_hla_match.models import HLAPair
 from py_hla_match.hla import HLA
 from enum import IntEnum
 from typing import Tuple
@@ -25,13 +25,13 @@ class AlleleMatchLevel(IntEnum):
     NON_CODING_VARIANT_MATCH = 5
 
 
-class MatchResult():
+class MatchResult:
     """
-    Report class on patient/donor compatibility for an HLA locus
+    Report class on patient/donor compatibility for a single HLA locus
 
     Attributes:
-        patient (Patient): Patient object (HLA alleles)
-        donor (Donor): Donor object (HLA alleles)
+        patient (HLAPair): Patient object (HLA alleles)
+        donor (HLAPair): Donor object (HLA alleles)
         score (int): (internal) score of correct allele pairing (patient/donor)
         allele_matches (Tuple[AlleleMatchLevel, AlleleMatchLevel]): Match
         results
@@ -39,8 +39,8 @@ class MatchResult():
 
     def __init__(
             self,
-            patient: Patient,
-            donor: Donor,
+            patient: HLAPair,
+            donor: HLAPair,
             score: int,
             allele_match_levels: Tuple[AlleleMatchLevel, AlleleMatchLevel]
     ) -> None:
@@ -53,6 +53,7 @@ class MatchResult():
                    self.patient.hla1.ard_redux_allele_string
                    == self.patient.hla2.ard_redux_allele_string
                )
+
 
     @property
     def loci_match_basic_resolution(self):
@@ -313,7 +314,7 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
 
 def _get_correct_allele_pairing(
-    patient_alleles: Tuple[HLA, HLA], donor_alleles: Tuple[HLA, HLA]
+    patient_alleles: HLAPair, donor_alleles: HLAPair
 ) -> Tuple[int, Tuple[AlleleMatchLevel, AlleleMatchLevel]]:
     """
     Determines the correct pairing of patient and donor HLA allele by
@@ -340,12 +341,12 @@ def _get_correct_allele_pairing(
     """
     pairings = [
         (
-            patient_alleles[0], donor_alleles[0],
-            patient_alleles[1], donor_alleles[1]
+            patient_alleles.hla1, donor_alleles.hla1,
+            patient_alleles.hla2, donor_alleles.hla2
         ),
         (
-            patient_alleles[0], donor_alleles[1],
-            patient_alleles[1], donor_alleles[0]
+            patient_alleles.hla1, donor_alleles.hla2,
+            patient_alleles.hla2, donor_alleles.hla1
         ),
     ]
 
@@ -370,7 +371,7 @@ def _get_correct_allele_pairing(
     return best_score, correct_pairing
 
 
-def allele_pair_match(patient: Patient, donor: Donor) -> MatchResult:
+def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
     """
     Matching of two patient and donor HLA alleles encoding the HLA gene
 
@@ -387,13 +388,8 @@ def allele_pair_match(patient: Patient, donor: Donor) -> MatchResult:
         - Uses `get_correct_allele_pairing` function to evaluate all possible
         allele pairings and selects the one with the highest score
     """
-    patient_alleles = [patient.hla1, patient.hla2]
-    donor_alleles = [donor.hla1, donor.hla2]
-
     # Get correct allele pairing and its score
-    score, correct_pairing = _get_correct_allele_pairing(
-        patient_alleles, donor_alleles
-    )
+    score, correct_pairing = _get_correct_allele_pairing(patient, donor)
 
     # Return match result
     return MatchResult(
