@@ -1,7 +1,6 @@
 import unittest
 
 from py_hla_match.hla import HLA
-from py_hla_match.models import Patient, Donor
 from py_hla_match.matching import (
     allele_match, allele_pair_match, AlleleMatchLevel,
 )
@@ -9,6 +8,8 @@ from py_hla_match.exceptions import (
     InvalidLocusComparisonError, MalformedHLAStringError
 )
 from pyard.exceptions import InvalidAlleleError
+
+from py_hla_match.models import HLAPair
 
 
 class TestAlleleMatch(unittest.TestCase):
@@ -206,8 +207,8 @@ class TestAllelePairMatch(unittest.TestCase):
         donor_allele1 = HLA("DRB1*15:01:01")
         donor_allele2 = HLA("DRB1*15:01:01")
 
-        patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
-        donor = Donor(hla1=donor_allele1, hla2=donor_allele2)
+        patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+        donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
 
         result = allele_pair_match(patient, donor)
 
@@ -233,8 +234,8 @@ class TestAllelePairMatch(unittest.TestCase):
         donor_allele1 = HLA("DRB1*01:01P")
         donor_allele2 = HLA("DRB1*07:01:01")
 
-        patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
-        donor = Donor(hla1=donor_allele1, hla2=donor_allele2)
+        patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+        donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
 
         result = allele_pair_match(patient, donor)
 
@@ -262,8 +263,8 @@ class TestAllelePairMatch(unittest.TestCase):
         donor_allele1 = HLA("B*51:01:01")
         donor_allele2 = HLA("B*35:02:01")
 
-        patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
-        donor = Donor(hla1=donor_allele1, hla2=donor_allele2)
+        patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+        donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
 
         result = allele_pair_match(patient, donor)
 
@@ -292,8 +293,8 @@ class TestAllelePairMatch(unittest.TestCase):
         donor_allele1 = HLA("DPB1*04:02:01")
         donor_allele2 = HLA("DPB1*04:02:01")
 
-        patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
-        donor = Donor(hla1=donor_allele1, hla2=donor_allele2)
+        patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+        donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
 
         result = allele_pair_match(patient, donor)
 
@@ -319,8 +320,8 @@ class TestAllelePairMatch(unittest.TestCase):
         donor_allele1 = HLA("DPB1*04:01:01")
         donor_allele2 = HLA("DPB1*02:01:02")
 
-        patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
-        donor = Donor(hla1=donor_allele1, hla2=donor_allele2)
+        patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+        donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
 
         result = allele_pair_match(patient, donor)
 
@@ -345,8 +346,8 @@ class TestAllelePairMatch(unittest.TestCase):
         donor_allele1 = HLA("DPB1*04:02P")
         donor_allele2 = HLA("DPB1*03:01P")
 
-        patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
-        donor = Donor(hla1=donor_allele1, hla2=donor_allele2)
+        patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+        donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
 
         result = allele_pair_match(patient, donor)
 
@@ -367,28 +368,32 @@ class TestAllelePairMatch(unittest.TestCase):
         patient_allele2 = HLA("A*02:01:01")
         donor_allele1 = HLA("B*07:02:01")
         donor_allele2 = HLA("A*02:01:01")
-        donor = Donor(hla1=donor_allele1, hla2=donor_allele2)
 
         with self.assertRaises(MalformedHLAStringError):
-            patient = Patient(hla1=HLA("a"), hla2=patient_allele2)
+            # this should already throw error
+            patient = HLAPair(hla1=HLA("a"), hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
         # Test 2: InvalidAlleleError
         with self.assertRaises(InvalidAlleleError):
-            patient = Patient(hla1=HLA("A*07:01"), hla2=patient_allele2)
+            patient = HLAPair(hla1=HLA("A*07:01"), hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
         # Test 3: TypeError
         patient_allele1 = 1  # Not an HLA object
         with self.assertRaises(TypeError):
-            patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
+            patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
         # Test 4: InvalidLocusComparisonError
         patient_allele1 = HLA("A*01:01:01")
         patient_allele2 = HLA("A*02:01:01")
         with self.assertRaises(InvalidLocusComparisonError):
-            patient = Patient(hla1=patient_allele1, hla2=patient_allele2)
+            patient = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+            donor = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
             allele_pair_match(patient=patient, donor=donor)
 
 
