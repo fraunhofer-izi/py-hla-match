@@ -12,3 +12,8 @@ __all__ = [
     'models',
     'entities'
 ]
+
+# import global ARD instance
+from .singleton import get_ard_instance
+
+global_ard = get_ard_instance()

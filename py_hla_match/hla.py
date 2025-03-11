@@ -1,10 +1,34 @@
 import logging
 import re
-import pyard
+from .singleton import get_ard_instance
 
 from py_hla_match.exceptions import MalformedHLAStringError
 
 logger = logging.getLogger(__name__)
+
+# regex pattern for HLA allele string
+NOMENCLATURE_PATTERN = re.compile(
+    r"""
+    ^(?:HLA-)?
+    (?P<locus>[A-Z0-9]+)
+    \*
+    (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+    (?P<suffix>[NLSCAQ])?
+    (?P<group_code>[GP])?$
+    """,
+    re.VERBOSE
+)
+
+# regex pattern for ARD redux allele string
+REDUX_PATTERN = re.compile(
+    r"""
+    ^(?:HLA-)?                 # Optional 'HLA-' prefix
+    (?P<locus>[A-Z0-9]+)       # Locus
+    \*                         # Asterisk separator
+    (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})  # Allele fields
+    """,
+    re.VERBOSE
+)
 
 
 class HLA:
@@ -57,18 +81,7 @@ class HLA:
         """
         Validates the HLA allele string format.
         """
-        pattern = re.compile(
-            r"""
-            ^(?:HLA-)?
-            (?P<locus>[A-Z0-9]+)
-            \*
-            (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
-            (?P<suffix>[NLSCAQ])?
-            (?P<group_code>[GP])?$
-            """,
-            re.VERBOSE
-        )
-        match = pattern.match(self.allele_string)
+        match = NOMENCLATURE_PATTERN.match(self.allele_string)
         if not match:
             raise MalformedHLAStringError(
                 f"Invalid HLA allele string: {self.allele_string}"
@@ -84,21 +97,12 @@ class HLA:
         Reduce Allele to 2 field ARD level using the wonderful py-ard package
         For further information: https://github.com/nmdp-bioinformatics/py-ard
         """
-        ard = pyard.init()
+        ard = get_ard_instance()
         redux_type = 'lgx'
         self.ard_redux_allele_string = ard.redux(
             self.allele_string, redux_type
         )
-        pattern = re.compile(
-            r"""
-            ^(?:HLA-)?                 # Optional 'HLA-' prefix
-            (?P<locus>[A-Z0-9]+)       # Locus
-            \*                         # Asterisk separator
-            (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})  # Allele fields
-            """,
-            re.VERBOSE
-        )
-        match = pattern.match(self.ard_redux_allele_string)
+        match = REDUX_PATTERN.match(self.ard_redux_allele_string)
         if match:
             allele_fields = match.group('allele_fields')
             field_contents = allele_fields.split(':')
