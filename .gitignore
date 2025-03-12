@@ -14,9 +14,6 @@ dist/
 *.egg
 *.wheel
 
-# Poetry specific
-poetry.lock
-
 # PyInstaller
 *.manifest
 *.spec
