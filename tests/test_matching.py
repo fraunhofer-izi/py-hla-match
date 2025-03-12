@@ -407,7 +407,7 @@ dummy_MatchResult = MatchResult(
                 )
 
 
-class TestLociLevelMatch(unittest.TestCase):
+class TestLociLevelMatch_basic_resolution(unittest.TestCase):
 
     def test_ARD_MATCH_and_ARD_MATCH(self):
         level1 = AlleleMatchLevel.ARD_MATCH
@@ -427,30 +427,6 @@ class TestLociLevelMatch(unittest.TestCase):
 
     def test_ARD_MATCH_and_NON_CODING_VARIANT_MATCH(self):
         level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
         level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
@@ -487,16 +463,176 @@ class TestLociLevelMatch(unittest.TestCase):
             result, "PARTIAL_ARD_MISMATCH"
         )
 
-    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_SYNONYMOUS_VARIANT_MATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
         level2 = AlleleMatchLevel.ALLELE_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
-    def test_ALLELE_MISMATCH_and_ALLELE_MISMATCH(self):
+    def test_ALLELE_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
         level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
         level2 = AlleleMatchLevel.ALLELE_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
@@ -511,6 +647,54 @@ class TestLociLevelMatch(unittest.TestCase):
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
+    def test_ALLELE_GROUP_MISMATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MISMATCH")
+
     def test_LOCUS_MISMATCH_and_LOCUS_MISMATCH(self):
         level1 = AlleleMatchLevel.LOCUS_MISMATCH
         level2 = AlleleMatchLevel.LOCUS_MISMATCH
@@ -519,13 +703,318 @@ class TestLociLevelMatch(unittest.TestCase):
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
+    def test_TypeError(self):
+        level1 = 1
+        level2 = 2
+        with self.assertRaises(TypeError):
+            dummy_MatchResult._calculate_loci_match_basic_resolution(
+                level1, level2
+            )
+
+    def test_TypeError_message(self):
+        level1 = 1
+        level2 = 2
+        with self.assertRaises(TypeError) as context:
+            dummy_MatchResult._calculate_loci_match_basic_resolution(
+                level1, level2
+            )
+        self.assertEqual(
+            str(context.exception),
+            f"match_level_1 and match_level_2 must be instances of "
+            f"{AlleleMatchLevel}, not {type(level1)} and "
+            f"{type(level2)}."
+        )
+
+
+class TestLociLevelMatch_high_resolution(unittest.TestCase):
+
+    def test_ARD_MATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.ARD_MATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
+
+    def test_ARD_MATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.ARD_MATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
+
+    def test_ARD_MATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.ARD_MATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+
+    def test_ARD_MATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.ARD_MATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_ARD_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ARD_MATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_ARD_MATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ARD_MATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_SYNONYMOUS_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_NON_CODING_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ARD_MATCH")
+
+    def test_ALLELE_MISMATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ALLELE_GROUP_MISMATCH_AND_ALLELE_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "DOUBLE_ALLELE_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+
+    def test_ALLELE_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_MISMATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+
     def test_ALLELE_GROUP_MISMATCH_and_LOCUS_MISMATCH(self):
         level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
         level2 = AlleleMatchLevel.LOCUS_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "ARD_MISMATCH")
+        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_GROUP_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "DOUBLE_ALLELE_GROUP_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "ALLELE_GROUP_MISMATCH_AND_ALLELE_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
+
+    def test_ALLELE_GROUP_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "DOUBLE_LOCUS_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_GROUP_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ALLELE_MISMATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ARD_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
+
+    def test_LOCUS_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
+        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        result = dummy_MatchResult._calculate_loci_match_high_resolution(
+            level1, level2
+        )
+        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
 
     def test_TypeError(self):
         level1 = 1

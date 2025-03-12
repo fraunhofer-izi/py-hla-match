@@ -70,16 +70,16 @@ class MatchResult:
 
     @property
     def loci_match_full_resolution(self):
-        if not hasattr(self, '_locus_match_high_resolution'):
-            self._locus_match_high_resolution = \
-                self._loci_level_match('high_resolution')
-        return self._locus_match_high_resolution
+        if not hasattr(self, '_locus_match_full_resolution'):
+            self._locus_match_full_resolution = \
+                self._loci_level_match('full_resolution')
+        return self._locus_match_full_resolution
 
     def _get_details(self) -> str:
         """
         TODO: not implemented yet
         """
-        return None
+        raise NotImplementedError("Not implemented yet.")
 
     def _loci_level_match(self, resolution):
         """
@@ -96,8 +96,19 @@ class MatchResult:
                 match_level_1, match_level_2
             )
 
+        elif resolution == 'full_resolution':
+            raise NotImplementedError(
+                "\'full_resolution\' not implemented yet.\n"
+                "Please use either \'basic_resolution\' or "
+                "\'high_resolution\'."
+            )
+
         else:
-            raise ValueError(f"Unknown resolution level: {resolution}")
+            raise ValueError(
+                f"Unknown resolution level: {resolution}\n"
+                f"Expected 'basic_resolution', 'high_resolution', or "
+                f"'full_resolution'."
+            )
 
     def _calculate_loci_match_basic_resolution(
             self, match_level_1, match_level_2
@@ -447,6 +458,6 @@ if __name__ == "__main__":
         result = match_result.loci_match_high_resolution
         print(
             f"allele_match_1: {level1.name}, "
-            f"allele_match_2: {level2.name} => loci_match_basic_resolution:"
+            f"allele_match_2: {level2.name} => loci_match_high_resolution:"
             f"{result}"
         )
