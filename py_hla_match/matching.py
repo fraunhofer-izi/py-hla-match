@@ -1,10 +1,12 @@
-from py_hla_match.models import HLAPair
+import logging
+from py_hla_match.models import HLAPair, Individual
 from py_hla_match.hla import HLA
 from enum import IntEnum
-from typing import Tuple
+from typing import List, Tuple
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
 
+logger = logging.getLogger(__name__)
 
 class AlleleMatchLevel(IntEnum):
     """
@@ -422,42 +424,34 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
     )
 
 
-if __name__ == "__main__":
-    from itertools import product
-
-    # Create dummy Patient and Donor classes with minimal attributes
-    class DummyPatient:
-        def __init__(self):
-            self.hla1 = HLA("HLA-A*01:01:01:01")
-            self.hla2 = HLA("HLA-A*01:02:01:01")
-
-    class DummyDonor:
-        def __init__(self):
-            self.hla1 = HLA("HLA-A*01:01:01:01")
-            self.hla2 = HLA("HLA-A*01:02:01:01")
-
-    # List all possible AlleleMatchLevel values
-    allele_match_levels = list(AlleleMatchLevel)
-
-    # Loop over all combinations of AlleleMatchLevel for allele_match_1 and
-    # allele_match_2
-    for level1, level2 in product(allele_match_levels, repeat=2):
-        # Create dummy patient and donor
-        patient = DummyPatient()
-        donor = DummyDonor()
-
-        # Create MatchResult instance with the current allele match levels
-        match_result = MatchResult(
-            patient=patient,
-            donor=donor,
-            score=0,
-            allele_match_levels=(level1, level2)
-        )
-
-        # Call loci_match_basic_resolution and print the result
-        result = match_result.loci_match_high_resolution
-        print(
-            f"allele_match_1: {level1.name}, "
-            f"allele_match_2: {level2.name} => loci_match_high_resolution:"
-            f"{result}"
-        )
+def multi_locus_match(patient: Individual, donor: Individual) -> List[MatchResult]:
+    """
+    Calculate compatibility of patient and donor for all recorded patient loci
+    
+    Args:
+        patient (Individual): Patient object
+        donor (Individual): Donor object
+    
+    Returns:
+        List[MatchResult]: List of MatchResult objects for each locus
+    """
+    results = []
+    donor_loci = {hla_pair.locus for hla_pair in donor.hla_data}
+    for patient_hla_pair in patient.hla_data:
+        # check if there is a matching locus in the donor data
+        locus = patient_hla_pair.locus
+        if locus not in donor_loci:
+            logger.warning(
+                f"Locus {locus} not found in donor data and will be excluded from the results."
+            )
+            continue
+        for donor_hla_pair in donor.hla_data:
+            if donor_hla_pair.locus == locus:
+                results.append(allele_pair_match(patient_hla_pair, donor_hla_pair))
+                break
+    return results
+        
+        
+        
+                
+                
