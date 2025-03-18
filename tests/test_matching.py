@@ -1053,7 +1053,7 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         
         patient_hla_pair2 = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
         
-        patient = Individual(hla_pairs=[patient_hla_pair1, patient_hla_pair2])
+        patient = Individual(hla_data=[patient_hla_pair1, patient_hla_pair2])
         
         donor_allele1 = HLA("A*01:01:01")
         donor_allele2 = HLA("A*01:01:01")
@@ -1065,7 +1065,7 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         
         donor_hla_pair2 = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
         
-        donor = Individual(hla_pairs=[donor_hla_pair1, donor_hla_pair2])
+        donor = Individual(hla_data=[donor_hla_pair1, donor_hla_pair2])
         
         result = multi_locus_match(patient, donor)
         
@@ -1084,7 +1084,7 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         
         patient_hla_pair2 = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
         
-        patient = Individual(hla_pairs=[patient_hla_pair1, patient_hla_pair2])
+        patient = Individual(hla_data=[patient_hla_pair1, patient_hla_pair2])
         
         donor_allele1 = HLA("A*01:01:01")
         donor_allele2 = HLA("A*01:01:01")
@@ -1097,7 +1097,7 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         
         donor_hla_pair2 = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
         
-        donor = Individual(hla_pairs=[donor_hla_pair1, donor_hla_pair2])
+        donor = Individual(hla_data=[donor_hla_pair1, donor_hla_pair2])
         
         result = multi_locus_match(patient, donor)
         
