@@ -1069,8 +1069,12 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         
         result = multi_locus_match(patient, donor)
         
-        self.assertEqual(result[0].allele_match_levels, [AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH])
-        self.assertEqual(result[1].allele_match_levels, [AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH])
+        self.assertEqual(result[0].allele_match_levels, 
+                         [AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH, 
+                          AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH])
+        self.assertEqual(result[1].allele_match_levels, 
+                         [AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH, 
+                          AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH])
     
     
     def test_multi_locus_match_missing_donor_locus(self):
@@ -1112,7 +1116,9 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         
         # result should now only contain a single matched locus 
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].allele_match_levels, [AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH])
+        self.assertEqual(result[0].allele_match_levels, 
+                         [AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH, 
+                          AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH])
 
 if __name__ == "__main__":
     unittest.main()
