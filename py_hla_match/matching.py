@@ -8,6 +8,7 @@ from py_hla_match.exceptions import InvalidLocusComparisonError
 
 logger = logging.getLogger(__name__)
 
+
 class AlleleMatchLevel(IntEnum):
     """
     Following hla nomenclature:
@@ -52,9 +53,31 @@ class MatchResult:
         self.allele_score = score
         self.allele_match_levels = allele_match_levels
         self.is_homozygous_patient = (
-                   self.patient.hla1.ard_redux_allele_string
-                   == self.patient.hla2.ard_redux_allele_string
-               )
+                self.patient.hla1.ard_redux_allele_string
+                == self.patient.hla2.ard_redux_allele_string
+        )
+
+    def get_match_level_for_resolution(self, resolution: str) -> str:
+        """
+        Get match level for a given resolution
+
+        Args:
+            resolution (str): Resolution level (basic, high, full)
+
+        Returns:
+            str: Match level for the given resolution
+        """
+        if resolution == "basic":
+            return self.loci_match_basic_resolution
+        elif resolution == "high":
+            return self.loci_match_high_resolution
+        elif resolution == "full":
+            return self.loci_match_full_resolution
+        else:
+            raise ValueError(
+                f"Unknown resolution level: {resolution}\n"
+                f"Expected 'basic', 'high', or 'full'."
+            )
 
     @property
     def loci_match_basic_resolution(self):
@@ -125,8 +148,8 @@ class MatchResult:
         """
         # type check
         if not all(
-            isinstance(level, AlleleMatchLevel) for
-            level in [match_level_1, match_level_2]
+                isinstance(level, AlleleMatchLevel) for
+                level in [match_level_1, match_level_2]
         ):
             raise TypeError(
                 f"match_level_1 and match_level_2 must be instances of "
@@ -152,11 +175,11 @@ class MatchResult:
         # Partial mismatch if one allele is basic resolution match level and
         # the other is basic resolution mismatch level
         elif (
-            match_level_1 in match_levels and
-            match_level_2 in mismatch_levels
+                match_level_1 in match_levels and
+                match_level_2 in mismatch_levels
         ) or (
-            match_level_1 in mismatch_levels and
-            match_level_2 in match_levels
+                match_level_1 in mismatch_levels and
+                match_level_2 in match_levels
         ):
             return "PARTIAL_ARD_MISMATCH"
         # Both alleles are basic mismatch level
@@ -177,8 +200,8 @@ class MatchResult:
         """
         # type check
         if not all(
-            isinstance(level, AlleleMatchLevel) for
-            level in [match_level_1, match_level_2]
+                isinstance(level, AlleleMatchLevel) for
+                level in [match_level_1, match_level_2]
         ):
             raise TypeError(
                 f"match_level_1 and match_level_2 must be instances of "
@@ -205,35 +228,35 @@ class MatchResult:
         # Partial mismatch if one allele is high resolution match level and
         # the other is high resolution mismatch level
         elif (
-            match_level_1 in match_levels and
-            match_level_2 in mismatch_levels
+                match_level_1 in match_levels and
+                match_level_2 in mismatch_levels
         ):
             # resolve high resolution mismatch level
             return f"PARTIAL_{match_level_2.name}"
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in match_levels
+                match_level_1 in mismatch_levels and
+                match_level_2 in match_levels
         ):
             # resolve high resolution mismatch level
             return f"PARTIAL_{match_level_1.name}"
         # Both alleles are high resolution mismatch level
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in mismatch_levels and
-            match_level_1 < match_level_2  # Order of mismatch "severity"
+                match_level_1 in mismatch_levels and
+                match_level_2 in mismatch_levels and
+                match_level_1 < match_level_2  # Order of mismatch "severity"
         ):
             return f"{match_level_1.name}_AND_{match_level_2.name}"
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in mismatch_levels and
-            match_level_1 > match_level_2  # Order of mismatch "severity"
+                match_level_1 in mismatch_levels and
+                match_level_2 in mismatch_levels and
+                match_level_1 > match_level_2  # Order of mismatch "severity"
         ):
             return f"{match_level_2.name}_AND_{match_level_1.name}"
         # Additional sanity check
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in mismatch_levels and
-            match_level_1 is match_level_2
+                match_level_1 in mismatch_levels and
+                match_level_2 in mismatch_levels and
+                match_level_1 is match_level_2
         ):
             return f"DOUBLE_{match_level_1.name}"  # TODO: discuss terminology
         else:
@@ -270,8 +293,8 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
     if hla1.locus != hla2.locus:
         if (
-            'DRB' in hla1.locus and 'DRB' in hla2.locus and
-            'DRB1' not in hla1.locus and 'DRB1' not in hla2.locus
+                'DRB' in hla1.locus and 'DRB' in hla2.locus and
+                'DRB1' not in hla1.locus and 'DRB1' not in hla2.locus
         ):
             return AlleleMatchLevel.LOCUS_MISMATCH
         else:
@@ -309,9 +332,9 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
     # To save some time continue with synonymous variant+ only if available
     if (
-        hla1.synonymous_variant is not None
-        and
-        hla2.synonymous_variant is not None
+            hla1.synonymous_variant is not None
+            and
+            hla2.synonymous_variant is not None
     ):
         if hla1.synonymous_variant == hla2.synonymous_variant:
             # continue with non coding variant
@@ -338,7 +361,7 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
 
 def _get_correct_allele_pairing(
-    patient_alleles: HLAPair, donor_alleles: HLAPair
+        patient_alleles: HLAPair, donor_alleles: HLAPair
 ) -> Tuple[int, Tuple[AlleleMatchLevel, AlleleMatchLevel]]:
     """
     Determines the correct pairing of patient and donor HLA allele by
@@ -450,8 +473,3 @@ def multi_locus_match(patient: Individual, donor: Individual) -> List[MatchResul
                 results.append(allele_pair_match(patient_hla_pair, donor_hla_pair))
                 break
     return results
-        
-        
-        
-                
-                
