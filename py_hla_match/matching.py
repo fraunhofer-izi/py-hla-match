@@ -1,3 +1,4 @@
+from py_hla_match.external import is_permissive_dpb1_match
 from py_hla_match.models import HLAPair
 from py_hla_match.hla import HLA
 from enum import IntEnum
@@ -42,7 +43,8 @@ class MatchResult:
             patient: HLAPair,
             donor: HLAPair,
             score: int,
-            allele_match_levels: Tuple[AlleleMatchLevel, AlleleMatchLevel]
+            allele_match_levels: Tuple[AlleleMatchLevel, AlleleMatchLevel],
+            compute_dpb1_permissive: bool = False
     ) -> None:
 
         self.patient = patient
@@ -50,9 +52,12 @@ class MatchResult:
         self.allele_score = score
         self.allele_match_levels = allele_match_levels
         self.is_homozygous_patient = (
-                   self.patient.hla1.ard_redux_allele_string
-                   == self.patient.hla2.ard_redux_allele_string
-               )
+                self.patient.hla1.ard_redux_allele_string
+                == self.patient.hla2.ard_redux_allele_string
+        )
+        self.dpb1_permissive = None
+        if compute_dpb1_permissive:
+            self._compute_dpb1_permissive()
 
     @property
     def loci_match_basic_resolution(self):
@@ -123,8 +128,8 @@ class MatchResult:
         """
         # type check
         if not all(
-            isinstance(level, AlleleMatchLevel) for
-            level in [match_level_1, match_level_2]
+                isinstance(level, AlleleMatchLevel) for
+                level in [match_level_1, match_level_2]
         ):
             raise TypeError(
                 f"match_level_1 and match_level_2 must be instances of "
@@ -150,11 +155,11 @@ class MatchResult:
         # Partial mismatch if one allele is basic resolution match level and
         # the other is basic resolution mismatch level
         elif (
-            match_level_1 in match_levels and
-            match_level_2 in mismatch_levels
+                match_level_1 in match_levels and
+                match_level_2 in mismatch_levels
         ) or (
-            match_level_1 in mismatch_levels and
-            match_level_2 in match_levels
+                match_level_1 in mismatch_levels and
+                match_level_2 in match_levels
         ):
             return "PARTIAL_ARD_MISMATCH"
         # Both alleles are basic mismatch level
@@ -175,8 +180,8 @@ class MatchResult:
         """
         # type check
         if not all(
-            isinstance(level, AlleleMatchLevel) for
-            level in [match_level_1, match_level_2]
+                isinstance(level, AlleleMatchLevel) for
+                level in [match_level_1, match_level_2]
         ):
             raise TypeError(
                 f"match_level_1 and match_level_2 must be instances of "
@@ -203,35 +208,35 @@ class MatchResult:
         # Partial mismatch if one allele is high resolution match level and
         # the other is high resolution mismatch level
         elif (
-            match_level_1 in match_levels and
-            match_level_2 in mismatch_levels
+                match_level_1 in match_levels and
+                match_level_2 in mismatch_levels
         ):
             # resolve high resolution mismatch level
             return f"PARTIAL_{match_level_2.name}"
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in match_levels
+                match_level_1 in mismatch_levels and
+                match_level_2 in match_levels
         ):
             # resolve high resolution mismatch level
             return f"PARTIAL_{match_level_1.name}"
         # Both alleles are high resolution mismatch level
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in mismatch_levels and
-            match_level_1 < match_level_2  # Order of mismatch "severity"
+                match_level_1 in mismatch_levels and
+                match_level_2 in mismatch_levels and
+                match_level_1 < match_level_2  # Order of mismatch "severity"
         ):
             return f"{match_level_1.name}_AND_{match_level_2.name}"
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in mismatch_levels and
-            match_level_1 > match_level_2  # Order of mismatch "severity"
+                match_level_1 in mismatch_levels and
+                match_level_2 in mismatch_levels and
+                match_level_1 > match_level_2  # Order of mismatch "severity"
         ):
             return f"{match_level_2.name}_AND_{match_level_1.name}"
         # Additional sanity check
         elif (
-            match_level_1 in mismatch_levels and
-            match_level_2 in mismatch_levels and
-            match_level_1 is match_level_2
+                match_level_1 in mismatch_levels and
+                match_level_2 in mismatch_levels and
+                match_level_1 is match_level_2
         ):
             return f"DOUBLE_{match_level_1.name}"  # TODO: discuss terminology
         else:
@@ -239,6 +244,18 @@ class MatchResult:
                 f"Unexpected match levels {match_level_1.name}"
                 f"and {match_level_2.name}"
             )
+
+    def _compute_dpb1_permissive(self) -> None:
+        # only compute for DPB1 locus
+        if self.patient.locus != "DPB1":
+            pass
+        else:
+            patient_dpb1 = self.patient.hla1.ard_redux_allele_string
+            patient_dpb2 = self.patient.hla2.ard_redux_allele_string
+            donor_dpb1 = self.donor.hla1.ard_redux_allele_string
+            donor_dpb2 = self.donor.hla2.ard_redux_allele_string
+            dpb1_permissive = is_permissive_dpb1_match(patient_dpb1, patient_dpb2, donor_dpb1, donor_dpb2)
+            self.dpb1_permissive = dpb1_permissive
 
 
 def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
@@ -268,8 +285,8 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
     if hla1.locus != hla2.locus:
         if (
-            'DRB' in hla1.locus and 'DRB' in hla2.locus and
-            'DRB1' not in hla1.locus and 'DRB1' not in hla2.locus
+                'DRB' in hla1.locus and 'DRB' in hla2.locus and
+                'DRB1' not in hla1.locus and 'DRB1' not in hla2.locus
         ):
             return AlleleMatchLevel.LOCUS_MISMATCH
         else:
@@ -307,9 +324,9 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
     # To save some time continue with synonymous variant+ only if available
     if (
-        hla1.synonymous_variant is not None
-        and
-        hla2.synonymous_variant is not None
+            hla1.synonymous_variant is not None
+            and
+            hla2.synonymous_variant is not None
     ):
         if hla1.synonymous_variant == hla2.synonymous_variant:
             # continue with non coding variant
@@ -336,7 +353,7 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
 
 def _get_correct_allele_pairing(
-    patient_alleles: HLAPair, donor_alleles: HLAPair
+        patient_alleles: HLAPair, donor_alleles: HLAPair
 ) -> Tuple[int, Tuple[AlleleMatchLevel, AlleleMatchLevel]]:
     """
     Determines the correct pairing of patient and donor HLA allele by
@@ -393,7 +410,7 @@ def _get_correct_allele_pairing(
     return best_score, correct_pairing
 
 
-def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
+def allele_pair_match(patient: HLAPair, donor: HLAPair, calculate_dpb1_permissive: bool = False) -> MatchResult:
     """
     Matching of two patient and donor HLA alleles encoding the HLA gene
 
@@ -419,45 +436,5 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
         donor=donor,
         score=score,
         allele_match_levels=correct_pairing,
+        calculate_dpb1_permissive=calculate_dpb1_permissive
     )
-
-
-if __name__ == "__main__":
-    from itertools import product
-
-    # Create dummy Patient and Donor classes with minimal attributes
-    class DummyPatient:
-        def __init__(self):
-            self.hla1 = HLA("HLA-A*01:01:01:01")
-            self.hla2 = HLA("HLA-A*01:02:01:01")
-
-    class DummyDonor:
-        def __init__(self):
-            self.hla1 = HLA("HLA-A*01:01:01:01")
-            self.hla2 = HLA("HLA-A*01:02:01:01")
-
-    # List all possible AlleleMatchLevel values
-    allele_match_levels = list(AlleleMatchLevel)
-
-    # Loop over all combinations of AlleleMatchLevel for allele_match_1 and
-    # allele_match_2
-    for level1, level2 in product(allele_match_levels, repeat=2):
-        # Create dummy patient and donor
-        patient = DummyPatient()
-        donor = DummyDonor()
-
-        # Create MatchResult instance with the current allele match levels
-        match_result = MatchResult(
-            patient=patient,
-            donor=donor,
-            score=0,
-            allele_match_levels=(level1, level2)
-        )
-
-        # Call loci_match_basic_resolution and print the result
-        result = match_result.loci_match_high_resolution
-        print(
-            f"allele_match_1: {level1.name}, "
-            f"allele_match_2: {level2.name} => loci_match_high_resolution:"
-            f"{result}"
-        )
