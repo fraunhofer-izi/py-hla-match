@@ -21,7 +21,9 @@ class BaseMatchResult(ABC):
                  chunksize: int = 10000):
 
         if resolution not in {"basic", "high", "full"}:
-            raise ValueError("Resolution must be one of: 'basic', 'high', 'full'")
+            raise ValueError(
+                "Resolution must be one of: 'basic', 'high', 'full'"
+            )
 
         self.source = self._load_data(source, chunksize)
         self.target = self._load_data(target, chunksize)
@@ -42,7 +44,9 @@ class BaseMatchResult(ABC):
             elif data.endswith(".xlsx"):
                 return pd.read_excel(data, chunksize=chunksize)
             else:
-                raise ValueError("Unsupported file format. Must be either CSV or Excel.")
+                raise ValueError(
+                    "Unsupported file format. Must be either CSV or Excel."
+                )
         # Data is a list of Individual objects
         return iter(data)
 
@@ -59,23 +63,45 @@ class BaseMatchResult(ABC):
         with open(self.result_file, "w") as f:
             first_chunk = True
             current_chunk = 0
-            source_individuals = list(islice(self.source, self.chunksize * current_chunk,
-                                             self.chunksize * (current_chunk + 1)))
-            target_individuals = list(islice(self.target, self.chunksize * current_chunk,
-                                             self.chunksize * (current_chunk + 1)))
+            source_individuals = list(
+                islice(
+                    self.source,
+                    self.chunksize * current_chunk,
+                    self.chunksize * (current_chunk + 1)
+                )
+            )
+            target_individuals = list(
+                islice(
+                    self.target,
+                    self.chunksize * current_chunk,
+                    self.chunksize * (current_chunk + 1)
+                )
+            )
             # while there are still chunks to process
             while len(source_individuals) > 0 and len(target_individuals) > 0:
-                result = self.process_chunk(source_individuals, target_individuals)
+                result = self.process_chunk(
+                    source_individuals, target_individuals
+                )                
                 if first_chunk:
                     result.to_csv(f, index=False)
                     first_chunk = False
                 else:
                     result.to_csv(f, index=False, header=False)
                 current_chunk += 1
-                source_individuals = list(islice(self.source, self.chunksize * current_chunk,
-                                                 self.chunksize * (current_chunk + 1)))
-                target_individuals = list(islice(self.target, self.chunksize * current_chunk,
-                                                 self.chunksize * (current_chunk + 1)))
+                source_individuals = list(
+                    islice(
+                        self.source,
+                        self.chunksize * current_chunk,
+                        self.chunksize * (current_chunk + 1)
+                    )
+                )
+                target_individuals = list(
+                    islice(
+                        self.target,
+                        self.chunksize * current_chunk,
+                        self.chunksize * (current_chunk + 1)
+                    )
+                )
         return pd.read_csv(self.result_file)
 
     def to_df(self):
@@ -93,20 +119,29 @@ class BaseMatchResult(ABC):
 
 class PairwiseMatchResult(BaseMatchResult):
     """
-    Match individuals row-wise based on two data sources - > indices of source to same indices of target. Use case for
-    this result would be the evaluation of an already prepared match resource for several patients, i.e. in a study
-    setting.
+    Match individuals row-wise based on two data sources - > indices of source
+    to same indices of target. Use case for this result would be the
+    evaluation of an already prepared match resource for several patients, i.e.
+    in a study setting.
     """
 
-    def process_chunk(self, source_chunk: Iterator[Individual], target_chunk: Iterator[Individual]) -> pd.DataFrame:
+    def process_chunk(
+            self,
+            source_chunk: Iterator[Individual],
+            target_chunk: Iterator[Individual]
+    ) -> pd.DataFrame:
         results = []
         for idx, source_individual in enumerate(source_chunk):
             target_individual = target_chunk[idx]
-            match_results = multi_locus_match(source_individual, target_individual)
+            match_results = multi_locus_match(
+                source_individual, target_individual
+            )
             row = {}
             for result in match_results:
                 locus = result.patient.locus
-                match_level = result.get_match_level_for_resolution(self.resolution)
+                match_level = result.get_match_level_for_resolution(
+                    self.resolution
+                )
                 row[locus] = match_level
             results.append(row)
         df = pd.DataFrame(results)
@@ -115,8 +150,9 @@ class PairwiseMatchResult(BaseMatchResult):
 
 class BestMatchResult(BaseMatchResult):
     """
-    Find the best match for a single source Individual across a  target dataset. Streams through the target in chunks
-    and keeps track of the overall best matching donor Individual.
+    Find the best match for a single source Individual across a  target
+    dataset. Streams through the target in chunks and keeps track of the
+    overall best matching donor Individual.
     """
 
     def __init__(self,
@@ -143,7 +179,8 @@ class BestMatchResult(BaseMatchResult):
 
     def get_best_match_target_idx(self) -> int:
         """
-        Returns the index of the best matching donor Individual in the target dataset.
+        Returns the index of the best matching donor Individual in the target
+        dataset.
         """
         return self.best_match_idx
 
@@ -153,26 +190,42 @@ class BestMatchResult(BaseMatchResult):
 
     def calculate_result(self) -> None:
         """
-        Loads the target data in chunks and processes each chunk to find the best match.
+        Loads the target data in chunks and processes each chunk to find the
+        best match.
         """
         best_score = -1
         source_ind = self._single_source
-        with open(self.result_file, "w") as f:
+        with open(self.result_file, "w") as f:  # noqa: F841
             current_chunk = 0
-            target_individuals = list(islice(self.target, self.chunksize * current_chunk,
-                                             self.chunksize * (current_chunk + 1)))
+            target_individuals = list(
+                islice(
+                    self.target,
+                    self.chunksize * current_chunk,
+                    self.chunksize * (current_chunk + 1)
+                )
+            )
             # track global index over all chunks
             current_idx = 0
-            # loop will stop when new chunk is attempted to be loaded but is empty
+            # loop will stop when new chunk is attempted to be loaded but is
+            # empty
             while len(target_individuals) > 0:
                 for idx, target_individual in enumerate(target_individuals):
-                    match_results = multi_locus_match(source_ind, target_individual)
-                    score = sum(result.allele_score for result in match_results)
+                    match_results = multi_locus_match(
+                        source_ind, target_individual
+                    )
+                    score = sum(
+                        result.allele_score for result in match_results
+                    )
                     if score > best_score:
                         best_score = score
                         self.best_match_idx = idx
                         self.best_match_individual = target_individual
                 current_idx += idx
                 current_chunk += 1
-                target_individuals = list(islice(self.target, self.chunksize * current_chunk,
-                                                 self.chunksize * (current_chunk + 1)))
+                target_individuals = list(
+                    islice(
+                        self.target,
+                        self.chunksize * current_chunk,
+                        self.chunksize * (current_chunk + 1)
+                    )
+                )
