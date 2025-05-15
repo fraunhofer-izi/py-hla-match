@@ -1,5 +1,6 @@
 import logging
 from typing import List, Optional
+from collections import Counter
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
 from py_hla_match.hla import HLA
@@ -55,14 +56,19 @@ class Individual:
         self._sanity_check()
 
     def _sanity_check(self) -> None:
-        # the same locus should not appear twice in the hla_data
-        # check if there are any duplicate loci
-        loci = [hla_pair.locus for hla_pair in self.hla_data] 
+        """
+        Verify each HLA locus appreas only once in each individual
+        """
+        loci_counts = Counter([hla_pair.locus for hla_pair in self.hla_data])
+        duplicate_loci = [
+            locus for locus, count in loci_counts.items() if count > 1
+        ]
         # raise error and report duplicate locus if present
-        if len(loci) != len(set(loci)):
-            duplicate_loci = [locus for locus in loci if loci.count(locus) > 1]
-            raise ValueError(f"Duplicate loci found: {duplicate_loci}. Individuals may not have mutliple HLA pairs for the same locus.")
-
+        if duplicate_loci:
+            raise ValueError(
+                f"Duplicate loci found: {duplicate_loci}. Individuals may not "
+                f"have mutliple HLA pairs for the same locus."
+                )
 
     def get_best_match(self, individuals: List['Individual']) -> 'Donor':
         """
