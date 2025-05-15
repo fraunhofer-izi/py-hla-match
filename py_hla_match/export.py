@@ -32,9 +32,11 @@ class BaseMatchResult(ABC):
         self.result_file = "match_results.csv"
         self.calculate_result()
 
-    def _load_data(self,
-                   data: Union[Iterator[Individual], str],
-                   chunksize: int) -> Iterator[pd.DataFrame]:
+    def _load_data(
+            self,
+            data: Union[Iterator[Individual], str],
+            chunksize: int
+    ) -> Iterator[pd.DataFrame]:
         """Loads data either from memory or a file."""
         # Data is a file path
         if isinstance(data, str):
@@ -42,7 +44,8 @@ class BaseMatchResult(ABC):
             if data.endswith(".csv"):
                 return pd.read_csv(data, chunksize=chunksize)
             elif data.endswith(".xlsx"):
-                return pd.read_excel(data, chunksize=chunksize)
+                # excel has no chunksize and needs custom handling
+                return self._excel_chunk_iterator(data, chunksize)
             else:
                 raise ValueError(
                     "Unsupported file format. Must be either CSV or Excel."
@@ -51,11 +54,51 @@ class BaseMatchResult(ABC):
         return iter(data)
 
     @abstractmethod
-    def process_chunk(self,
-                      source_chunk: Iterator[Individual],
-                      target_chunk: Iterator[Individual]) -> pd.DataFrame:
+    def process_chunk(
+        self,
+        source_chunk: Iterator[Individual],
+        target_chunk: Iterator[Individual]
+    ) -> pd.DataFrame:
         """Processes a single chunk of data."""
         pass
+
+    def _excel_chunk_iterator(
+            self, file_path: str, chunksize: int
+    ) -> Iterator[pd.DataFrame]:
+        """
+        Creates an iterator that reads Excel files in chunks.
+
+        Args:
+            file_path: Path to the Excel file
+            chunksize: Number of rows to read in each chunk
+
+        Returns:
+            Iterator yielding DataFrames for each chunk
+        """
+        # header with column info
+        excel_info = pd.read_excel(file_path, nrows=0)
+
+        # Read the file in chunks
+        skip = 0
+        while True:
+            # skip == 0 means header
+            if skip == 0:
+                df = pd.read_excel(file_path, nrows=chunksize)
+            else:
+                # chunks need to skip header and previous rows
+                df = pd.read_excel(
+                    file_path,
+                    skiprows=range(1, skip + 1),  # header and previous rows
+                    nrows=chunksize
+                )
+                # column names from header
+                df.columns = excel_info.columns
+
+            # break at file end
+            if len(df) == 0:
+                break
+            skip += len(df)
+            yield df
 
     def calculate_result(self) -> None:
         """Processes data in chunks and writes to a file."""
@@ -81,7 +124,7 @@ class BaseMatchResult(ABC):
             while len(source_individuals) > 0 and len(target_individuals) > 0:
                 result = self.process_chunk(
                     source_individuals, target_individuals
-                )                
+                )
                 if first_chunk:
                     result.to_csv(f, index=False)
                     first_chunk = False
