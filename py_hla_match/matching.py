@@ -447,29 +447,37 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
     )
 
 
-def multi_locus_match(patient: Individual, donor: Individual) -> List[MatchResult]:
+def multi_locus_match(
+        patient: Individual,
+        donor: Individual
+) -> List[MatchResult]:
     """
     Calculate compatibility of patient and donor for all recorded patient loci
-    
+
     Args:
         patient (Individual): Patient object
         donor (Individual): Donor object
-    
+
     Returns:
         List[MatchResult]: List of MatchResult objects for each locus
     """
     results = []
-    donor_loci = {hla_pair.locus for hla_pair in donor.hla_data}
+
+    # create dict
+    donor_hla_dict = {hla_pair.locus: hla_pair for hla_pair in donor.hla_data}
+
     for patient_hla_pair in patient.hla_data:
         # check if there is a matching locus in the donor data
         locus = patient_hla_pair.locus
-        if locus not in donor_loci:
-            logger.warning(
-                f"Locus {locus} not found in donor data and will be excluded from the results."
+
+        if locus in donor_hla_dict:
+            results.append(
+                allele_pair_match(patient_hla_pair, donor_hla_dict[locus])
             )
-            continue
-        for donor_hla_pair in donor.hla_data:
-            if donor_hla_pair.locus == locus:
-                results.append(allele_pair_match(patient_hla_pair, donor_hla_pair))
-                break
+        else:
+            logger.warning(
+                f"Locus {locus} not found in donor data and will be excluded"
+                f"from the results."
+            )
+
     return results
