@@ -1,10 +1,14 @@
 from py_hla_match.external import is_permissive_dpb1_match
-from py_hla_match.models import HLAPair
+import logging
+from py_hla_match.models import HLAPair, Individual
+
 from py_hla_match.hla import HLA
 from enum import IntEnum
-from typing import Tuple
+from typing import List, Tuple
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
+
+logger = logging.getLogger(__name__)
 
 
 class AlleleMatchLevel(IntEnum):
@@ -58,6 +62,30 @@ class MatchResult:
         self.dpb1_permissive = None
         if compute_dpb1_permissive:
             self._compute_dpb1_permissive()
+
+
+    def get_match_level_for_resolution(self, resolution: str) -> str:
+        """
+        Get match level for a given resolution
+
+        Args:
+            resolution (str): Resolution level (basic, high, full)
+
+        Returns:
+            str: Match level for the given resolution
+        """
+        if resolution == "basic":
+            return self.loci_match_basic_resolution
+        elif resolution == "high":
+            return self.loci_match_high_resolution
+        elif resolution == "full":
+            return self.loci_match_full_resolution
+        else:
+            raise ValueError(
+                f"Unknown resolution level: {resolution}\n"
+                f"Expected 'basic', 'high', or 'full'."
+            )
+
 
     @property
     def loci_match_basic_resolution(self):
@@ -438,3 +466,40 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair, calculate_dpb1_permissiv
         allele_match_levels=correct_pairing,
         calculate_dpb1_permissive=calculate_dpb1_permissive
     )
+
+
+
+def multi_locus_match(
+        patient: Individual,
+        donor: Individual
+) -> List[MatchResult]:
+    """
+    Calculate compatibility of patient and donor for all recorded patient loci
+
+    Args:
+        patient (Individual): Patient object
+        donor (Individual): Donor object
+
+    Returns:
+        List[MatchResult]: List of MatchResult objects for each locus
+    """
+    results = []
+
+    # create dict
+    donor_hla_dict = {hla_pair.locus: hla_pair for hla_pair in donor.hla_data}
+
+    for patient_hla_pair in patient.hla_data:
+        # check if there is a matching locus in the donor data
+        locus = patient_hla_pair.locus
+
+        if locus in donor_hla_dict:
+            results.append(
+                allele_pair_match(patient_hla_pair, donor_hla_dict[locus])
+            )
+        else:
+            logger.warning(
+                f"Locus {locus} not found in donor data and will be excluded"
+                f" from the results."
+            )
+
+    return results
