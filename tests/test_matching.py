@@ -1,14 +1,16 @@
+from typing import List
 import unittest
 
 from py_hla_match.hla import HLA
 from py_hla_match.matching import (
-    allele_match, allele_pair_match, AlleleMatchLevel, MatchResult
+    allele_match, allele_pair_match, AlleleMatchLevel, MatchResult,
+    multi_locus_match
 )
 from py_hla_match.exceptions import (
     InvalidLocusComparisonError, MalformedHLAStringError
 )
 from pyard.exceptions import InvalidAlleleError
-from py_hla_match.models import HLAPair
+from py_hla_match.models import HLAPair, Individual
 
 
 class TestAlleleMatch(unittest.TestCase):
@@ -1037,6 +1039,96 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
             f"{AlleleMatchLevel}, not {type(level1)} and "
             f"{type(level2)}."
         )
+
+    def test_multi_locus_match(self):
+        """
+        Test match results for multiple pairs of alleles stored in an
+        individual object
+        """
+        patient_allele1 = HLA("A*01:01:01")
+        patient_allele2 = HLA("A*01:01:01")
+
+        patient_hla_pair1 = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+
+        patient_allele1 = HLA("B*07:02:01")
+        patient_allele2 = HLA("B*07:02:01")
+
+        patient_hla_pair2 = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+
+        patient = Individual(hla_data=[patient_hla_pair1, patient_hla_pair2])
+
+        donor_allele1 = HLA("A*01:01:01")
+        donor_allele2 = HLA("A*01:01:01")
+
+        donor_hla_pair1 = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
+
+        donor_allele1 = HLA("B*07:02:01")
+        donor_allele2 = HLA("B*07:02:01")
+
+        donor_hla_pair2 = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
+
+        donor = Individual(hla_data=[donor_hla_pair1, donor_hla_pair2])
+
+        result = multi_locus_match(patient, donor)
+
+        self.assertEqual(
+            result[0].allele_match_levels,
+            [
+                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+            ]
+        )
+        self.assertEqual(
+            result[1].allele_match_levels,
+            [
+                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+            ]
+        )
+
+    def test_multi_locus_match_missing_donor_locus(self):
+        patient_allele1 = HLA("A*01:01:01")
+        patient_allele2 = HLA("A*01:01:01")
+
+        patient_hla_pair1 = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+
+        patient_allele1 = HLA("B*07:02:01")
+        patient_allele2 = HLA("B*07:02:01")
+
+        patient_hla_pair2 = HLAPair(hla1=patient_allele1, hla2=patient_allele2)
+
+        patient = Individual(hla_data=[patient_hla_pair1, patient_hla_pair2])
+
+        donor_allele1 = HLA("A*01:01:01")
+        donor_allele2 = HLA("A*01:01:01")
+
+        donor_hla_pair1 = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
+
+        # different locus recorded for donor
+        donor_allele1 = HLA("C*07:02:01")
+        donor_allele2 = HLA("C*07:02:01")
+
+        donor_hla_pair2 = HLAPair(hla1=donor_allele1, hla2=donor_allele2)
+
+        donor = Individual(hla_data=[donor_hla_pair1, donor_hla_pair2])
+
+        result = multi_locus_match(patient, donor)
+
+        # check if correct warning were raised during execution
+        with self.assertLogs("py_hla_match.matching", level="WARNING") as cm:
+            result: List[MatchResult] = multi_locus_match(patient, donor)
+            self.assertEqual(len(cm.output), 1)
+            self.assertEqual(
+                cm.output[0],
+                "WARNING:py_hla_match.matching:Locus B not found in donor data"
+                " and will be excluded from the results.",
+            )
+
+        # result should now only contain a single matched locus
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].allele_match_levels,
+                         [AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+                          AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH])
 
 
 if __name__ == "__main__":

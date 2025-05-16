@@ -1,5 +1,6 @@
 import logging
-from typing import Optional
+from typing import List, Optional
+from collections import Counter
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
 from py_hla_match.hla import HLA
@@ -45,13 +46,35 @@ class HLAPair:
 
 
 class Individual:
-    def __init__(self, hla_data: list[HLAPair]) -> None:
+    def __init__(self, hla_data: List[HLAPair]) -> None:
         """
         Represents an individual with HLA data.
 
         :param hla_data: List of HLAPair objects
         """
         self.hla_data = hla_data
+        self._sanity_check()
+
+    def _sanity_check(self) -> None:
+        """
+        Verify each HLA locus appreas only once in each individual
+        """
+        loci_counts = Counter([hla_pair.locus for hla_pair in self.hla_data])
+        duplicate_loci = [
+            locus for locus, count in loci_counts.items() if count > 1
+        ]
+        # raise error and report duplicate locus if present
+        if duplicate_loci:
+            raise ValueError(
+                f"Duplicate loci found: {duplicate_loci}. Individuals may not "
+                f"have mutliple HLA pairs for the same locus."
+                )
+
+    def get_best_match(self, individuals: List['Individual']) -> 'Donor':
+        """
+        Get the best match from a list of donors.
+        """
+        pass
 
 
 class Patient(Individual):
@@ -61,18 +84,6 @@ class Patient(Individual):
 
     def __init__(self,  hla_data: list[HLAPair]) -> None:
         super().__init__(hla_data)
-
-    def match(self, donor: 'Donor') -> None:
-        """
-        Match the patient with a donor and get compatibility.
-        """
-        pass
-
-    def get_best_match(self, donors: list['Donor']) -> 'Donor':
-        """
-        Get the best match from a list of donors.
-        """
-        pass
 
 
 class Donor(Individual):
