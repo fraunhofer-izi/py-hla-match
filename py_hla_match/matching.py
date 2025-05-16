@@ -477,7 +477,7 @@ def multi_locus_match(
         else:
             logger.warning(
                 f"Locus {locus} not found in donor data and will be excluded"
-                f"from the results."
+                f" from the results."
             )
 
     return results
