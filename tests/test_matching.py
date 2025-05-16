@@ -3,7 +3,8 @@ import unittest
 
 from py_hla_match.hla import HLA
 from py_hla_match.matching import (
-    allele_match, allele_pair_match, AlleleMatchLevel, MatchResult, multi_locus_match
+    allele_match, allele_pair_match, AlleleMatchLevel, MatchResult,
+    multi_locus_match
 )
 from py_hla_match.exceptions import (
     InvalidLocusComparisonError, MalformedHLAStringError
