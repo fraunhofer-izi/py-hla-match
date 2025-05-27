@@ -1,6 +1,8 @@
 import unittest
+
 from py_hla_match.exceptions import MalformedHLAStringError
 from py_hla_match.hla import HLA
+import pyard
 
 
 class TestHLA(unittest.TestCase):
@@ -127,25 +129,54 @@ class TestHLA(unittest.TestCase):
         self.assertIsNone(hla.suffix)
         self.assertIsNone(hla.group_code)
 
-    def test_invalid_suffix(self):
+    def test_invalid_locus(self):
         with self.assertRaises(MalformedHLAStringError):
-            HLA("HLA-A*32:11X")
+            HLA("HLA-Ad*32:11")
 
-    def test_invalid_suffix_numeric(self):
+    def test_missing_locus(self):
         with self.assertRaises(MalformedHLAStringError):
-            HLA("HLA-A*24:02:01:01:01")
+            HLA("*24:02:01:01")
 
-    def test_invalid_suffix_special_character(self):
+    def test_missing_asterix(self):
         with self.assertRaises(MalformedHLAStringError):
-            HLA("HLA-B*44:02@")
+            HLA("HLA-B44:02")
 
-    def test_invalid_suffix_lowercase(self):
-        with self.assertRaises(MalformedHLAStringError):
-            HLA("HLA-A*24:02l")
+    def test_invalid_allele(self):
+        with self.assertRaises(pyard.exceptions.InvalidAlleleError):
+            HLA("HLA-DPB1*07:32")
 
-    def test_invalid_hla_with_incorrect_field(self):
-        with self.assertRaises(MalformedHLAStringError):
-            HLA("HLA-A*02:01X:01")
+    def test_incomplete_allele_logs_warning(self):
+        with self.assertLogs('py_hla_match.hla', level='WARNING') as captured:
+            HLA("HLA-A*32")
+
+        self.assertTrue(
+            any(
+                "is not a specific allele." in message for message
+                in captured.output
+            ),
+            "Expected the log message about 'not a specific allele.'"
+        )
+        self.assertTrue(
+            any(
+                "Validity of '32' is not checked." in message for message
+                in captured.output
+            ),
+            "Expected the log message about 'Validity of ... is not checked.'"
+        )
+
+    def test_logger_warnings_for_unparseable_content(self):
+        with self.assertLogs('py_hla_match.hla', level='WARNING') as captured:
+            HLA("HLA-C**invalid")
+
+        # Now check that the expected warnings appeared
+        self.assertTrue(
+            any("did match HLA Nomenclature" in msg for msg in captured.output),
+            "Expected 'did match HLA Nomenclature' warning in logs"
+        )
+        self.assertTrue(
+            any("has unparseable content" in msg for msg in captured.output),
+            "Expected 'has unparseable content' warning in logs"
+        )
 
     def test_repr(self):
         hla = HLA("HLA-A*32:11Q")
