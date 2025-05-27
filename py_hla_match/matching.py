@@ -1,10 +1,12 @@
+# matching.py
 import logging
 from py_hla_match.models import HLAPair, Individual
 from py_hla_match.hla import HLA
 from enum import IntEnum
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
+from py_hla_match.external import DPB1TCEStatus, query_dpb1_tce
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +22,14 @@ class AlleleMatchLevel(IntEnum):
     NON_CODING_VARIANT_MATCH: Non-coding variant match
     cf.https://hla.alleles.org/nomenclature/naming.html
     """
+    # NOTE: no clean seperation for now
+    NOT_APPLICABLE = -6
+
+    # clean AlleleMatchLevel
     LOCUS_MISMATCH = 0
     ALLELE_GROUP_MISMATCH = 1
     ALLELE_MISMATCH = 2
+    # NOTE: seperating mismatches from matches based on ARD
     ARD_MATCH = 3
     SYNONYMOUS_VARIANT_MATCH = 4
     NON_CODING_VARIANT_MATCH = 5
@@ -38,8 +45,11 @@ class MatchResult:
         score (int): (internal) score of correct allele pairing (patient/donor)
         allele_matches (Tuple[AlleleMatchLevel, AlleleMatchLevel]): Match
         results
-    """
 
+    Negative score indicates missing HLA allele information crucial for
+    matching. This means HLA matching was (partially) not possible.
+    """
+    # A
     def __init__(
             self,
             patient: HLAPair,
@@ -52,10 +62,14 @@ class MatchResult:
         self.donor = donor
         self.allele_score = score
         self.allele_match_levels = allele_match_levels
-        self.is_homozygous_patient = (
-                self.patient.hla1.ard_redux_allele_string
-                == self.patient.hla2.ard_redux_allele_string
-        )
+        if (
+            self.patient.hla1.ard_redux_allele_string is not None
+            and self.patient.hla2.ard_redux_allele_string is not None
+        ):
+            self.is_homozygous_patient = (
+                    self.patient.hla1.ard_redux_allele_string
+                    == self.patient.hla2.ard_redux_allele_string
+            )
 
     def get_match_level_for_resolution(self, resolution: str) -> str:
         """
@@ -265,6 +279,54 @@ class MatchResult:
                 f"and {match_level_2.name}"
             )
 
+    def get_dpb1_tce_status(
+            self,
+            api_version: str = "3.0",
+            timeout: int = 10
+    ) -> Optional[DPB1TCEStatus]:
+        """
+        Calculate DPB1 permissive/non-permissive via EBI API.
+        WARNING: may slow things down significantly.
+
+        Sets self.dpb1_permissive to one of:
+        - DPB1TCEStatus
+        """
+        if self.patient.locus != "DPB1":
+            logger.debug(
+                f"Not applicable to {self.patient.locus}"
+                f"Skipping DPB1 TCE status calculation."
+            )
+            return None
+
+        patient_dpb1 = self.patient.hla1.ard_redux_allele_string
+        patient_dpb2 = self.patient.hla2.ard_redux_allele_string
+        donor_dpb1 = self.donor.hla1.ard_redux_allele_string
+        donor_dpb2 = self.donor.hla2.ard_redux_allele_string
+
+        if not all(
+            [patient_dpb1, patient_dpb2, donor_dpb1, donor_dpb2]
+        ):
+            logger.warning(
+                f"One or more required alleles are missing for DPB1 to call "
+                f"EBI API, got P1:'{patient_dpb1}', P2:'{patient_dpb2}', "
+                f"D1:'{donor_dpb1}', D2:'{donor_dpb2}'. dpb1_tce_status "
+                f"remains unchanged ({self.dpb1_tce_status})"
+            )
+            return None
+
+        # if we are here, the query should be valid
+        dpb1_tce_status = query_dpb1_tce(
+            patient_dpb1=patient_dpb1,
+            patient_dpb2=patient_dpb2,
+            donor_dpb1=donor_dpb1,
+            donor_dpb2=donor_dpb2,
+            version=api_version,
+            timeout=timeout
+        )
+        # update match result and return DPB1TCEStatus
+        self.dpb1_tce_status = dpb1_tce_status
+        return self.dpb1_tce_status
+
 
 def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     """
@@ -291,10 +353,11 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
             f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
         )
 
+    # This should only happen for DRBX TODO: is that correct?
     if hla1.locus != hla2.locus:
         if (
-                'DRB' in hla1.locus and 'DRB' in hla2.locus and
-                'DRB1' not in hla1.locus and 'DRB1' not in hla2.locus
+                ('DRB' in hla1.locus and 'DRB' in hla2.locus) and
+                ('DRB1' not in hla1.locus and 'DRB1' not in hla2.locus)
         ):
             return AlleleMatchLevel.LOCUS_MISMATCH
         else:
@@ -432,19 +495,23 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
     Notes:
         - The function assumes that both, patient and donor, have exactly two
         HLA alleles
-        - Uses `get_correct_allele_pairing` function to evaluate all possible
-        allele pairings and selects the one with the highest score
+        - Uses `_get_correct_allele_pairing` function to evaluate all possible
+        allele pairings and selects the one with the highest score (i.e.
+        correct pairing)
     """
     # Get correct allele pairing and its score
     score, correct_pairing = _get_correct_allele_pairing(patient, donor)
 
-    # Return match result
-    return MatchResult(
+    # Create MatchResult object
+    match_result = MatchResult(
         patient=patient,
         donor=donor,
         score=score,
-        allele_match_levels=correct_pairing,
+        allele_match_levels=correct_pairing
     )
+
+    # Return match result
+    return match_result
 
 
 def multi_locus_match(
@@ -463,21 +530,68 @@ def multi_locus_match(
     """
     results = []
 
+    # NOTE: currently, parsing of patient and donor HLA data would have failed
+    # without locus information, i.e., locus information is always available
+
     # create dict
     donor_hla_dict = {hla_pair.locus: hla_pair for hla_pair in donor.hla_data}
 
     for patient_hla_pair in patient.hla_data:
-        # check if there is a matching locus in the donor data
         locus = patient_hla_pair.locus
-
+        # check locus in donor data
         if locus in donor_hla_dict:
-            results.append(
-                allele_pair_match(patient_hla_pair, donor_hla_dict[locus])
-            )
+            donor_hla_pair = donor_hla_dict[locus]
         else:
             logger.warning(
-                f"Locus {locus} not found in donor data and will be excluded"
-                f" from the results."
+                f"Locus {locus} not found in donor data, matching skipped."
             )
+            results.append(
+                MatchResult(
+                    patient=patient_hla_pair,
+                    donor=HLAPair(None, None),
+                    score=AlleleMatchLevel.NOT_APPLICABLE.value
+                    + AlleleMatchLevel.NOT_APPLICABLE.value,
+                    allele_match_levels=[
+                        AlleleMatchLevel.NOT_APPLICABLE,
+                        AlleleMatchLevel.NOT_APPLICABLE
+                    ]
+                )
+            )
+            continue
+
+        # check for high resolution HLA data
+        if (
+            patient_hla_pair.has_high_resolution_hla_pair()
+            and donor_hla_pair.has_high_resolution_hla_pair()
+        ):
+            # Perform allele pair match
+            match_result = allele_pair_match(
+                patient_hla_pair,
+                donor_hla_pair
+            )
+            logger.info(
+                f"Match result for locus {locus}: "
+                f"{match_result.allele_match_levels}"
+            )
+            results.append(match_result)
+            continue
+        else:
+            logger.warning(
+                f"HLA data of {patient_hla_pair} and {donor_hla_pair} is "
+                f" insufficient for matching."
+            )
+            results.append(
+                MatchResult(
+                    patient=patient_hla_pair,
+                    donor=HLAPair(None, None),
+                    score=AlleleMatchLevel.NOT_APPLICABLE.value
+                    + AlleleMatchLevel.NOT_APPLICABLE.value,
+                    allele_match_levels=[
+                        AlleleMatchLevel.NOT_APPLICABLE,
+                        AlleleMatchLevel.NOT_APPLICABLE
+                    ]
+                )
+            )
+            continue
 
     return results
