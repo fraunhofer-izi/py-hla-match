@@ -68,9 +68,8 @@ class TestAlleleMatch(unittest.TestCase):
         with self.assertRaises(InvalidLocusComparisonError) as context:
             allele_match(allele1, allele2)
         expected_message = (
-            f"Invalid locus comparison between '{allele1.locus}' and "
-            f"'{allele2.locus}'. You may only compare DRBX. "
-            f"Potential error in data preprocessing."
+            "Invalid locus comparison between 'A' and 'B'. You may only "
+            "compare loci of DRBX. Potential error in data preprocessing."
         )
         self.assertEqual(str(context.exception), expected_message)
 
@@ -1118,17 +1117,23 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         with self.assertLogs("py_hla_match.matching", level="WARNING") as cm:
             result: List[MatchResult] = multi_locus_match(patient, donor)
             self.assertEqual(len(cm.output), 1)
-            self.assertEqual(
-                cm.output[0],
-                "WARNING:py_hla_match.matching:Locus B not found in donor data"
-                " and will be excluded from the results.",
+            self.assertIn(
+                "Locus B not found in donor data, matching skipped.",
+                cm.output[0]
             )
 
         # result should now only contain a single matched locus
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].allele_match_levels,
-                         [AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-                          AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(
+            result[0].allele_match_levels,
+            [AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+             AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH]
+        )
+        self.assertEqual(
+            result[1].allele_match_levels,
+            [AlleleMatchLevel.NOT_APPLICABLE,
+             AlleleMatchLevel.NOT_APPLICABLE]
+        )
 
 
 if __name__ == "__main__":
