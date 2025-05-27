@@ -170,7 +170,10 @@ class TestHLA(unittest.TestCase):
 
         # Now check that the expected warnings appeared
         self.assertTrue(
-            any("did match HLA Nomenclature" in msg for msg in captured.output),
+            any(
+                "did match HLA Nomenclature" in msg for msg
+                in captured.output
+            ),
             "Expected 'did match HLA Nomenclature' warning in logs"
         )
         self.assertTrue(
