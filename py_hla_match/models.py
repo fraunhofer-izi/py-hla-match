@@ -1,3 +1,4 @@
+# models.py
 import logging
 from typing import List, Optional
 from collections import Counter
@@ -9,20 +10,20 @@ logger = logging.getLogger(__name__)
 
 
 class HLAPair:
-    def __init__(self, hla1: HLA, hla2: HLA) -> None:
+    def __init__(self, hla1: Optional[HLA], hla2: Optional[HLA]) -> None:
         """
-        Pair of HLA objects for the same locus.
+        Pair of HLA objects from the same locus.
 
-        :param hla1: The first HLA object
-        :param hla2: The second HLA object
+        :param hla1: The first HLA object (None if unparsable)
+        :param hla2: The second HLA object (None if unparsable)
         """
 
         # check for object validity -> hla1 and hla2 must be hla objects
-        if not isinstance(hla1, HLA):
+        if hla1 is not None and not isinstance(hla1, HLA):
             raise TypeError(
                 f"hla1 must be an instance of HLA, not {type(hla1).__name__}."
             )
-        if not isinstance(hla2, HLA):
+        if hla2 is not None and not isinstance(hla2, HLA):
             raise TypeError(
                 f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
             )
@@ -35,14 +36,86 @@ class HLAPair:
         """
         Returns the locus of the HLA pair.
         """
-        if self.hla1 is None or self.hla2 is None:
+        locus1 = self.hla1.locus if self.hla1 else None
+        locus2 = self.hla2.locus if self.hla2 else None
+
+        # if both are None, return None
+        if locus1 is None and locus2 is None:
             return None
-        elif self.hla1.locus is None or self.hla2.locus is None:
-            return None
-        elif self.hla1.locus != self.hla2.locus:
-            raise InvalidLocusComparisonError(self.hla1.locus, self.hla2.locus)
+
+        # If one is None, return the other
+        if locus1 is None:
+            return locus2
+        if locus2 is None:
+            return locus1
+
+        # must match if both present
+        if locus1 != locus2:
+            if (
+                ('DRB' in locus1 or 'DRB' in locus2) and
+                ('DRB1' not in locus1 and 'DRB1' not in locus2)
+            ):
+                return 'DRBX'
+            else:
+                raise InvalidLocusComparisonError(locus1, locus2)
         else:
-            return self.hla1.locus
+            return locus1
+
+    # helper functions
+    def has_any_data(self) -> bool:
+        """Check if HLAPair has any HLA data."""
+        return self.hla1 is not None or self.hla2 is not None
+
+    def has_locus_info(self) -> bool:
+        """Check if locus is available."""
+        return self.locus is not None
+
+    def has_valid_hla(self) -> bool:
+        """
+        Check if at least one allele has valid HLA data (one-field or better).
+        """
+        hla1_valid = self.hla1 and self.hla1.has_one_field_resolution()
+        hla2_valid = self.hla2 and self.hla2.has_one_field_resolution()
+        return hla1_valid or hla2_valid
+
+    def has_high_resolution_hla(self) -> bool:
+        """
+        Check if at least one allele has high-resolution HLA data (two-field or
+        better).
+        """
+        hla1_high_res = self.hla1 and self.hla1.has_two_field_resolution()
+        hla2_high_res = self.hla2 and self.hla2.has_two_field_resolution()
+        return hla1_high_res or hla2_high_res
+
+    def has_hla_pair(self) -> bool:
+        """Check if both alleles are present."""
+        return self.hla1 is not None and self.hla2 is not None
+
+    def has_valid_hla_pair(self) -> bool:
+        """Check if both alleles have valid HLA data (one-field or better)."""
+        hla1_valid = self.hla1 and self.hla1.has_one_field_resolution()
+        hla2_valid = self.hla2 and self.hla2.has_one_field_resolution()
+        return hla1_valid and hla2_valid
+
+    def has_high_resolution_hla_pair(self) -> bool:
+        """
+        Check if both alleles have high-resolution HLA data (two-field or
+        better).
+        """
+        hla1_high_res = self.hla1 and self.hla1.has_two_field_resolution()
+        hla2_high_res = self.hla2 and self.hla2.has_two_field_resolution()
+        return hla1_high_res and hla2_high_res
+
+    def __str__(self) -> str:
+        """String representation of HLAPair."""
+        if self.locus is None:
+            return "HLAPair(locus=None, hla1=None, hla2=None)"
+        hla1_str = str(self.hla1.allele_string) if self.hla1 else "None"
+        hla2_str = str(self.hla2.allele_string) if self.hla2 else "None"
+        return f"HLAPair(locus={self.locus}, hla1={hla1_str}, hla2={hla2_str})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
 
 class Individual:
@@ -59,7 +132,9 @@ class Individual:
         """
         Verify each HLA locus appreas only once in each individual
         """
-        loci_counts = Counter([hla_pair.locus for hla_pair in self.hla_data])
+        valid_loci = [pair for pair in self.hla_data if pair.locus is not None]
+
+        loci_counts = Counter([hla_pair.locus for hla_pair in valid_loci])
         duplicate_loci = [
             locus for locus, count in loci_counts.items() if count > 1
         ]
@@ -68,7 +143,27 @@ class Individual:
             raise ValueError(
                 f"Duplicate loci found: {duplicate_loci}. Individuals may not "
                 f"have mutliple HLA pairs for the same locus."
-                )
+            )
+
+    def get_hla_summary(self) -> dict:
+        """Get summary of HLA data."""
+        total_pairs = len(self.hla_data)
+        parsed_pairs = sum(
+            1 for pair in self.hla_data if pair.has_any_data()
+        )
+        valid_pairs = sum(
+            1 for pair in self.hla_data if pair.has_valid_hla_pair()
+        )
+        high_res_pairs = sum(
+            1 for pair in self.hla_data if pair.has_high_resolution_hla_pair()
+        )
+
+        return {
+            "total_alles": total_pairs,
+            "parsed_alleles": parsed_pairs,
+            "valid_alleles": valid_pairs,
+            "high_resolution_alleles": high_res_pairs
+        }
 
     def get_best_match(self, individuals: List['Individual']) -> 'Donor':
         """
