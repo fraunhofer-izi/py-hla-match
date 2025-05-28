@@ -7,24 +7,20 @@ from py_hla_match.external import query_dpb1_tce, DPB1TCEStatus
 
 class TestDPB1TCE(unittest.TestCase):
 
-    def create_mock_response(self, tce_prediction, version="3.0"):
+    def create_mock_response(self, tce_prediction, version="2.1"):
         response_keys = {
             "2.0": "HLA-DPB1_TCE_report_V2.0",
             "2.1": "HLA-DPB1_TCE_report_V2.1",
             "3.0": "HLA-DPB1_TCE_report_V3.0"
         }
-        donors_key = 'donor' if version == "2.0" else 'donors'
-        result_key = 'results' if version == "2.0" else 'result'
 
         return {
             response_keys[version]: {
-                'patient': {
-                    donors_key: [{
-                        result_key: {
-                            'tce_prediction': tce_prediction
-                        }
-                    }]
-                }
+                'donors': [{
+                    'result': {
+                        'tce_prediction': tce_prediction
+                    }
+                }]
             }
         }
 
@@ -231,6 +227,26 @@ class TestDPB1TCE(unittest.TestCase):
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
         self.assertEqual(result, DPB1TCEStatus.REQUEST_ERROR)
+
+    @patch('requests.get')
+    def test_ard_matched_maps_to_permissive(self, mock_get):
+        mock_response = Mock()
+        mock_response.json.return_value = \
+            self.create_mock_response("ARD Matched")
+        mock_get.return_value = mock_response
+
+        result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
+        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+    @patch('requests.get')
+    def test_permissive_core_maps_to_permissive(self, mock_get):
+        mock_response = Mock()
+        mock_response.json.return_value = \
+            self.create_mock_response("Permissive (Core)")
+        mock_get.return_value = mock_response
+
+        result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
+        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
 
 
 if __name__ == '__main__':
