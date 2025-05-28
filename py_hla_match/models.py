@@ -43,23 +43,30 @@ class HLAPair:
         if locus1 is None and locus2 is None:
             return None
 
-        # If one is None, return the other
+        # handle DRBX fist
+        # may be obsolete since we adjusted hla.py
+        locus_drbx = [
+            'DRB2', 'DRB3', 'DRB4', 'DRB5', 'DRB6', 'DRB7', 'DRB8', 'DRB9',
+            'DRBX'
+        ]
+
+        # for now just hardcoded DRBX
+        # TODO: needs external validation
+        if locus1 in locus_drbx:
+            return 'DRBX'
+        elif locus2 in locus_drbx:
+            return 'DRBX'
+
+        # if not drbx HLAPair should be considered from the same locus
         if locus1 is None:
             return locus2
         if locus2 is None:
             return locus1
 
-        # must match if both present
-        if locus1 != locus2:
-            if (
-                ('DRB' in locus1 or 'DRB' in locus2) and
-                ('DRB1' not in locus1 and 'DRB1' not in locus2)
-            ):
-                return 'DRBX'
-            else:
-                raise InvalidLocusComparisonError(locus1, locus2)
-        else:
+        if locus1 == locus2:
             return locus1
+        else:
+            raise InvalidLocusComparisonError(locus1, locus2)
 
     # helper functions
     def has_any_data(self) -> bool:

@@ -100,6 +100,13 @@ class HLA:
         # extract locuse
         self.locus = match.group('locus')
 
+        # hardcode DRBX
+        if self.locus in [
+            'DRB2', 'DRB3', 'DRB4', 'DRB5', 'DRB6', 'DRB7', 'DRB8', 'DRB9',
+            'DRBX'
+        ]:
+            self.locus = 'DRBX'
+
         try:
             # try NOMENCLATURE_PATTERN first
             allele_fields = match.group('allele_fields')
@@ -147,6 +154,8 @@ class HLA:
 
         :raises MalformedHLAStringError: If the allele string is malformed.
         """
+        # may wanna check with:
+        # https://raw.githubusercontent.com/ANHIG/IMGTHLA/Latest/wmda/hla_nom.txt
         # check if we got at least a one-field (valid) allele string
         allele_match = NOMENCLATURE_PATTERN.match(self.allele_string)
         if allele_match is not None:

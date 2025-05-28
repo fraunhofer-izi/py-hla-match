@@ -75,8 +75,7 @@ Desktop.ini
 py_hla_match/main.py
 
 # data files
-tests/resources/real_world_data_snippet.csv
-tests/resources/real_world_data_snippet.xlsx
+tests/resources/real_data
 
 # output files
 output

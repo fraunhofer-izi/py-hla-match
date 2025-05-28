@@ -63,13 +63,16 @@ class MatchResult:
         self.allele_score = score
         self.allele_match_levels = allele_match_levels
         if (
-            self.patient.hla1.ard_redux_allele_string is not None
+            self.patient.hla1 is not None and self.patient.hla2 is not None
+            and self.patient.hla1.ard_redux_allele_string is not None
             and self.patient.hla2.ard_redux_allele_string is not None
         ):
             self.is_homozygous_patient = (
-                    self.patient.hla1.ard_redux_allele_string
-                    == self.patient.hla2.ard_redux_allele_string
+                self.patient.hla1.ard_redux_allele_string
+                == self.patient.hla2.ard_redux_allele_string
             )
+        else:
+            self.is_homozygous_patient = None
 
     def get_match_level_for_resolution(self, resolution: str) -> str:
         """

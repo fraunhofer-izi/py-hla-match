@@ -42,18 +42,18 @@ class TestAlleleMatch(unittest.TestCase):
             "hla1 must be an instance of HLA", str(context.exception)
         )
 
-    def test_valid_locus_mismatch(self):
-        """
-        Test Case: Locus mismatch
-        Allele 1: DRB3*02:02:01
-        Allele 2: DRB4*01:03:01
-        Expected Match Level: LOCUS_MISMATCH (0)
-        """
-        allele1 = HLA("DRB3*02:02:01")
-        allele2 = HLA("DRB4*01:03:01")
-        expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
-        result = allele_match(allele1, allele2)
-        self.assertEqual(result, expected_match_level)
+    # def test_valid_locus_mismatch(self):
+    #     """
+    #     Test Case: Locus mismatch
+    #     Allele 1: DRB3*02:02:01
+    #     Allele 2: DRB4*01:03:01
+    #     Expected Match Level: LOCUS_MISMATCH (0)
+    #     """
+    #     allele1 = HLA("DRB3*02:02:01")
+    #     allele2 = HLA("DRB4*01:03:01")
+    #     expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
+    #     result = allele_match(allele1, allele2)
+    #     self.assertEqual(result, expected_match_level)
 
     def test_invalid_locus_mismatch(self):
         """
