@@ -70,3 +70,13 @@ Desktop.ini
 
 # Git-related
 *.patch
+
+# python files
+py_hla_match/main.py
+
+# data files
+tests/resources/real_world_data_snippet.csv
+tests/resources/real_world_data_snippet.xlsx
+
+# output files
+output
