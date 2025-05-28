@@ -12,6 +12,7 @@ python = ">=3.9,<4.0"
 pandas = "^2.2.2"
 py-ard = "^1.5.3"
 openpyxl = "^3.1.0"
+requests = "^2.32.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"
