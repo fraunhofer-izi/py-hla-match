@@ -1,3 +1,4 @@
+# external.py
 import requests
 import logging
 from enum import Enum
@@ -131,32 +132,40 @@ def query_dpb1_tce(
         # normalize
         normalized_prediction = tce_prediction.strip().lower()
 
-        # map API responses
-        if "ard matched" in normalized_prediction:
+        # TODO: might want some clinician's feedback
+        EXACT_TCE_MAPPINGS = {
+            "permissive": DPB1TCEStatus.PERMISSIVE,
+            "permissive (core)": DPB1TCEStatus.PERMISSIVE,
+            "ard matched": DPB1TCEStatus.PERMISSIVE,
+
+            "non-permissive gvh": DPB1TCEStatus.NON_PERMISSIVE_GVH,
+            "non permissive gvh": DPB1TCEStatus.NON_PERMISSIVE_GVH,
+
+            "non-permissive hvg": DPB1TCEStatus.NON_PERMISSIVE_HVG,
+            "non permissive hvg": DPB1TCEStatus.NON_PERMISSIVE_HVG,
+        }
+
+        if "not possible as typing contains non-existent allele"\
+                in normalized_prediction:
+            logger.warning(f"EBI API reports invalid allele: {tce_prediction}")
+            return DPB1TCEStatus.INVALID_ALLELES
+
+        # exact matching for safety
+        if normalized_prediction in EXACT_TCE_MAPPINGS:
+            status = EXACT_TCE_MAPPINGS[normalized_prediction]
             logger.info(
-                f"Mapping '{tce_prediction}' to PERMISSIVE"
+                f"Mapping '{tce_prediction}' (normalized: "
+                f"'{normalized_prediction}') "
+                f"to {status.name}"
             )
-            return DPB1TCEStatus.PERMISSIVE
-        elif "permissive (core)" in normalized_prediction:
-            logger.info(
-                f"Mapping '{tce_prediction}' to PERMISSIVE"
-            )
-            return DPB1TCEStatus.PERMISSIVE
-        elif "permissive" in normalized_prediction:
-            logger.info(f"Mapping '{tce_prediction}' to PERMISSIVE")
-            return DPB1TCEStatus.PERMISSIVE
-        elif "non-permissive gvh" in normalized_prediction or \
-             "non permissive gvh" in normalized_prediction:
-            logger.info(f"Mapping '{tce_prediction}' to NON_PERMISSIVE_GVH")
-            return DPB1TCEStatus.NON_PERMISSIVE_GVH
-        elif "non-permissive hvg" in normalized_prediction or \
-             "non permissive hvg" in normalized_prediction:
-            logger.info(f"Mapping '{tce_prediction}' to NON_PERMISSIVE_HVG")
-            return DPB1TCEStatus.NON_PERMISSIVE_HVG
+            return status
         else:
-            logger.warning(
-                f"Unknown TCE prediction: '{tce_prediction}' "
-                f"(normalized: '{normalized_prediction}')"
+            # Unknown response - fail loudly for safety
+            logger.error(
+                f"CRITICAL: Unknown TCE prediction from EBI API: "
+                f"'{tce_prediction}' (normalized: '{normalized_prediction}'). "
+                "This requires immediate investigation - the API may have "
+                f"changed. Known values: {list(EXACT_TCE_MAPPINGS.keys())}"
             )
             return DPB1TCEStatus.API_ERROR
 
