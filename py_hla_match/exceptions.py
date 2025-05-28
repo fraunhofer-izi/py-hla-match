@@ -1,3 +1,6 @@
+from typing import Union, Dict, Optional
+
+
 class MalformedHLAStringError(Exception):
     """
     Error raised when an HLA string is malformed or cannot be parsed.
@@ -24,7 +27,7 @@ class InvalidLocusComparisonError(Exception):
     def __init__(self, locus1, locus2):
         message = (
             f"Invalid locus comparison between '{locus1}' and '{locus2}'. "
-            f"You may only compare DRBX. "
+            f"You may only compare loci of DRBX. "
             f"Potential error in data preprocessing."
         )
         super().__init__(message)
@@ -52,3 +55,44 @@ class MalformedHLADataSourceError(Exception):
         if self.details:
             return f"{base_message} (Details: {self.details})"
         return base_message
+
+
+class DataLoaderError(Exception):
+    """Base class for exceptions in the loader module."""
+    pass
+
+
+class FileNotFoundError(DataLoaderError, FileNotFoundError):
+    """Custom exception for file not found."""
+    pass
+
+
+class UnsupportedFileTypeError(DataLoaderError):
+    """Exception for unsupported file types."""
+    pass
+
+
+class EmptyDataError(DataLoaderError):
+    """Exception for empty or unparsable data files."""
+    pass
+
+
+class ParsingError:
+    """Container for parsing error information."""
+
+    def __init__(
+        self,
+        row_id: Union[str, int],
+        error_type: str,
+        message: str,
+        details: Optional[Dict] = None
+    ):
+        self.row_id = row_id
+        self.error_type = error_type
+        self.message = message
+        self.details = details or {}
+
+    def __str__(self):
+        return (
+            f"Row {self.row_id}: {self.error_type} - {self.message}"
+        )
