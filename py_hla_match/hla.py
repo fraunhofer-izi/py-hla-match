@@ -1,3 +1,4 @@
+# hla.py
 import logging
 import re
 from .singleton import get_ard_instance
@@ -9,12 +10,25 @@ logger = logging.getLogger(__name__)
 # regex pattern for HLA allele string
 NOMENCLATURE_PATTERN = re.compile(
     r"""
-    ^(?:HLA-)?
-    (?P<locus>[A-Z0-9]+)
-    \*
-    (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
-    (?P<suffix>[NLSCAQ])?
-    (?P<group_code>[GP])?$
+    ^ (?:HLA-)?
+    (?P<locus>[A-Z0-9]+) # locus always required
+    \* # asterisk always required
+    ( # three alternatives
+        # 1: well-formed allele
+        (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+        (?![NLSCAQ][GP]|[GP][NLSCAQ])
+        (?P<suffix>[NLSCAQ])?
+        (?P<group_code>[GP])?
+        $ # must match to end of string
+    |
+        # 2: known nan
+        (?P<nan>NA|NE|NEW|UNKNOWN|ND|NULL)
+        $
+    |
+        # 3: anything else - trigger MalformedHLAStringError
+        (?P<remainder>.*) # anything else
+        $ # must match to end of string
+    )
     """,
     re.VERBOSE
 )
@@ -22,21 +36,52 @@ NOMENCLATURE_PATTERN = re.compile(
 # regex pattern for ARD redux allele string
 REDUX_PATTERN = re.compile(
     r"""
-    ^(?:HLA-)?                 # Optional 'HLA-' prefix
-    (?P<locus>[A-Z0-9]+)       # Locus
-    \*                         # Asterisk separator
-    (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})  # Allele fields
+    ^ (?:HLA-)?
+    (?P<locus>[A-Z0-9]+)
+    \*
+    (
+        (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+        (?P<suffix>[NLSCAQ])?
+        (?P<group_code>[GP])?
+        $
+    |
+        (?P<remainder>.*)
+        $
+    )
     """,
     re.VERBOSE
 )
+
+VALID_HLA_LOCI = frozenset({
+    'A', 'B', 'C',  # NOTE: standard HLA Class I loci
+    'DRB1',  # NOTE: standard HLA Class II loci
+    'DQB1',  # NOTE: standard HLA Class II loci
+    'DPB1',  # NOTE: not standard but often discussed
+    'DQA1',  # NOTE: interesting candidate
+    'DPA1',  # NOTE: interesting candidate
+    'DRB3', 'DRB4', 'DRB5',  # NOTE: interesting candidate(s) (s. 'superlocus')
+    'DRB2', 'DRB6', 'DRB7', 'DRB8', 'DRB9',  # pseudogenes
+    # NOTE: fallback for DRBX which is not a valid locus but keeps popping up
+    'DRBX',
+    # the exhaustive list of all known HLA loci
+    'E', 'F', 'G', 'H', 'J', 'K', 'L', 'N', 'P', 'R', 'S', 'T',
+    'U', 'V', 'W', 'X', 'Y', 'Z', 'DRA',
+    'DQA2',
+    'DPA2', 'DPA3',
+    'DPB2',
+    'DQB2', 'DQB3',
+    'DOA', 'DOB', 'DMA', 'DMB',
+    'HFE', 'TAP1', 'TAP2', 'PSMB9', 'PSMB8',
+    'MICA', 'MICB', 'MICC', 'MICD', 'MICE'
+})
 
 
 class HLA:
     def __init__(self, allele_string: str) -> None:
         """
-        Initializes an HLA object by parsing the HLA allele string.
+        Initializes an HLA object by parsing an HLA allele string.
 
-        :param allele_string: The HLA allele string to be parsed
+        :param allele_string: HLA allele string
         """
         self.allele_string = allele_string
         self.locus = None
@@ -50,47 +95,97 @@ class HLA:
         self.ard_redux_allele_group = None
         self.ard_redux_allele = None
 
-        self._parse_allele()
-        self._ard_redux()
+        self._parse_allele_string()
 
-    def _parse_allele(self) -> None:
+        # if well-formed high-res allele use py-ard reduction
+        if self.allele:
+            self._ard_redux()
+        else:
+            logger.warning(
+                f"HLA string '{self.allele_string}' at locus "
+                f"'{self.locus}' is not a specific allele."
+            )
+            if self.allele_group is not None:
+                logger.warning(
+                    f"WARNING: Validity of '{self.allele_group}' not checked."
+                )
+
+    def _parse_allele_string(self) -> None:
         """
-        Parses the HLA allele string and populates the attributes.
+        Parses HLA allele string and populate HLA attributes.
         """
         # validate the allele string
         match = self._validate_nomenclature()
 
-        # extract locus, allele fields, suffix or group code
+        # extract locuse
         self.locus = match.group('locus')
-        allele_fields = match.group('allele_fields')
-        self.suffix = match.group('suffix')
-        self.group_code = match.group('group_code')
 
-        # extract detailes from allele fields
-        field_contents = allele_fields.split(':')
-        if len(field_contents) > 0:
-            self.allele_group = field_contents[0]
-        if len(field_contents) > 1:
-            self.allele = field_contents[1]
-        if len(field_contents) > 2:
-            self.synonymous_variant = field_contents[2]
-        if len(field_contents) > 3:
-            self.non_coding_variant = field_contents[3]
+        allele_fields = match.group('allele_fields')
+        nan_field = match.group('nan')
+        remainder = match.group('remainder')
+
+        if allele_fields:
+            self.suffix = match.group('suffix')
+            self.group_code = match.group('group_code')
+
+            # extract details from allele fields
+            field_contents = allele_fields.split(':')
+            if len(field_contents) > 0:
+                self.allele_group = field_contents[0]
+            if len(field_contents) > 1:
+                self.allele = field_contents[1]
+            if len(field_contents) > 2:
+                self.synonymous_variant = field_contents[2]
+            if len(field_contents) > 3:
+                self.non_coding_variant = field_contents[3]
+        elif nan_field:
+            logger.info(
+                f"HLA string '{self.allele_string}' at locus "
+                f"'{self.locus}' is undefined: '{nan_field}')."
+            )
+        elif remainder:
+            raise MalformedHLAStringError(
+                f"Invalid HLA allele string: '{self.allele_string}' "
+                f"contains unparsable content: '{remainder}'"
+            )
+        else:
+            raise MalformedHLAStringError(
+                f"HLA string '{self.allele_string}' at locus"
+                f" '{self.locus}' is empty."
+            )
 
     def _validate_nomenclature(self) -> re.Match:
         """
-        Validates the HLA allele string format.
+        Validate HLA allele string with nomenclature.
+
+        Tries to extract locus information if HLA allele string is not
+        complete.
+
+        :raises MalformedHLAStringError: If the allele string is malformed.
         """
+        # may wanna check with:
+        # https://raw.githubusercontent.com/ANHIG/IMGTHLA/Latest/wmda/hla_nom.txt
+        # check if we got at least a one-field (valid) allele string
         match = NOMENCLATURE_PATTERN.match(self.allele_string)
         if not match:
             raise MalformedHLAStringError(
                 f"Invalid HLA allele string: {self.allele_string}"
+                " String must contain valid LOCUS followed by '*'."
             )
-        # TODO: Return additional details on specific error occurence
-        # TODO: verify locus is part of named genes within the HLA region
-        # TODO: potentially validate the allele string is known allele with
-        # ref. to https://hla.alleles.org/alleles/index.html)
+
+        # validate locus
+        locus = match.group('locus')
+        if not self._is_valid_locus(locus):
+            raise MalformedHLAStringError(
+                f"Invalid HLA allele string: '{self.allele_string}' with "
+                f"unknown locus '{locus}'."
+            )
+
         return match
+
+    def _is_valid_locus(self, locus: str) -> bool:
+        """Locus validation using known loci."""
+        return locus in VALID_HLA_LOCI
 
     def _ard_redux(self):
         """
@@ -110,6 +205,18 @@ class HLA:
                 self.ard_redux_allele_group = field_contents[0]
             if len(field_contents) > 1:
                 self.ard_redux_allele = field_contents[1]
+
+    def has_two_field_resolution(self) -> bool:
+        """Check if HLA has at least two-field resolution."""
+        return self.allele is not None
+
+    def has_one_field_resolution(self) -> bool:
+        """Check if HLA has at least one-field resolution."""
+        return self.allele_group is not None
+
+    def is_specific_allele(self) -> bool:
+        """Check if HLA is a specific HLA allele."""
+        return self.has_two_field_resolution()
 
     def __eq__(self, other):
         if not isinstance(other, HLA):

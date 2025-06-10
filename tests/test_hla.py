@@ -127,6 +127,36 @@ class TestHLA(unittest.TestCase):
         self.assertIsNone(hla.suffix)
         self.assertIsNone(hla.group_code)
 
+    def test_valid_two_field_allele_group(self):
+        hla = HLA("A*01")
+        self.assertEqual(hla.locus, "A")
+        self.assertEqual(hla.allele_group, "01")
+        self.assertIsNone(hla.allele)
+
+    def test_invalid_missing_locus(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("*01:01")
+
+    def test_missing_asterisk_delimiter(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A01:01")
+
+    def test_empty_field_between_delimiters(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("C*07::01")
+
+    def test_leading_whitespace(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA(" A*01:01")
+
+    def test_trailing_whitespace(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*01:01 ")
+
+    def test_internal_whitespace(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*01 : 01")
+
     def test_invalid_suffix(self):
         with self.assertRaises(MalformedHLAStringError):
             HLA("HLA-A*32:11X")
@@ -143,9 +173,54 @@ class TestHLA(unittest.TestCase):
         with self.assertRaises(MalformedHLAStringError):
             HLA("HLA-A*24:02l")
 
+    def test_invalid_non_digit_in_allele_field(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*01:0A")
+
+    def test_invalid_double_locus(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("HLA-DRB1*A*01:01")
+
     def test_invalid_hla_with_incorrect_field(self):
         with self.assertRaises(MalformedHLAStringError):
             HLA("HLA-A*02:01X:01")
+
+    def test_invalid_group_code_and_suffix_combinations(self):
+        invalid_combinations = [
+                "DQB1*06:02:01GN",
+                "DQA1*05:88PQ"
+            ]
+        for hla_string in invalid_combinations:
+            with self.subTest(hla_string=hla_string):
+                with self.assertRaises(MalformedHLAStringError):
+                    HLA(hla_string)
+
+    def test_invalid_suffix_and_group_code_combinations(self):
+        invalid_combinations = [
+                "A*01:01NG",
+                "B*07:02NP",
+            ]
+        for hla_string in invalid_combinations:
+            with self.subTest(hla_string=hla_string):
+                with self.assertRaises(MalformedHLAStringError):
+                    HLA(hla_string)
+
+    def test_nan_logs_info(self):
+        """Test known nan log info."""
+        with self.assertLogs('py_hla_match.hla', level='INFO') as captured:
+            hla = HLA("HLA-A*NE")
+
+        #  expected info message
+        self.assertTrue(
+            any(
+                "is undefined: 'NE'" in message for message
+                in captured.output
+            ),
+            "Expected log message about 'NE'"
+        )
+
+        # locus still extracted correctly
+        self.assertEqual(hla.locus, 'A')
 
     def test_repr(self):
         hla = HLA("HLA-A*32:11Q")
