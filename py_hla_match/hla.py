@@ -16,7 +16,7 @@ NOMENCLATURE_PATTERN = re.compile(
     ( # three alternatives
         # 1: well-formed allele
         (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
-        (?![NLSCAQ][GP]|[GP][NLSCAQ])
+        (?![NLSCAQ][GP]|[GP][NLSCAQ])  # no suffix AND group code
         (?P<suffix>[NLSCAQ])?
         (?P<group_code>[GP])?
         $ # must match to end of string
@@ -206,17 +206,24 @@ class HLA:
             if len(field_contents) > 1:
                 self.ard_redux_allele = field_contents[1]
 
-    def has_two_field_resolution(self) -> bool:
-        """Check if HLA has at least two-field resolution."""
-        return self.allele is not None
-
-    def has_one_field_resolution(self) -> bool:
-        """Check if HLA has at least one-field resolution."""
-        return self.allele_group is not None
-
-    def is_specific_allele(self) -> bool:
-        """Check if HLA is a specific HLA allele."""
-        return self.has_two_field_resolution()
+    def has_resolution_level(self) -> int:
+        """
+        Returns the resolution level based on the number of parsed fields.
+        - 4: Non-coding variant (e.g., A*01:01:01:02)
+        - 3: Synonymous variant (e.g., A*01:01:02)
+        - 2: Specific allele (e.g., A*01:01)
+        - 1: Allele group (e.g., A*01)
+        - 0: Locus only or undefined
+        """
+        if self.non_coding_variant is not None:
+            return 4
+        if self.synonymous_variant is not None:
+            return 3
+        if self.allele is not None:
+            return 2
+        if self.allele_group is not None:
+            return 1
+        return 0
 
     def __eq__(self, other):
         if not isinstance(other, HLA):
