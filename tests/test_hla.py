@@ -132,6 +132,13 @@ class TestHLA(unittest.TestCase):
         self.assertEqual(hla.locus, "A")
         self.assertEqual(hla.allele_group, "01")
         self.assertIsNone(hla.allele)
+        self.assertIsNone(hla.synonymous_variant)
+        self.assertIsNone(hla.non_coding_variant)
+        self.assertIsNone(hla.suffix)
+        self.assertIsNone(hla.group_code)
+        self.assertIsNone(hla.ard_redux_allele_string)
+        self.assertIsNone(hla.ard_redux_allele_group)
+        self.assertIsNone(hla.ard_redux_allele)
 
     def test_invalid_missing_locus(self):
         with self.assertRaises(MalformedHLAStringError):
