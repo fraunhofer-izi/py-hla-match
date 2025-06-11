@@ -1,4 +1,3 @@
-# hla.py
 import logging
 import re
 from .singleton import get_ard_instance
@@ -54,46 +53,91 @@ REDUX_PATTERN = re.compile(
 
 VALID_HLA_LOCI = frozenset({
     'A', 'B', 'C',  # NOTE: standard HLA Class I loci
-    'DRB1',  # NOTE: standard HLA Class II loci
-    'DQB1',  # NOTE: standard HLA Class II loci
+    'DRB1',  # NOTE: standard HLA Class II locus
+    'DQB1',  # NOTE: standard HLA Class II locus
     'DPB1',  # NOTE: not standard but often discussed
     'DQA1',  # NOTE: interesting candidate
     'DPA1',  # NOTE: interesting candidate
-    'DRB3', 'DRB4', 'DRB5',  # NOTE: interesting candidate(s) (s. 'superlocus')
-    'DRB2', 'DRB6', 'DRB7', 'DRB8', 'DRB9',  # pseudogenes
-    # NOTE: fallback for DRBX which is not a valid locus but keeps popping up
-    'DRBX',
+    'DRB3', 'DRB4', 'DRB5',  # NOTE: interesting candidate(s)
+    'DRBX',  # NOTE: NOT A LOCUS, but often used to indicate missing DRB3/4/5
+    # However, DRB3/4/5 may need special hadling
+
+    'MICA', 'MICB',  # NOTE: interesting candidates
+    'DMA', 'DMB', 'DOA', 'DOB',  # NOTE: interesting candidates
     # the exhaustive list of all known HLA loci
-    'E', 'F', 'G', 'H', 'J', 'K', 'L', 'N', 'P', 'R', 'S', 'T',
-    'U', 'V', 'W', 'X', 'Y', 'Z', 'DRA',
-    'DQA2',
-    'DPA2', 'DPA3',
-    'DPB2',
-    'DQB2', 'DQB3',
-    'DOA', 'DOB', 'DMA', 'DMB',
-    'HFE', 'TAP1', 'TAP2', 'PSMB9', 'PSMB8',
-    'MICA', 'MICB', 'MICC', 'MICD', 'MICE'
+    # should be considered non-standard or experimental
+
+    'E', 'F', 'G',  # limited data
+    'DQA2', 'DQB2',  # limited data
+
+    # currently not considered for matching ---
+
+    # 'MICC', 'MICD', 'MICE'  # non functional related to MICA/MICB
+    # 'TAP1', 'TAP2',  # not direct cell-surface targets
+    # 'PSMB9', 'PSMB8',  # not direct cell-surface targets
+    # 'HFE',  # hemochromatosis locus, not relevant to HLA matching
+    # 'DRA',  # largely monomorphic/minimally polymorphic DR alpha chain
+    # likely pseudogenes ---
+    # 'DPA2', 'DPB2', 'DPA3', 'DQB3',
+    # --- likely pseudogenes
+    # pseudogenes ---
+    # 'DRB2', 'DRB6', 'DRB7', 'DRB8', 'DRB9',
+    # 'H', 'J', 'K', 'L', 'N', 'P', 'R', 'S', 'T',
+    # 'U', 'V', 'W', 'X', 'Y', 'Z',
+    # --- pseudogenes
+
+    # --- currently not considered for matching
 })
+
+# we now support processing of DRB345
+DRB345_SUB_LOCI = {
+    'DRB3', 'DRB4', 'DRB5',
+    'DRBX'  # generic locus indicating "missing"
+}
 
 
 class HLA:
-    def __init__(self, allele_string: str) -> None:
-        """
-        Initializes an HLA object by parsing an HLA allele string.
+    __slots__ = (
+        # original allele string
+        'allele_string',
+        # parsed locus fields
+        'locus', 'drb_sub_locus',
+        # parsed allele fields
+        'allele_group', 'allele', 'synonymous_variant', 'non_coding_variant',
+        # parsed suffix and group code
+        'suffix', 'group_code',
+        # ARD reduction string
+        'ard_redux_allele_string',
+        # ARD reduction fields
+        'ard_redux_allele_group', 'ard_redux_allele',
+        # locked state
+        '_locked',
+    )
 
-        :param allele_string: HLA allele string
+    def __setattr__(self, name, value):
         """
-        self.allele_string = allele_string
-        self.locus = None
-        self.allele_group = None
-        self.allele = None
-        self.synonymous_variant = None
-        self.non_coding_variant = None
-        self.suffix = None
-        self.group_code = None
-        self.ard_redux_allele_string = None
-        self.ard_redux_allele_group = None
-        self.ard_redux_allele = None
+        Block any attribute mutation once _locked is True.
+        __slots__ prevents creation of *new* attributes;
+        this method prevents changing existing ones.
+        """
+        if getattr(self, '_locked', False):
+            raise AttributeError(
+                f"{self.__class__.__name__} instances are immutable "
+                f"after initialisation (attempted to set '{name}')."
+            )
+        super().__setattr__(name, value)
+
+    def __delattr__(self, name):
+        raise AttributeError(
+            f"{self.__class__.__name__} instances are immutable"
+        )
+
+    def __init__(self, allele_string: str) -> None:
+        super().__setattr__('allele_string', allele_string)
+        # set None as default for missing slot members
+        for attr in self.__slots__:
+            if attr not in ('allele_string', '_locked'):
+                super().__setattr__(attr, None)
 
         self._parse_allele_string()
 
@@ -110,6 +154,8 @@ class HLA:
                     f"WARNING: Validity of '{self.allele_group}' not checked."
                 )
 
+        super().__setattr__('_locked', True)
+
     def _parse_allele_string(self) -> None:
         """
         Parses HLA allele string and populate HLA attributes.
@@ -119,6 +165,11 @@ class HLA:
 
         # extract locuse
         self.locus = match.group('locus')
+        # handle DRB3/4/5 region
+        if self.locus in DRB345_SUB_LOCI:
+            # if locus is DRB3/4/5, set the sub-locus
+            self.drb_sub_locus = self.locus
+            self.locus = 'DRB345'
 
         allele_fields = match.group('allele_fields')
         nan_field = match.group('nan')
@@ -230,6 +281,7 @@ class HLA:
             return NotImplemented
         return (
             self.locus == other.locus and
+            self.drb_sub_locus == other.drb_sub_locus and
             self.allele_group == other.allele_group and
             self.allele == other.allele and
             self.synonymous_variant == other.synonymous_variant and
@@ -240,15 +292,18 @@ class HLA:
         )
 
     def __hash__(self):
-        return hash((
-            self.locus,
-            self.allele_group,
-            self.allele,
-            self.synonymous_variant,
-            self.non_coding_variant,
-            self.suffix,
-            self.group_code
-        ))
+        return hash(
+            (
+                self.locus,
+                self.drb_sub_locus,
+                self.allele_group,
+                self.allele,
+                self.synonymous_variant,
+                self.non_coding_variant,
+                self.suffix,
+                self.group_code
+            )
+        )
 
     def __repr__(self):
         return (

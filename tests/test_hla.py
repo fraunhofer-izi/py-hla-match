@@ -140,6 +140,53 @@ class TestHLA(unittest.TestCase):
         self.assertIsNone(hla.ard_redux_allele_group)
         self.assertIsNone(hla.ard_redux_allele)
 
+    def test_valid_drb3_is_canonicalised(self):
+        hla = HLA("DRB3*01:01")
+        self.assertEqual(hla.locus, "DRB345")
+        self.assertEqual(hla.drb_sub_locus, "DRB3")
+        self.assertEqual(hla.allele_group, "01")
+        self.assertEqual(hla.allele, "01")
+
+    def test_valid_drb4_is_canonicalised(self):
+        hla = HLA("DRB4*01:01:09")
+        self.assertEqual(hla.locus, "DRB345")
+        self.assertEqual(hla.drb_sub_locus, "DRB4")
+        self.assertEqual(hla.allele_group, "01")
+        self.assertEqual(hla.allele, "01")
+        self.assertEqual(hla.synonymous_variant, "09")
+        self.assertIsNone(hla.non_coding_variant)
+        self.assertIsNone(hla.suffix)
+        self.assertIsNone(hla.group_code)
+        self.assertEqual(hla.ard_redux_allele_string, "DRB4*01:01")
+        self.assertEqual(hla.ard_redux_allele_group, "01")
+        self.assertEqual(hla.ard_redux_allele, "01")
+
+    def test_valid_drb5_is_canonicalised(self):
+        hla = HLA("DRB5*01:01:09")
+        self.assertEqual(hla.locus, "DRB345")
+        self.assertEqual(hla.drb_sub_locus, "DRB5")
+        self.assertEqual(hla.allele_group, "01")
+        self.assertEqual(hla.allele, "01")
+        self.assertEqual(hla.synonymous_variant, "09")
+        self.assertIsNone(hla.non_coding_variant)
+        self.assertIsNone(hla.suffix)
+        self.assertIsNone(hla.group_code)
+        self.assertEqual(hla.ard_redux_allele_string, "DRB5*01:01")
+        self.assertEqual(hla.ard_redux_allele_group, "01")
+        self.assertEqual(hla.ard_redux_allele, "01")
+
+    def test_valid_drbx_nan_parsed(self):
+        hla = HLA("DRBX*NE")
+        self.assertEqual(hla.locus, "DRB345")
+        self.assertEqual(hla.drb_sub_locus, "DRBX")
+        self.assertIsNone(hla.allele_group)
+        self.assertIsNone(hla.allele)
+        # ‘NE’ recognised, therefore resolution level 0
+        self.assertEqual(hla.has_resolution_level(), 0)
+
+    def test_drb3_not_equal_drb4(self):
+        self.assertNotEqual(HLA("DRB3*01:01"), HLA("DRB4*01:01"))
+
     def test_invalid_missing_locus(self):
         with self.assertRaises(MalformedHLAStringError):
             HLA("*01:01")
@@ -239,6 +286,23 @@ class TestHLA(unittest.TestCase):
             "ard_redux_allele_group='32', ard_redux_allele='11')"
         )
         self.assertEqual(repr(hla), expected_repr)
+
+
+class TestHLAImmutability(unittest.TestCase):
+
+    def test_object_is_read_only_after_init(self):
+        h = HLA("A*01:01")
+        with self.assertRaises(AttributeError):
+            h.allele = "99"
+        with self.assertRaises(AttributeError):
+            h.new_attr = 123
+
+    def test_read_only(self):
+        h = HLA("A*01:01")
+        with self.assertRaises(AttributeError):
+            h.allele = "99"
+        with self.assertRaises(AttributeError):
+            del h.allele
 
 
 if __name__ == "__main__":
