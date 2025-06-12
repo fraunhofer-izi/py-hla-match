@@ -1,5 +1,6 @@
+# models.py
 import logging
-from typing import List, Optional
+from typing import List
 from collections import Counter
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
@@ -11,10 +12,12 @@ logger = logging.getLogger(__name__)
 class HLAPair:
     def __init__(self, hla1: HLA, hla2: HLA) -> None:
         """
-        Pair of HLA objects for the same locus.
+        Pair of HLA objects from the same locus.
 
         :param hla1: The first HLA object
         :param hla2: The second HLA object
+        :raises TypeError: If hla1 or hla2 are not HLA objects
+        :raises LocusMismatchError: If HLA objects do not share locus
         """
 
         # check for object validity -> hla1 and hla2 must be hla objects
@@ -26,23 +29,46 @@ class HLAPair:
             raise TypeError(
                 f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
             )
+        if hla1.locus != hla2.locus:
+            raise InvalidLocusComparisonError(hla1.locus, hla2.locus)
 
         self.hla1 = hla1
         self.hla2 = hla2
-        self.locus = self._get_locus()
+        self.locus: str = hla1.locus
 
-    def _get_locus(self) -> Optional[str]:
+    @property
+    def alleles(self) -> tuple[HLA, HLA]:
+        """Returns HLA objects in HLAPair."""
+        return (self.hla1, self.hla2)
+
+    # helper functions
+    def get_paired_resolution(self) -> int:
         """
-        Returns the locus of the HLA pair.
+        Resolution of HLAPair.
         """
-        if self.hla1 is None or self.hla2 is None:
-            return None
-        elif self.hla1.locus is None or self.hla2.locus is None:
-            return None
-        elif self.hla1.locus != self.hla2.locus:
-            raise InvalidLocusComparisonError(self.hla1.locus, self.hla2.locus)
-        else:
-            return self.hla1.locus
+        return min(
+            self.hla1.has_resolution_level(),
+            self.hla2.has_resolution_level()
+        )
+
+    def __str__(self) -> str:
+        """String representation of HLAPair."""
+        if self.locus is None:
+            return "HLAPair(locus=None, hla1=None, hla2=None)"
+        hla1_str = str(self.hla1.allele_string)
+        hla2_str = str(self.hla2.allele_string)
+        return f"HLAPair(locus={self.locus}, hla1={hla1_str}, hla2={hla2_str})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, HLAPair):
+            return NotImplemented
+        return frozenset(self.alleles) == frozenset(other.alleles)
+
+    def __hash__(self) -> int:
+        return hash(frozenset(self.alleles))
 
 
 class Individual:
@@ -50,14 +76,20 @@ class Individual:
         """
         Represents an individual with HLA data.
 
-        :param hla_data: List of HLAPair objects
+        :param hla_data: List of HLAPair
         """
+        for item in hla_data:
+            if not isinstance(item, HLAPair):
+                raise TypeError(
+                    f"hla_data list must contain only HLAPair objects, "
+                    f"but found an item of type {type(item).__name__}."
+                )
         self.hla_data = hla_data
         self._sanity_check()
 
     def _sanity_check(self) -> None:
         """
-        Verify each HLA locus appreas only once in each individual
+        Verify each HLA locus appears only once per individual
         """
         loci_counts = Counter([hla_pair.locus for hla_pair in self.hla_data])
         duplicate_loci = [
@@ -66,9 +98,27 @@ class Individual:
         # raise error and report duplicate locus if present
         if duplicate_loci:
             raise ValueError(
-                f"Duplicate loci found: {duplicate_loci}. Individuals may not "
-                f"have mutliple HLA pairs for the same locus."
-                )
+                f"Multiple {duplicate_loci} found. Individuals may not "
+                f"have multiple HLAPair for the same locus."
+            )
+
+    def get_hla_summary(self) -> dict:
+        """Get summary of HLA data."""
+        if not self.hla_data:
+            return {
+                "total_loci_typed": 0,
+                "resolution_summary": {}
+            }
+
+        resolution_levels = [
+            pair.get_paired_resolution() for pair in self.hla_data
+        ]
+        resolution_counts = Counter(resolution_levels)
+
+        return {
+            "total_loci_typed": len(self.hla_data),
+            "resolution_summary": dict(resolution_counts)
+        }
 
     def get_best_match(self, individuals: List['Individual']) -> 'Donor':
         """
