@@ -225,6 +225,15 @@ class HLA:
         # may wanna check with:
         # https://raw.githubusercontent.com/ANHIG/IMGTHLA/Latest/wmda/hla_nom.txt
         # check if we got at least a one-field (valid) allele string
+
+        # NOTE: we could soften this in the future
+        if any(ch.islower() for ch in self.allele_string if ch.isalpha()):
+            raise MalformedHLAStringError(
+                f"Lower-case letters found in '{self.allele_string}'. "
+                "Allele strings must be upper-case adhering to HLA "
+                "nomenclature."
+            )
+
         match = NOMENCLATURE_PATTERN.match(self.allele_string)
         if not match:
             raise MalformedHLAStringError(
