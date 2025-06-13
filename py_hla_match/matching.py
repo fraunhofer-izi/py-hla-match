@@ -2,7 +2,7 @@ import logging
 from py_hla_match.models import HLAPair, Individual
 from py_hla_match.hla import HLA
 from enum import IntEnum
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set
 
 from py_hla_match.exceptions import InvalidLocusComparisonError
 from py_hla_match.external import DPB1TCEStatus, query_dpb1_tce
@@ -416,6 +416,40 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     if hla1.ard_redux_allele != hla2.ard_redux_allele:
         return AlleleMatchLevel.ALLELE_MISMATCH
 
+    # Check for suffix
+    if (
+            hla1.suffix is not None
+            or hla2.suffix is not None
+    ):
+        if hla1.suffix != hla2.suffix:
+            # consensus says mismatch
+            # Fleischhauer, D. G. I. K., et al. "Deutscher Konsensus 2021
+            # zur Spenderauswahl für die allogene Stammzelltransplantation."
+            risk_suffixes: Set[str] = {"N", "L", "S", "C", "A"}
+            ambiguous_suffixes: Set[str] = {"Q"}
+            if (
+                (hla1.suffix in risk_suffixes)
+                or (hla2.suffix in risk_suffixes)
+            ):
+                return AlleleMatchLevel.ALLELE_MISMATCH
+            elif (
+                (hla1.suffix in ambiguous_suffixes)
+                or (hla2.suffix in ambiguous_suffixes)
+            ):
+                # warn about "questionable" suffix
+                logger.warning(
+                    f"Questionable suffix found in alleles "
+                    f"{hla1.allele_string} and/or {hla2.allele_string}."
+                )
+                # continue
+        else:  # equal suffixes
+            logger.warning(
+                f"Equal suffixes found in alleles "
+                f"{hla1.allele_string} and/or {hla2.allele_string}."
+                "Matching currently not implemented."
+            )
+            return AlleleMatchLevel.NOT_APPLICABLE
+
     # from here on we have at least an ARD level match
 
     # Check for group code
@@ -424,16 +458,6 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
             or hla2.group_code is not None
     ):
         # If group_code is provided, we will not exceed ARD level match
-        return AlleleMatchLevel.ARD_MATCH
-
-    # Check for suffix
-    if (
-            hla1.suffix is not None
-            or
-            hla2.suffix is not None
-    ):
-        # TODO: implement logic for suffixes
-        # for now, skip these alleles
         return AlleleMatchLevel.ARD_MATCH
 
     # Compare specific allele (we check this again to continue with

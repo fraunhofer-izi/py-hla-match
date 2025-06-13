@@ -176,7 +176,7 @@ class TestAlleleMatch(unittest.TestCase):
         """
         allele1 = HLA("B*38:68L")
         allele2 = HLA("B*38:01P")
-        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        expected_match_level = AlleleMatchLevel.ALLELE_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -191,7 +191,7 @@ class TestAlleleMatch(unittest.TestCase):
         # currently resolved to ARD_MATCH, solely relying on py-ard
         allele1 = HLA("C*03:693")
         allele2 = HLA("C*03:20N")
-        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        expected_match_level = AlleleMatchLevel.ALLELE_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
