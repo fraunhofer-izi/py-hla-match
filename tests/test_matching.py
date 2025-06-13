@@ -571,18 +571,18 @@ class TestAllelePairMatch(unittest.TestCase):
         self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_levels)
 
-    def test_equal_null_suffix_returns_not_applicable(self):
+    def test_equal_null_suffix_returns_ard_match(self):
         """
         Case: two alleles, with risk suffix 'N'
         Allele-1: A*24:09N
         Allele-2: A*24:23N
-        Expected: NOT_APPLICABLE (-6)
+        Expected: ARD_MATCH (3)
         """
         allele1 = HLA("A*24:09N")
         allele2 = HLA("A*24:09N")
         self.assertEqual(
             allele_match(allele1, allele2),
-            AlleleMatchLevel.NOT_APPLICABLE
+            AlleleMatchLevel.ARD_MATCH
         )
 
     def test_identical_g_group_codes_caps_at_ard_match(self):

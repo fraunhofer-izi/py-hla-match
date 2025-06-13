@@ -443,12 +443,10 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
                 )
                 # continue
         else:  # equal suffixes
-            logger.warning(
-                f"Equal suffixes found in alleles "
-                f"{hla1.allele_string} and/or {hla2.allele_string}."
-                "Matching currently not implemented."
+            logger.debug(
+                "Identical suffix '%s' in %s and %s – treated as match.",
+                hla1.suffix, hla1.allele_string, hla2.allele_string
             )
-            return AlleleMatchLevel.NOT_APPLICABLE
 
     # from here on we have at least an ARD level match
 
