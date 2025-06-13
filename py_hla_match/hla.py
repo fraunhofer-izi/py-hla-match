@@ -237,7 +237,7 @@ class HLA:
         # NOTE: we might soften this in the future
         if allele_string := self.allele_string:
             if (
-                allele_string != allele_string.strip() 
+                allele_string != allele_string.strip()
                 or any(ch.isspace() for ch in allele_string)
             ):
                 raise MalformedHLAStringError(
