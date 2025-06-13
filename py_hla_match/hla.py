@@ -59,6 +59,7 @@ VALID_HLA_LOCI = frozenset({
     'DQA1',  # NOTE: interesting candidate
     'DPA1',  # NOTE: interesting candidate
     'DRB3', 'DRB4', 'DRB5',  # NOTE: interesting candidate(s)
+    'DRB345',  # NOTE: NOT A LOCUS, but used here as generic DRB3/4/5
     'DRBX',  # NOTE: NOT A LOCUS, but often used to indicate missing DRB3/4/5
     # However, DRB3/4/5 may need special hadling
 
@@ -178,7 +179,14 @@ class HLA:
         if allele_fields:
             self.suffix = match.group('suffix')
             self.group_code = match.group('group_code')
-
+            if self.group_code == 'G' and allele_fields.count(':') < 2:
+                raise MalformedHLAStringError(
+                    f"'{self.allele_string}' – 'G' group needs ≥3 fields."
+                )
+            if self.group_code == 'P' and allele_fields.count(':') < 1:
+                raise MalformedHLAStringError(
+                    f"'{self.allele_string}' – 'P' group needs ≥2 fields."
+                )
             # extract details from allele fields
             field_contents = allele_fields.split(':')
             if len(field_contents) > 0:
