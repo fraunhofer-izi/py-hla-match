@@ -346,6 +346,20 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
             (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE),
         )
 
+    def test_pairing_prefers_lower_negative_penalty(self):
+        """
+        Test Case: Two possible pairings – one sums to -3, the other to +1.
+        """
+        p = HLAPair(HLA("B*07"),     HLA("B*07:02"))
+        d = HLAPair(HLA("B*07:02"),  HLA("B*07"))
+
+        best_score, levels = _get_correct_allele_pairing(p, d)
+        self.assertEqual(best_score, -3)
+        self.assertEqual(
+            levels,
+            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.ARD_MATCH)
+        )
+
 
 class TestAllelePairMatch(unittest.TestCase):
     def test_valid_match_without_swapping(self):
@@ -556,6 +570,61 @@ class TestAllelePairMatch(unittest.TestCase):
 
         self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_levels)
+
+    def test_equal_null_suffix_returns_not_applicable(self):
+        """
+        Case: two alleles, with risk suffix 'N'
+        Allele-1: A*24:09N
+        Allele-2: A*24:23N
+        Expected: NOT_APPLICABLE (-6)
+        """
+        allele1 = HLA("A*24:09N")
+        allele2 = HLA("A*24:09N")
+        self.assertEqual(
+            allele_match(allele1, allele2),
+            AlleleMatchLevel.NOT_APPLICABLE
+        )
+
+    def test_identical_g_group_codes_caps_at_ard_match(self):
+        """
+        Case: both alleles have 'G' group-code
+        Allele-1: DQB1*06:02:01G
+        Allele-2: DQB1*06:02:02G
+        Expected: ARD_MATCH (3)
+        """
+        a1 = HLA("DQB1*06:02:01G")
+        a2 = HLA("DQB1*06:02:02G")
+        self.assertEqual(allele_match(a1, a2), AlleleMatchLevel.ARD_MATCH)
+
+    def test_invalid_single_field_p_group_raises(self):
+        """
+        Case: 'P' group with only one numeric field
+        Allele: DQA1*05P
+        Expected: MalformedHLAStringError during parsing.
+        """
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("DQA1*05P")
+
+    # TODO: this test is currently not satisfied and will be fixed in the
+    # future
+    # def test_compressed_allele_without_colon_is_rejected(self):
+    #     """
+    #     Case: historical 'compressed' notation without ':'
+    #     Allele: A*0101
+    #     Expected: MalformedHLAStringError.
+    #     """
+    #     with self.assertRaises(MalformedHLAStringError):
+    #         HLA("A*0101")
+
+    def test_non_breaking_space_is_rejected(self):
+        """
+        Case: allele string contains a non-breaking space (NBSP, U+00A0)
+        Allele: 'A*01:01\u00A0'
+        Expected: MalformedHLAStringError.
+        """
+        bad = "A*01:01\u00A0"
+        with self.assertRaises(MalformedHLAStringError):
+            HLA(bad)
 
     def test_allele_pair_match_propagates_exceptions(self):
         """

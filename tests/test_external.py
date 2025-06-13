@@ -158,11 +158,9 @@ class TestDPB1TCE(unittest.TestCase):
         mock_response = Mock()
         mock_response.json.return_value = {
             "HLA-DPB1_TCE_report_V3.0": {
-                'patient': {
                     'donors': [{
                         'result': {}  # no tce_prediction
                     }]
-                }
             }
         }
         mock_get.return_value = mock_response
