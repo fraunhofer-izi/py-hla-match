@@ -14,7 +14,7 @@ NOMENCLATURE_PATTERN = re.compile(
     \* # asterisk always required
     ( # three alternatives
         # 1: well-formed allele
-        (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+        (?P<allele_fields>\d{2,4}(?::\d{2,4}){0,3})
         (?![NLSCAQ][GP]|[GP][NLSCAQ])  # no suffix AND group code
         (?P<suffix>[NLSCAQ])?
         (?P<group_code>[GP])?
@@ -39,7 +39,7 @@ REDUX_PATTERN = re.compile(
     (?P<locus>[A-Z0-9]+)
     \*
     (
-        (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+        (?P<allele_fields>\d{2,4}(?::\d{2,4}){0,3})
         (?P<suffix>[NLSCAQ])?
         (?P<group_code>[GP])?
         $
