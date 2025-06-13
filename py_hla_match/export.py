@@ -257,7 +257,7 @@ class BestMatchResult(BaseMatchResult):
                         source_ind, target_individual
                     )
                     score = sum(
-                        result.allele_score for result in match_results
+                        result.pairing_score for result in match_results
                     )
                     if score > best_score:
                         best_score = score
