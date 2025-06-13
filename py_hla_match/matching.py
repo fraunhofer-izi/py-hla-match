@@ -593,7 +593,10 @@ def multi_locus_match(
                 f"Locus {locus} not found in donor data – "
                 "matching will be reported as NOT_APPLICABLE."
             )
-            donor_pair = HLAPair(HLA(f"{locus}*NA"), HLA(f"{locus}*NA"))
+            if locus == "DRB345":
+                donor_pair = HLAPair(HLA("DRBX*NA"), HLA("DRBX*NA"))
+            else:
+                donor_pair = HLAPair(HLA(f"{locus}*NA"), HLA(f"{locus}*NA"))
 
         # compute match (missing donor pair will propagate NOT_APPLICABLE)
         match_result = allele_pair_match(patient_pair, donor_pair)
