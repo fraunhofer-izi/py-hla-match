@@ -234,6 +234,17 @@ class HLA:
                 "nomenclature."
             )
 
+        # NOTE: we might soften this in the future
+        if allele_string := self.allele_string:
+            if (
+                allele_string != allele_string.strip() 
+                or any(ch.isspace() for ch in allele_string)
+            ):
+                raise MalformedHLAStringError(
+                    "Found whitespace or invisible characters in allele "
+                    f"string '{allele_string}'."
+                )
+
         match = NOMENCLATURE_PATTERN.match(self.allele_string)
         if not match:
             raise MalformedHLAStringError(
@@ -264,8 +275,13 @@ class HLA:
         redux_type = 'lgx'
         self.ard_redux_allele_string = ard.redux(
             self.allele_string, redux_type
-        )
+        ).strip()
         match = REDUX_PATTERN.match(self.ard_redux_allele_string)
+        if not match:
+            raise MalformedHLAStringError(
+                "py-ard reports unexpected string not matching regex "
+                f"'{self.ard_redux_allele_string}'."
+            )
         if match:
             allele_fields = match.group('allele_fields')
             field_contents = allele_fields.split(':')
