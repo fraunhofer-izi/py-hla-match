@@ -154,25 +154,25 @@ class TestAlleleMatch(unittest.TestCase):
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_valid_ard_match_with_Q_suffix(self):
+    def test_not_applicable_with_Q_suffix(self):
         """
         Test Case: ARD match with Q suffix
         Allele 1: A*01:436Q
         Allele 2: A*01:01:70
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: NOT_APPLICABLE
         """
         allele1 = HLA("A*01:436Q")
         allele2 = HLA("A*01:01:70")
-        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_valid_ard_match_with_L_suffix(self):
+    def test_valid_allele_mismatch_with_L_suffix(self):
         """
         Test Case: ARD match with L suffix
         Allele 1: B*38:68L
         Allele 2: B*38:01P
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: ALLELE_MISMATCH (2)
         """
         allele1 = HLA("B*38:68L")
         allele2 = HLA("B*38:01P")
@@ -180,12 +180,12 @@ class TestAlleleMatch(unittest.TestCase):
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_valid_ard_match_with_N_suffix(self):
+    def test_valid_allele_mismatch_with_N_suffix(self):
         """
         Test Case: ARD match with N suffix
         Allele 1: C*03:693
         Allele 2: C*03:20N
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: ALLELE_MISMATCH (2)
         """
         # TODO: external validation of correct logic required
         # currently resolved to ARD_MATCH, solely relying on py-ard
@@ -260,7 +260,7 @@ class TestAlleleMatch(unittest.TestCase):
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_ard_match_with_suffix_C(self):
+    def test_not_applicable_with_suffix_Q(self):
         """
         Test Case: Suffix does match beyond ARD_MATCH
         Allele 1: A*24:473Q
@@ -269,7 +269,7 @@ class TestAlleleMatch(unittest.TestCase):
         """
         allele1 = HLA("A*24:473Q")
         allele2 = HLA("A*24:02P")
-        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -571,18 +571,18 @@ class TestAllelePairMatch(unittest.TestCase):
         self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_levels)
 
-    def test_equal_null_suffix_returns_ard_match(self):
+    def test_equal_null_suffix_returns_not_applicable(self):
         """
         Case: two alleles, with risk suffix 'N'
         Allele-1: A*24:09N
         Allele-2: A*24:23N
-        Expected: ARD_MATCH (3)
+        Expected: NOT_APPLICABLE
         """
         allele1 = HLA("A*24:09N")
         allele2 = HLA("A*24:09N")
         self.assertEqual(
             allele_match(allele1, allele2),
-            AlleleMatchLevel.ARD_MATCH
+            AlleleMatchLevel.NOT_APPLICABLE
         )
 
     def test_identical_g_group_codes_caps_at_ard_match(self):

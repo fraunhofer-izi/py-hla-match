@@ -432,6 +432,7 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
                 or (hla2.suffix in risk_suffixes)
             ):
                 return AlleleMatchLevel.ALLELE_MISMATCH
+                # TODO: or return AlleleMatchLevel.ALLELE_GROUP_MISMATCH
             elif (
                 (hla1.suffix in ambiguous_suffixes)
                 or (hla2.suffix in ambiguous_suffixes)
@@ -439,14 +440,20 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
                 # warn about "questionable" suffix
                 logger.warning(
                     f"Questionable suffix found in alleles "
-                    f"{hla1.allele_string} and/or {hla2.allele_string}."
+                    f"{hla1.allele_string} and/or {hla2.allele_string}"
+                    " - cannot safely determine a general match level. "
+                    "Matching will be reported as "
+                    f"{AlleleMatchLevel.NOT_APPLICABLE.name}."
                 )
-                # continue
+                return AlleleMatchLevel.NOT_APPLICABLE
         else:  # equal suffixes
             logger.debug(
-                "Identical suffix '%s' in %s and %s – treated as match.",
+                "Identical suffix '%s' in %s and %s – cannot safely determine "
+                "a general match level. Matching will be reported as "
+                f"{AlleleMatchLevel.NOT_APPLICABLE.name}.",
                 hla1.suffix, hla1.allele_string, hla2.allele_string
             )
+            return AlleleMatchLevel.NOT_APPLICABLE
 
     # from here on we have at least an ARD level match
 
@@ -455,11 +462,13 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
             hla1.group_code is not None
             or hla2.group_code is not None
     ):
-        # If group_code is provided, we will not exceed ARD level match
+        # If P group_code is provided, we will not exceed ARD level match
         return AlleleMatchLevel.ARD_MATCH
+        # If G group_code is provided, we could exceed ARD level match
+        # TODO: continue
 
     # Compare specific allele (we check this again to continue with
-    # synonymous variant+ only if available)
+    # synonymous variant+ only if non-redux allele strings are equal)
     if hla1.allele != hla2.allele:
         return AlleleMatchLevel.ARD_MATCH  # ARD level match remains
 
