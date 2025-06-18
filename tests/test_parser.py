@@ -63,6 +63,47 @@ class TestParser(unittest.TestCase):
         )
         self.assertEqual("DRB1", individuals[0].hla_data[4].locus)
 
+    def test_stream_csv(self):
+        """Test streaming parsing of a valid CSV file."""
+        parser = HLADataSource(self.valid_csv)
+        individuals = parser.parse(stream=True, chunk_size=2)
+        n_streamed = 0
+        for individual in individuals:
+            n_streamed += 1
+            self.assertIsInstance(individual, Individual)
+        self.assertEqual(n_streamed, 8)
+
+    def test_stream_csv_with_col_indices(self):
+        """Test streaming parsing of a valid CSV file with column indices."""
+        parser = HLADataSource(self.valid_csv, col_idx_start=2, col_idx_stop=5)
+        individuals = parser.parse(stream=True, chunk_size=2)
+        n_streamed = 0
+        for individual in individuals:
+            n_streamed += 1
+            self.assertIsInstance(individual, Individual)
+            self.assertEqual(len(individual.hla_data), 3)
+        self.assertEqual(n_streamed, 8)      
+        
+    def test_stream_excel(self):
+        """Test streaming parsing of a valid Excel file."""
+        parser = HLADataSource(self.valid_excel)
+        individuals = parser.parse(stream=True, chunk_size=2)
+        n_streamed = 0
+        for individual in individuals:
+            n_streamed += 1
+            self.assertIsInstance(individual, Individual)
+        self.assertEqual(n_streamed, 8)      
+        
+    def test_stream_excel_with_col_indices(self):
+        """Test streaming parsing of a valid Excel file with column indices."""
+        parser = HLADataSource(self.valid_excel, col_idx_start=2, col_idx_stop=5)
+        individuals = parser.parse(stream=True, chunk_size=2)
+        n_streamed = 0
+        for individual in individuals:
+            n_streamed += 1
+            self.assertIsInstance(individual, Individual)
+            self.assertEqual(len(individual.hla_data), 3)
+        self.assertEqual(n_streamed, 8)
 
 if __name__ == "__main__":
     unittest.main()
