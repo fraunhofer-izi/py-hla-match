@@ -38,8 +38,8 @@ class TestParser(unittest.TestCase):
         """
         parser = HLADataSource(self.invalid_csv)
         with self.assertLogs(
-            "py_hla_match.parser",
-            level="ERROR"
+                "py_hla_match.parser",
+                level="ERROR"
         ) as log_context:
             parser.parse()
         error_logs = [
@@ -81,9 +81,9 @@ class TestParser(unittest.TestCase):
         for individual in individuals:
             n_streamed += 1
             self.assertIsInstance(individual, Individual)
-            self.assertEqual(len(individual.hla_data), 3)
-        self.assertEqual(n_streamed, 8)      
-        
+            self.assertEqual(len(individual.hla_data), 2)
+        self.assertEqual(n_streamed, 8)
+
     def test_stream_excel(self):
         """Test streaming parsing of a valid Excel file."""
         parser = HLADataSource(self.valid_excel)
@@ -92,8 +92,8 @@ class TestParser(unittest.TestCase):
         for individual in individuals:
             n_streamed += 1
             self.assertIsInstance(individual, Individual)
-        self.assertEqual(n_streamed, 8)      
-        
+        self.assertEqual(n_streamed, 8)
+
     def test_stream_excel_with_col_indices(self):
         """Test streaming parsing of a valid Excel file with column indices."""
         parser = HLADataSource(self.valid_excel, col_idx_start=2, col_idx_stop=5)
@@ -102,8 +102,9 @@ class TestParser(unittest.TestCase):
         for individual in individuals:
             n_streamed += 1
             self.assertIsInstance(individual, Individual)
-            self.assertEqual(len(individual.hla_data), 3)
+            self.assertEqual(len(individual.hla_data), 2)
         self.assertEqual(n_streamed, 8)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -25,8 +25,8 @@ class HLADataSource:
         Initialize the HLADataSource.
 
         :param source_path: Path to the excel or csv file
-        :param col_idx_start: Column index to start parsing from
-        :param col_idx_stop: Column index to stop parsing at
+        :param col_idx_start: Column index to start parsing from (starting with first column as zero)
+        :param col_idx_stop: Column index to stop parsing at (stop index column is included in parsing)
         """
         self.source_path = source_path
         self.col_idx_start = col_idx_start
@@ -56,28 +56,30 @@ class HLADataSource:
         else:
             df = pd.read_excel(self.source_path)
             return self._parse_dataframe(df)
-        
+
     def _stream_excel(self, chunk_size: int) -> Iterable[Individual]:
         """
         Stream HLA data from an Excel file in chunks using openpyxl.
         """
         wb = load_workbook(self.source_path, read_only=True)
         ws = wb.active
-
-        # Skip the header row
+        # Skip header row
         rows = ws.iter_rows(min_row=2, values_only=True)
-
         buffer = []
-        for idx, row in enumerate(rows):
+        row_counter = 0  # Actual row count for tracking
+        for row in rows:
+            # Check for completely empty row
+            if all(cell is None for cell in row):
+                continue
             if self.col_idx_start is not None and self.col_idx_stop is not None:
-                row = row[self.col_idx_start:self.col_idx_stop]
-            buffer.append((idx, row))
+                row = row[self.col_idx_start:self.col_idx_stop + 1]
+            buffer.append((row_counter, row))
+            row_counter += 1
             if len(buffer) >= chunk_size:
                 for row_idx, row_data in buffer:
                     yield self._parse_row(row_data, row_idx)
                 buffer.clear()
-
-        # Yield remaining rows
+        # Yield remaining
         for row_idx, row_data in buffer:
             yield self._parse_row(row_data, row_idx)
 
@@ -97,7 +99,7 @@ class HLADataSource:
         """
         for chunk in pd.read_csv(self.source_path, chunksize=chunk_size):
             if self.col_idx_start is not None and self.col_idx_stop is not None:
-                chunk = chunk.iloc[:, self.col_idx_start:self.col_idx_stop]
+                chunk = chunk.iloc[:, self.col_idx_start:self.col_idx_stop + 1]
             for idx, row in chunk.iterrows():
                 yield self._parse_row(row, idx)
 
@@ -142,7 +144,7 @@ class HLADataSource:
         individuals: list[Individual] = []
         # slice the dataframe if start and end indices were given
         if self.col_idx_start and self.col_idx_stop:
-            df = df.iloc[:, self.col_idx_start:self.col_idx_stop]
+            df = df.iloc[:, self.col_idx_start:self.col_idx_stop + 1]
         for idx, row in df.iterrows():
             hla_pairs: list[HLAPair] = []
             # Map of locus to HLA objects
