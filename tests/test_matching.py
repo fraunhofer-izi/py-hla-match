@@ -95,8 +95,7 @@ class TestAlleleMatch(unittest.TestCase):
             allele_match(allele1, allele2)
         expected_message = (
             f"Invalid locus comparison between '{allele1.locus}' and "
-            f"'{allele2.locus}'. You may only compare DRBX. "
-            f"Potential error in data preprocessing."
+            f"'{allele2.locus}'."
         )
         self.assertEqual(str(context.exception), expected_message)
 

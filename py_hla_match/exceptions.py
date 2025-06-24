@@ -42,9 +42,7 @@ class InvalidLocusComparisonError(Exception):
     """
     def __init__(self, locus1, locus2):
         message = (
-            f"Invalid locus comparison between '{locus1}' and '{locus2}'. "
-            f"You may only compare DRBX. "
-            f"Potential error in data preprocessing."
+            f"Invalid locus comparison between '{locus1}' and '{locus2}'."
         )
         super().__init__(message)
         self.locus1 = locus1
