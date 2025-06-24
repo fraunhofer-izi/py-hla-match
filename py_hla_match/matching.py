@@ -292,13 +292,11 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
         )
 
     if hla1.locus != hla2.locus:
-        if (
-                'DRB' in hla1.locus and 'DRB' in hla2.locus and
-                'DRB1' not in hla1.locus and 'DRB1' not in hla2.locus
-        ):
+        raise InvalidLocusComparisonError(hla1.locus, hla2.locus)
+
+    if hla1.locus == 'DRB345':
+        if hla1.drb_sub_locus != hla2.drb_sub_locus:
             return AlleleMatchLevel.LOCUS_MISMATCH
-        else:
-            raise InvalidLocusComparisonError(hla1.locus, hla2.locus)
 
     if hla1.ard_redux_allele_group != hla2.ard_redux_allele_group:
         return AlleleMatchLevel.ALLELE_GROUP_MISMATCH
