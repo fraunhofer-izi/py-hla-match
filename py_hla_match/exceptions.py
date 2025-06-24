@@ -17,6 +17,25 @@ class MalformedHLAStringError(Exception):
         return base_message
 
 
+class EmptyHLAStringError(MalformedHLAStringError):
+    """
+    Error raised when an HLA string is empty.
+    """
+    def __init__(self, message, details=None):
+        """
+        :param message: Error message.
+        :param details: Optional additional details about the error.
+        """
+        super().__init__(message)
+        self.details = details
+
+    def __str__(self):
+        base_message = super().__str__()
+        if self.details:
+            return f"{base_message} (Details: {self.details})"
+        return base_message
+
+
 class InvalidLocusComparisonError(Exception):
     """
     Exception raised when attempting to compare alleles from different loci.

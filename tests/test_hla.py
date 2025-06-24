@@ -1,5 +1,8 @@
 import unittest
-from py_hla_match.exceptions import MalformedHLAStringError
+from py_hla_match.exceptions import (
+    MalformedHLAStringError,
+    EmptyHLAStringError
+)
 from py_hla_match.hla import HLA
 
 
@@ -275,6 +278,10 @@ class TestHLA(unittest.TestCase):
 
         # locus still extracted correctly
         self.assertEqual(hla.locus, 'A')
+
+    def test_invalid_hla_with_empty_fields(self):
+        with self.assertRaises(EmptyHLAStringError):
+            HLA("HLA-A*")
 
     def test_repr(self):
         hla = HLA("HLA-A*32:11Q")

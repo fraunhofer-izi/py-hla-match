@@ -2,11 +2,15 @@ import logging
 import re
 from .singleton import get_ard_instance
 
-from py_hla_match.exceptions import MalformedHLAStringError
+from py_hla_match.exceptions import (
+    MalformedHLAStringError,
+    EmptyHLAStringError
+)
 
 logger = logging.getLogger(__name__)
 
 # regex pattern for HLA allele string
+# TODO: class Configuration():
 NOMENCLATURE_PATTERN = re.compile(
     r"""
     ^ (?:HLA-)?
@@ -14,14 +18,14 @@ NOMENCLATURE_PATTERN = re.compile(
     \* # asterisk always required
     ( # three alternatives
         # 1: well-formed allele
-        (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+        (?P<allele_fields>\d{2,4}(?::\d{2,4}){0,3})
         (?![NLSCAQ][GP]|[GP][NLSCAQ])  # no suffix AND group code
         (?P<suffix>[NLSCAQ])?
         (?P<group_code>[GP])?
         $ # must match to end of string
     |
         # 2: known nan
-        (?P<nan>NA|NE|NEW|UNKNOWN|ND|NULL)
+        (?P<nan>NA|NE|NEW|UNKNOWN|ND|NULL)  # user defined
         $
     |
         # 3: anything else - trigger MalformedHLAStringError
@@ -39,7 +43,7 @@ REDUX_PATTERN = re.compile(
     (?P<locus>[A-Z0-9]+)
     \*
     (
-        (?P<allele_fields>\d{2,}(?::\d{2,}){0,3})
+        (?P<allele_fields>\d{2,4}(?::\d{2,4}){0,3})
         (?P<suffix>[NLSCAQ])?
         (?P<group_code>[GP])?
         $
@@ -59,6 +63,7 @@ VALID_HLA_LOCI = frozenset({
     'DQA1',  # NOTE: interesting candidate
     'DPA1',  # NOTE: interesting candidate
     'DRB3', 'DRB4', 'DRB5',  # NOTE: interesting candidate(s)
+    'DRB345',  # NOTE: NOT A LOCUS, but used here as generic DRB3/4/5
     'DRBX',  # NOTE: NOT A LOCUS, but often used to indicate missing DRB3/4/5
     # However, DRB3/4/5 may need special hadling
 
@@ -178,7 +183,14 @@ class HLA:
         if allele_fields:
             self.suffix = match.group('suffix')
             self.group_code = match.group('group_code')
-
+            if self.group_code == 'G' and allele_fields.count(':') < 2:
+                raise MalformedHLAStringError(
+                    f"'{self.allele_string}' – 'G' group needs ≥3 fields."
+                )
+            if self.group_code == 'P' and allele_fields.count(':') < 1:
+                raise MalformedHLAStringError(
+                    f"'{self.allele_string}' – 'P' group needs ≥2 fields."
+                )
             # extract details from allele fields
             field_contents = allele_fields.split(':')
             if len(field_contents) > 0:
@@ -200,7 +212,7 @@ class HLA:
                 f"contains unparsable content: '{remainder}'"
             )
         else:
-            raise MalformedHLAStringError(
+            raise EmptyHLAStringError(
                 f"HLA string '{self.allele_string}' at locus"
                 f" '{self.locus}' is empty."
             )
@@ -217,6 +229,26 @@ class HLA:
         # may wanna check with:
         # https://raw.githubusercontent.com/ANHIG/IMGTHLA/Latest/wmda/hla_nom.txt
         # check if we got at least a one-field (valid) allele string
+
+        # NOTE: we could soften this in the future
+        if any(ch.islower() for ch in self.allele_string if ch.isalpha()):
+            raise MalformedHLAStringError(
+                f"Lower-case letters found in '{self.allele_string}'. "
+                "Allele strings must be upper-case adhering to HLA "
+                "nomenclature."
+            )
+
+        # NOTE: we might soften this in the future
+        if allele_string := self.allele_string:
+            if (
+                allele_string != allele_string.strip()
+                or any(ch.isspace() for ch in allele_string)
+            ):
+                raise MalformedHLAStringError(
+                    "Found whitespace or invisible characters in allele "
+                    f"string '{allele_string}'."
+                )
+
         match = NOMENCLATURE_PATTERN.match(self.allele_string)
         if not match:
             raise MalformedHLAStringError(
@@ -247,8 +279,13 @@ class HLA:
         redux_type = 'lgx'
         self.ard_redux_allele_string = ard.redux(
             self.allele_string, redux_type
-        )
+        ).strip()
         match = REDUX_PATTERN.match(self.ard_redux_allele_string)
+        if not match:
+            raise MalformedHLAStringError(
+                "py-ard reports unexpected string not matching regex "
+                f"'{self.ard_redux_allele_string}'."
+            )
         if match:
             allele_fields = match.group('allele_fields')
             field_contents = allele_fields.split(':')
