@@ -348,16 +348,30 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
 
     def test_pairing_prefers_lower_negative_penalty(self):
         """
-        Test Case: Two possible pairings – one sums to -3, the other to +1.
+        Test Case: Two possible pairings – one sums to 0, the other to +1.
         """
         p = HLAPair(HLA("B*07"),     HLA("B*07:02"))
         d = HLAPair(HLA("B*07:02"),  HLA("B*07"))
 
         best_score, levels = _get_correct_allele_pairing(p, d)
-        self.assertEqual(best_score, -3)
+        self.assertEqual(best_score, 1)
         self.assertEqual(
             levels,
             (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.ARD_MATCH)
+        )
+
+    def test_correct_pairing_with_ambiguous_alleles(self):
+        """
+        Test Case: pairing prefers NOT_APPLICABLE over any mismatch
+        """
+        p = HLAPair(HLA("B*07"),     HLA("B*01"))
+        d = HLAPair(HLA("B*07"),  HLA("B*01"))
+
+        best_score, levels = _get_correct_allele_pairing(p, d)
+        self.assertEqual(best_score, 0)
+        self.assertEqual(
+            levels,
+            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE)
         )
 
 

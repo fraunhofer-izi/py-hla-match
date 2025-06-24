@@ -22,16 +22,16 @@ class AlleleMatchLevel(IntEnum):
     cf.https://hla.alleles.org/nomenclature/naming.html
     """
     # NOTE: no clean seperation for now
-    NOT_APPLICABLE = -6
+    NOT_APPLICABLE = 0
 
     # clean AlleleMatchLevel
-    LOCUS_MISMATCH = 0
-    ALLELE_GROUP_MISMATCH = 1
-    ALLELE_MISMATCH = 2
+    LOCUS_MISMATCH = -3
+    ALLELE_GROUP_MISMATCH = -2
+    ALLELE_MISMATCH = -1
     # NOTE: seperating mismatches from matches based on ARD
-    ARD_MATCH = 3
-    SYNONYMOUS_VARIANT_MATCH = 4
-    NON_CODING_VARIANT_MATCH = 5
+    ARD_MATCH = 1
+    SYNONYMOUS_VARIANT_MATCH = 2
+    NON_CODING_VARIANT_MATCH = 3
 
 
 class MatchResult:
