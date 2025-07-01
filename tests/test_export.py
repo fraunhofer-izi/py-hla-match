@@ -4,7 +4,7 @@ import tempfile
 
 import pandas as pd
 
-from py_hla_match.export import PairwiseMatchResult, BestMatchResult
+from py_hla_match.export import PairwiseMatchResult
 from py_hla_match.parser import HLADataSource
 
 
@@ -16,6 +16,9 @@ class TestExport(unittest.TestCase):
         TEST_DIR_PATH = os.path.dirname(os.path.realpath(__file__))
         cls.valid_csv = os.path.join(
             TEST_DIR_PATH, "resources", "hla_test_data.csv"
+        )
+        cls.invalid_csv = os.path.join(
+            TEST_DIR_PATH, "resources", "hla_test_data_malformed.csv"
         )
         cls.valid_excel = os.path.join(
             TEST_DIR_PATH, "resources", "hla_test_data.xlsx"
@@ -33,107 +36,120 @@ class TestExport(unittest.TestCase):
 
     def tearDown(self):
         """Clean up temporary files created during tests."""
-        for file in ["match_results.csv", "best_match_result.csv"]:
+        for file in ["match_results.csv"]:
             if os.path.exists(file):
                 os.remove(file)
 
-    def test_pairwise_match_object_based_basic_resolution(self):
-        """
-        Test pairwise matching with object-based data and basic resolution.
-        """
-        # basic parsing to get a list of individuals
-        individuals = HLADataSource(self.valid_csv).parse()
-        # create pairwise match object
-        match_result = PairwiseMatchResult(
-            individuals, individuals, resolution="basic"
-        ).to_df()
-        # check that the result is a pandas DataFrame
-        self.assertIsInstance(match_result, pd.DataFrame)
-        # check that the result has the expected number of rows
-        self.assertEqual(len(match_result), 8)
-        # check that the result has the expected number of columns
-        self.assertEqual(len(match_result.columns), 5)
-        # check that the resulting dataframe has correct column names
-        expected_columns = ["A", "B", "C", "DPA1", "DRB1"]
-        self.assertEqual(list(match_result.columns), expected_columns)
-
-    def test_best_match_object_based_basic_resolution(self):
-        """Test best match with object-based data and basic resolution."""
-        # basic parsing to get a list of individuals
-        individuals = HLADataSource(self.valid_csv).parse()
-        # create pairwise match object
-        match_result = BestMatchResult(
-            individuals[3], individuals, resolution="basic"
+    def test_valid_csv_no_streaming(self):
+        """Test parsing a valid CSV file without streaming."""
+        source = HLADataSource(self.valid_csv)
+        target = HLADataSource(self.valid_csv)
+        pairwise_match = PairwiseMatchResult(
+            source=source,
+            target=target,
+            storage_filename=os.path.join(self.temp_dir, "match_results.csv"),
+            resolution="basic",
+            stream=False
         )
-        best_match = match_result.get_best_match()
-        best_match_idx = match_result.get_best_match_target_idx()
-        # third individual in the list should be the best match
-        self.assertEqual(best_match_idx, 3)
-        self.assertEqual(best_match, individuals[3])
+        # assert that the generated file exists
+        self.assertTrue(os.path.exists(pairwise_match.result_file))
+        # assert content of DataFrame
+        result_df = pairwise_match.to_df()
+        self.assertIsInstance(result_df, pd.DataFrame)
+        self.assertEqual(result_df.shape[0], 8)
+        self.assertEqual(result_df.shape[1], 5)
 
-    def test_pairwise_match_file_based(self):
-        """Test pairwise matching with file-based data."""
-        individuals = HLADataSource(self.valid_csv).parse()
-        match_result = PairwiseMatchResult(individuals, individuals)
-        df = match_result.to_df()
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(len(df), 8)  # !! with 8 individuals in test file
-
-    def test_pairwise_match_excel_input(self):
-        """Test pairwise matching with Excel input file."""
-        individuals = HLADataSource(self.valid_csv).parse()
-        match_result = PairwiseMatchResult(individuals, individuals)
-        df = match_result.to_df()
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(len(df.columns), 5)  # !! with 5 loci in test file
-
-    def test_pairwise_match_high_resolution(self):
-        """Test pairwise matching with high resolution."""
-        individuals = HLADataSource(self.valid_csv).parse()
-        match_result = PairwiseMatchResult(
-            individuals, individuals, resolution="high"
-        ).to_df()
-        self.assertIsInstance(match_result, pd.DataFrame)
-        # !! with 5 loci intest file
-        self.assertEqual(len(match_result.columns), 5)
-
-    def test_pairwise_match_full_resolution(self):
-        """Not implemented yet."""
-        pass
-
-    def test_export_to_csv(self):
-        """Test exporting results to CSV."""
-        individuals = HLADataSource(self.valid_csv).parse()
-        match_result = PairwiseMatchResult(individuals, individuals)
-        output_file = os.path.join(self.temp_dir, "test_output.csv")
-        match_result.to_csv(output_file)
-        self.assertTrue(os.path.exists(output_file))
-        df = pd.read_csv(output_file)
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(len(df), 8)  # !! with 8 individuals in test file
-
-    def test_export_to_excel(self):
-        """Test exporting results to Excel."""
-        individuals = HLADataSource(self.valid_csv).parse()
-        match_result = PairwiseMatchResult(individuals, individuals)
-        output_file = os.path.join(self.temp_dir, "test_output.xlsx")
-        match_result.to_excel(output_file)
-        self.assertTrue(os.path.exists(output_file))
-        # Verify file content
-        df = pd.read_excel(output_file)
-        self.assertIsInstance(df, pd.DataFrame)
-        self.assertEqual(len(df), 8)  # !! with 8 individuals in test file
-
-    def test_invalid_resolution(self):
-        """Test that invalid resolution raises ValueError."""
-        individuals = HLADataSource(self.valid_csv).parse()
+    def test_valid_csv_streaming(self):
+        """Test parsing a valid CSV file with streaming."""
+        source = HLADataSource(self.valid_csv)
+        target = HLADataSource(self.valid_csv)
+        pairwise_match = PairwiseMatchResult(
+            source=source,
+            target=target,
+            storage_filename=os.path.join(self.temp_dir, "match_results.csv"),
+            resolution="basic",
+            stream=True,
+            chunksize=2
+        )
+        # assert that the generated file exists
+        self.assertTrue(os.path.exists(pairwise_match.result_file))
+        # assert exception gets thrown when trying to access the streamed df
         with self.assertRaises(ValueError):
-            PairwiseMatchResult(individuals, individuals, resolution="invalid")
+            pairwise_match.to_df()
 
-    def test_unsupported_file_format(self):
-        """Test that unsupported file format raises ValueError."""
-        unsupported_file = os.path.join(self.temp_dir, "test.txt")
-        with open(unsupported_file, 'w') as f:
-            f.write("test")
+    def test_valid_excel_streaming(self):
+        """Test parsing a valid Excel file with streaming."""
+        source = HLADataSource(self.valid_excel)
+        target = HLADataSource(self.valid_excel)
+        pairwise_match = PairwiseMatchResult(
+            source=source,
+            target=target,
+            storage_filename=os.path.join(self.temp_dir, "match_results_excel_streaming.csv"),
+            resolution="basic",
+            stream=True,
+            chunksize=2
+        )
+        # Assert that the generated file exists
+        self.assertTrue(os.path.exists(pairwise_match.result_file))
+        # Assert exception gets thrown when trying to access the streamed DataFrame
         with self.assertRaises(ValueError):
-            PairwiseMatchResult(unsupported_file, self.valid_csv)
+            pairwise_match.to_df()
+
+    def test_valid_excel_no_streaming(self):
+        """Test parsing a valid Excel file without streaming."""
+        source = HLADataSource(self.valid_excel)
+        target = HLADataSource(self.valid_excel)
+        pairwise_match = PairwiseMatchResult(
+            source=source,
+            target=target,
+            storage_filename=os.path.join(self.temp_dir, "match_results_excel_no_streaming.csv"),
+            resolution="basic",
+            stream=False,
+            chunksize=2
+        )
+        # Assert that the result is stored in memory as a DataFrame
+        self.assertIsInstance(pairwise_match.result, pd.DataFrame)
+        self.assertGreater(len(pairwise_match.result), 0)  # Ensure rows are present
+        self.assertGreater(len(pairwise_match.result.columns), 0)  # Ensure loci columns are present
+
+    def test_invalid_csv_streaming(self):
+        """Test parsing an invalid CSV file with streaming."""
+        source = HLADataSource(self.invalid_csv)
+        target = HLADataSource(self.invalid_csv)
+        pairwise_match = PairwiseMatchResult(
+            source=source,
+            target=target,
+            storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_streaming.csv"),
+            resolution="basic",
+            stream=True,
+            chunksize=2
+        )
+        # Assert that the generated file exists
+        self.assertTrue(os.path.exists(pairwise_match.result_file))
+        # Assert that the file contains valid rows despite malformed data
+        df = pd.read_csv(pairwise_match.result_file)
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertGreater(len(df), 0)  # Ensure rows are written
+        self.assertGreater(len(df.columns), 0)  # Ensure loci columns are present
+
+    def test_invalid_csv_no_streaming(self):
+        """Test parsing an invalid CSV file without streaming."""
+        source = HLADataSource(self.invalid_csv)
+        target = HLADataSource(self.invalid_csv)
+        pairwise_match = PairwiseMatchResult(
+            source=source,
+            target=target,
+            storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_no_streaming.csv"),
+            resolution="basic",
+            stream=False,
+            chunksize=2
+        )
+        # Assert that the result is stored in memory as a DataFrame
+        self.assertIsInstance(pairwise_match.result, pd.DataFrame)
+        self.assertGreater(len(pairwise_match.result), 0)  # Ensure rows are present
+        self.assertGreater(len(pairwise_match.result.columns), 0)  # Ensure loci columns are present
+        # Assert that errors were logged for malformed data
+        with self.assertLogs("py_hla_match.parser", level="ERROR") as log_context:
+            source.parse(stream=False)
+            error_logs = [record for record in log_context.output if "Encountered malformed HLA String" in record]
+            self.assertGreater(len(error_logs), 0, "Expected malformed HLA string log entries")
