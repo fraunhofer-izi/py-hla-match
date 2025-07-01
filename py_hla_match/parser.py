@@ -20,17 +20,21 @@ class HLADataSource:
 
     def __init__(self, source_path: str,
                  col_idx_start: int = None,
-                 col_idx_stop: int = None) -> None:
+                 col_idx_stop: int = None,
+                 row_idx_start: int = 1) -> None:
         """
         Initialize the HLADataSource.
 
         :param source_path: Path to the excel or csv file
         :param col_idx_start: Column index to start parsing from (starting with first column as zero)
         :param col_idx_stop: Column index to stop parsing at (stop index column is included in parsing)
+        :param row_idx_start: Row index to start parsing from (default is 1, which means the second row
+        as we expect a header row)
         """
         self.source_path = source_path
         self.col_idx_start = col_idx_start
         self.col_idx_stop = col_idx_stop
+        self.row_idx_start = row_idx_start
 
     def parse(self, stream: bool = False, chunk_size: int = 10000) -> Union[list[Individual], Iterable[Individual]]:
         """
@@ -63,8 +67,8 @@ class HLADataSource:
         """
         wb = load_workbook(self.source_path, read_only=True)
         ws = wb.active
-        # Skip header row
-        rows = ws.iter_rows(min_row=2, values_only=True)
+        # idx starting at 1
+        rows = ws.iter_rows(min_row=self.row_idx_start + 1, values_only=True)
         buffer = []
         row_counter = 0  # Actual row count for tracking
         for row in rows:
