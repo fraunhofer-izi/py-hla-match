@@ -292,6 +292,14 @@ class TestHLA(unittest.TestCase):
                 with self.assertRaises(MalformedHLAStringError):
                     HLA(hla_string)
 
+    def test_invalid_four_field_g_group(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("C*07:02:01:01G")
+
+    def test_invalid_three_field_p_group(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*02:01:01P")
+
     def test_nan_logs_info(self):
         """Test known nan log info."""
         with self.assertLogs('py_hla_match.hla', level='INFO') as captured:

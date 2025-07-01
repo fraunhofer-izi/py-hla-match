@@ -179,11 +179,11 @@ class HLA:
         if allele_fields:
             self.suffix = match.group('suffix')
             self.group_code = match.group('group_code')
-            if self.group_code == 'G' and allele_fields.count(':') < 2:
+            if self.group_code == 'G' and allele_fields.count(':') != 2:
                 raise MalformedHLAStringError(
                     f"'{self.allele_string}' – 'G' group needs ≥3 fields."
                 )
-            if self.group_code == 'P' and allele_fields.count(':') < 1:
+            if self.group_code == 'P' and allele_fields.count(':') != 1:
                 raise MalformedHLAStringError(
                     f"'{self.allele_string}' – 'P' group needs ≥2 fields."
                 )
