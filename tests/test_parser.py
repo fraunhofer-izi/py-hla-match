@@ -128,7 +128,6 @@ class TestParser(unittest.TestCase):
             "Parser failed to slice correctly when start index was 0"
         )
 
-    # NOTE: this test failes due to the same bug (col_idx_start is 0)
     def test_slice_consistency_non_stream_vs_stream(self):
         """
         Tests that slicing is consistent between stream and non-stream modes.

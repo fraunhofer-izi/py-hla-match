@@ -147,7 +147,7 @@ class HLADataSource:
         """
         individuals: list[Individual] = []
         # slice the dataframe if start and end indices were given
-        if self.col_idx_start and self.col_idx_stop:
+        if self.col_idx_start is not None and self.col_idx_stop is not None:
             df = df.iloc[:, self.col_idx_start:self.col_idx_stop + 1]
         for idx, row in df.iterrows():
             hla_pairs: list[HLAPair] = []
