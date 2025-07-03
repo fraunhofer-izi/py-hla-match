@@ -42,7 +42,7 @@ class TestAlleleMatch(unittest.TestCase):
             "hla1 must be an instance of HLA", str(context.exception)
         )
 
-    def test_valid_locus_mismatch(self):
+    def test_valid_drb34_locus_mismatch(self):
         """
         Test Case: Locus mismatch
         Allele 1: DRB3*02:02:01
@@ -51,6 +51,32 @@ class TestAlleleMatch(unittest.TestCase):
         """
         allele1 = HLA("DRB3*02:02:01")
         allele2 = HLA("DRB4*01:03:01")
+        expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+    def test_valid_drb35_locus_mismatch(self):
+        """
+        Test Case: Locus mismatch
+        Allele 1: DRB3*01
+        Allele 2: DRB5*01
+        Expected Match Level: LOCUS_MISMATCH (0)
+        """
+        allele1 = HLA("DRB3*01")
+        allele2 = HLA("DRB5*01")
+        expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+    def test_valid_drb3x_locus_mismatch(self):
+        """
+        Test Case: Locus mismatch
+        Allele 1: DRB3*01
+        Allele 2: DRBX*NE
+        Expected Match Level: LOCUS_MISMATCH (0)
+        """
+        allele1 = HLA("DRB3*01")
+        allele2 = HLA("DRBX*NE")
         expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
@@ -69,8 +95,7 @@ class TestAlleleMatch(unittest.TestCase):
             allele_match(allele1, allele2)
         expected_message = (
             f"Invalid locus comparison between '{allele1.locus}' and "
-            f"'{allele2.locus}'. You may only compare DRBX. "
-            f"Potential error in data preprocessing."
+            f"'{allele2.locus}'."
         )
         self.assertEqual(str(context.exception), expected_message)
 
