@@ -73,42 +73,59 @@ class PairwiseMatchResult:
 
         # Handle non-streaming case by converting lists to single-chunk iterators
         if not self.stream:
-            source_data = [source_data] if isinstance(source_data, list) else source_data
-            target_data = [target_data] if isinstance(target_data, list) else target_data
+            # Flatten the lists into iterables of Individual objects
+            source_data = iter(source_data)
+            target_data = iter(target_data)
 
         all_loci = set()
+        current_headers = None  # Keep track of headers in memory
         is_first_chunk = True
 
-        for source_chunk, target_chunk in zip(source_data, target_data):
+        for source_ind, target_ind in zip(source_data, target_data):
             results = []
 
-            for source_ind, target_ind in zip(source_chunk, target_chunk):
-                match_results: List[MatchResult] = multi_locus_match(source_ind, target_ind)
-                row = {}
-                for result in match_results:
-                    locus = result.patient.locus
-                    row[locus] = result.get_match_level_for_resolution(self.resolution)
-                    all_loci.add(locus)
-                results.append(row)
+            # Process individual objects directly
+            match_results: List[MatchResult] = multi_locus_match(source_ind, target_ind)
+            row = {}
+            for result in match_results:
+                locus = result.patient.locus
+                row[locus] = result.get_match_level_for_resolution(self.resolution)
+                all_loci.add(locus)
+            results.append(row)
 
             # Create a DataFrame for the current chunk
             chunk_df = pd.DataFrame(results)
             chunk_df = chunk_df.reindex(columns=sorted(all_loci))  # Ensure all loci are included
 
-            # If streaming is disabled, accumulate results in memory
-            if not self.stream:
+            # Write to the results file
+            if self.stream:
+                new_headers = sorted(all_loci)
+                if is_first_chunk:
+                    # Write header for the first chunk
+                    chunk_df.to_csv(self.result_file, index=False, mode='w')
+                    current_headers = new_headers
+                    is_first_chunk = False
+                else:
+                    # Check if the header needs to be updated
+                    if current_headers != new_headers:
+                        # Rewrite the file with updated headers
+                        existing_data = pd.read_csv(self.result_file)
+                        existing_data = existing_data.reindex(columns=new_headers, fill_value=None)
+                        existing_data.to_csv(self.result_file, index=False, mode='w')
+                        chunk_df.to_csv(self.result_file, index=False, mode='a', header=False)
+                        current_headers = new_headers
+                    else:
+                        # Append without writing the header for subsequent chunks
+                        chunk_df.to_csv(self.result_file, index=False, mode='a', header=False)
+            else:
+                # If streaming is disabled, accumulate results in memory
                 if self.result is None:
                     self.result = chunk_df
                 else:
                     self.result = pd.concat([self.result, chunk_df], ignore_index=True)
 
-            # Write to the results file
-            if is_first_chunk:
-                # Write header for the first chunk
-                chunk_df.to_csv(self.result_file, index=False, mode='w')
-                is_first_chunk = False
-            else:
-                # Append without writing the header for subsequent chunks
-                chunk_df.to_csv(self.result_file, index=False, mode='a', header=False)
+        # Write the accumulated results to the file in non-streaming mode
+        if not self.stream and self.result is not None:
+            self.result.to_csv(self.result_file, index=False)
 
         logger.info("Pairwise match result calculation completed.")
