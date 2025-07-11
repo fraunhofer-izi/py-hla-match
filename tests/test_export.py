@@ -153,3 +153,80 @@ class TestExport(unittest.TestCase):
             source.parse(stream=False)
             error_logs = [record for record in log_context.output if "Encountered malformed HLA String" in record]
             self.assertGreater(len(error_logs), 0, "Expected malformed HLA string log entries")
+
+    def test_length_mismatch_raises(self):
+        """
+        PairwiseMatchResult must raise a ValueError.
+        """
+        source_df = pd.DataFrame(
+            {"A1": ["A*01:01", "A*01:01"],
+             "A2": ["A*02:01", "A*02:01"]}
+        )  # 2 rows
+        target_df = pd.DataFrame(
+            {"A1": ["A*01:01", "A*01:01", "A*01:01"],
+             "A2": ["A*02:01", "A*02:01", "A*02:01"]}
+        )  # 3 rows
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as sf:
+            source_df.to_csv(sf.name, index=False)
+            source_path = sf.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tf:
+            target_df.to_csv(tf.name, index=False)
+            target_path = tf.name
+
+        source = HLADataSource(source_path)
+        target = HLADataSource(target_path)
+
+        with self.assertRaises(ValueError):
+            PairwiseMatchResult(
+                source=source,
+                target=target,
+                storage_filename=os.path.join(
+                    self.__class__.temp_dir, "len_mismatch.csv"
+                ),
+                resolution="basic",
+                stream=False
+            )
+
+    def test_unexpected_locus_raises(self):
+        """
+        Patient introduces a third locus in second row (by mistake). Export
+        raises ValueError.
+        """
+        source_df = pd.DataFrame(
+            {
+                "A1": ["A*01:01", "A*01:01"],
+                "A2": ["A*02:01", "A*02:01"],
+                "B1": ["B*07:183", "C*03:02:06"],
+                "B2": ["B*07:183", "C*03:02:06"]
+             }
+        )
+        target_df = pd.DataFrame(
+            {
+                "A1": ["A*01:01", "A*01:01"],
+                "A2": ["A*02:01", "A*02:01"],
+                "B1": ["B*07:183", "B*07:183"],
+                "B2": ["B*07:183", "B*07:183"]
+             }
+        )
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as sf:
+            source_df.to_csv(sf.name, index=False)
+            source_path = sf.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tf:
+            target_df.to_csv(tf.name, index=False)
+            target_path = tf.name
+
+        source = HLADataSource(source_path)
+        target = HLADataSource(target_path)
+
+        with self.assertRaises(ValueError):
+            PairwiseMatchResult(
+                source=source,
+                target=target,
+                storage_filename=os.path.join(
+                    self.__class__.temp_dir, "bad_locus.csv"
+                ),
+                resolution="basic",
+                stream=False
+            )
