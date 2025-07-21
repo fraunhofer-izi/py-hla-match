@@ -1,4 +1,5 @@
 import logging
+from itertools import zip_longest
 
 import pandas as pd
 
@@ -78,10 +79,16 @@ class PairwiseMatchResult:
             target_data = iter(target_data)
 
         all_loci = set()
-        current_headers = None  # Keep track of headers in memory
+        # Keep track of headers in memory
+        current_headers = None
         is_first_chunk = True
 
-        for source_ind, target_ind in zip(source_data, target_data):
+        for idx, (source_ind, target_ind) in enumerate(zip_longest(source_data, target_data, fillvalue=None)):
+
+            if source_ind is None:
+                raise ValueError(f"source_data exhausted before target_data at index {idx}")
+            elif target_ind is None:
+                raise ValueError(f"target_data exhausted before source_data at index {idx}")
 
             results = []
 
