@@ -1,4 +1,3 @@
-from ast import List
 import logging
 
 import pandas as pd
