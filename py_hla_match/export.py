@@ -21,7 +21,7 @@ class PairwiseMatchResult:
     :param storage_filename: Name of the file to store the results
     :param resolution: Resolution of the match results, can be 'basic', 'high', or 'full'
     :param stream: If True, results will be streamed and not stored in memory
-    :param chunksize: Size of the chunks to read from the file (if streaming)
+    :param chunk_size: Size of the chunks to read from the file (if streaming)
 
     :raises ValueError: If resolution is not one of 'basic', 'high', or 'full'
     """
@@ -32,7 +32,7 @@ class PairwiseMatchResult:
                  storage_filename: str = "match_results.csv",
                  resolution: str = "basic",
                  stream: bool = False,
-                 chunksize: int = 10000):
+                 chunk_size: int = 10000):
 
         if resolution not in {"basic", "high", "full"}:
             raise ValueError(
@@ -43,10 +43,11 @@ class PairwiseMatchResult:
         self.target = target
         self.resolution = resolution
         self.stream = stream
-        self.chunksize = chunksize
+        self.chunk_size = chunk_size
         self.result_file = storage_filename
         self.result = None  # Placeholder for the result DataFrame
         self.calculate_result()
+
 
     def to_df(self) -> DataFrame:
         """
@@ -67,8 +68,8 @@ class PairwiseMatchResult:
         logger.info("Starting pairwise match result calculation...")
 
         # Parse source and target data
-        source_data = self.source.parse(stream=self.stream, chunk_size=self.chunksize)
-        target_data = self.target.parse(stream=self.stream, chunk_size=self.chunksize)
+        source_data = self.source.parse(stream=self.stream, chunk_size=self.chunk_size)
+        target_data = self.target.parse(stream=self.stream, chunk_size=self.chunk_size)
 
         # Handle non-streaming case by converting lists to single-chunk iterators
         if not self.stream:
