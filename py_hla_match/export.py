@@ -7,7 +7,7 @@ from typing import List
 from pandas import DataFrame
 
 from py_hla_match.matching import MatchResult, multi_locus_match
-from tests.test_parser import HLADataSource
+from py_hla_match.parser import HLADataSource
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +82,7 @@ class PairwiseMatchResult:
         is_first_chunk = True
 
         for source_ind, target_ind in zip(source_data, target_data):
+
             results = []
 
             # Process individual objects directly
