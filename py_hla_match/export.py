@@ -12,7 +12,7 @@ from py_hla_match.parser import HLADataSource
 logger = logging.getLogger(__name__)
 
 
-class PairwiseMatchResult:
+class PairwiseMatch:
     """
     Match individuals row-wise based on two data sources - > indices of source
     to same indices of target. Will store the results in a csv file.
@@ -47,6 +47,12 @@ class PairwiseMatchResult:
         self.chunk_size = chunk_size
         self.result_file = storage_filename
         self.result = None  # Placeholder for the result DataFrame
+
+
+    def run(self) -> None:
+        """
+        Starts the pairwise match calculation.
+        """
         self.calculate_result()
 
 

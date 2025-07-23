@@ -4,7 +4,7 @@ import tempfile
 
 import pandas as pd
 
-from py_hla_match.export import PairwiseMatchResult
+from py_hla_match.export import PairwiseMatch
 from py_hla_match.parser import HLADataSource
 
 
@@ -62,7 +62,7 @@ class TestExport(unittest.TestCase):
         """Test parsing a valid CSV file without streaming."""
         source = HLADataSource(self.valid_csv)
         target = HLADataSource(self.valid_csv)
-        pairwise_match = PairwiseMatchResult(
+        pairwise_match = PairwiseMatch(
             source=source,
             target=target,
             storage_filename=os.path.join(self.temp_dir, "match_results.csv"),
@@ -81,7 +81,7 @@ class TestExport(unittest.TestCase):
         """Test parsing a valid CSV file with streaming."""
         source = HLADataSource(self.valid_csv)
         target = HLADataSource(self.valid_csv)
-        pairwise_match = PairwiseMatchResult(
+        pairwise_match = PairwiseMatch(
             source=source,
             target=target,
             storage_filename=os.path.join(self.temp_dir, "match_results.csv"),
@@ -99,7 +99,7 @@ class TestExport(unittest.TestCase):
         """Test parsing a valid Excel file with streaming."""
         source = HLADataSource(self.valid_excel)
         target = HLADataSource(self.valid_excel)
-        pairwise_match = PairwiseMatchResult(
+        pairwise_match = PairwiseMatch(
             source=source,
             target=target,
             storage_filename=os.path.join(self.temp_dir, "match_results_excel_streaming.csv"),
@@ -117,7 +117,7 @@ class TestExport(unittest.TestCase):
         """Test parsing a valid Excel file without streaming."""
         source = HLADataSource(self.valid_excel)
         target = HLADataSource(self.valid_excel)
-        pairwise_match = PairwiseMatchResult(
+        pairwise_match = PairwiseMatch(
             source=source,
             target=target,
             storage_filename=os.path.join(self.temp_dir, "match_results_excel_no_streaming.csv"),
@@ -134,7 +134,7 @@ class TestExport(unittest.TestCase):
         """Test parsing an invalid CSV file with streaming."""
         source = HLADataSource(self.invalid_csv)
         target = HLADataSource(self.invalid_csv)
-        pairwise_match = PairwiseMatchResult(
+        pairwise_match = PairwiseMatch(
             source=source,
             target=target,
             storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_streaming.csv"),
@@ -154,7 +154,7 @@ class TestExport(unittest.TestCase):
         """Test parsing an invalid CSV file without streaming."""
         source = HLADataSource(self.invalid_csv)
         target = HLADataSource(self.invalid_csv)
-        pairwise_match = PairwiseMatchResult(
+        pairwise_match = PairwiseMatch(
             source=source,
             target=target,
             storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_no_streaming.csv"),
@@ -188,7 +188,7 @@ class TestExport(unittest.TestCase):
         source, target = _generate_tmp_file_source_and_target(source_df, target_df)
 
         with self.assertRaises(ValueError):
-            PairwiseMatchResult(
+            PairwiseMatch(
                 source=source,
                 target=target,
                 storage_filename=os.path.join(
@@ -223,7 +223,7 @@ class TestExport(unittest.TestCase):
         source, target = _generate_tmp_file_source_and_target(source_df, target_df)
 
         with self.assertRaises(ValueError):
-            PairwiseMatchResult(
+            PairwiseMatch(
                 source=source,
                 target=target,
                 storage_filename=os.path.join(
