@@ -8,6 +8,24 @@ from py_hla_match.export import PairwiseMatchResult
 from py_hla_match.parser import HLADataSource
 
 
+def _generate_tmp_file_source_and_target(source_df: pd.DataFrame,
+                                         target_df: pd.DataFrame) -> tuple[HLADataSource, HLADataSource]:
+    """
+    Generate temporary files for source and target HLA data.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as sf:
+        source_df.to_csv(sf.name, index=False)
+        source_path = sf.name
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tf:
+        target_df.to_csv(tf.name, index=False)
+        target_path = tf.name
+
+    source = HLADataSource(source_path)
+    target = HLADataSource(target_path)
+
+    return source, target
+
+
 class TestExport(unittest.TestCase):
 
     @classmethod
@@ -167,15 +185,7 @@ class TestExport(unittest.TestCase):
              "A2": ["A*02:01", "A*02:01", "A*02:01"]}
         )  # 3 rows
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as sf:
-            source_df.to_csv(sf.name, index=False)
-            source_path = sf.name
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tf:
-            target_df.to_csv(tf.name, index=False)
-            target_path = tf.name
-
-        source = HLADataSource(source_path)
-        target = HLADataSource(target_path)
+        source, target = _generate_tmp_file_source_and_target(source_df, target_df)
 
         with self.assertRaises(ValueError):
             PairwiseMatchResult(
@@ -210,15 +220,7 @@ class TestExport(unittest.TestCase):
              }
         )
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as sf:
-            source_df.to_csv(sf.name, index=False)
-            source_path = sf.name
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tf:
-            target_df.to_csv(tf.name, index=False)
-            target_path = tf.name
-
-        source = HLADataSource(source_path)
-        target = HLADataSource(target_path)
+        source, target = _generate_tmp_file_source_and_target(source_df, target_df)
 
         with self.assertRaises(ValueError):
             PairwiseMatchResult(
@@ -230,3 +232,4 @@ class TestExport(unittest.TestCase):
                 resolution="basic",
                 stream=False
             )
+
