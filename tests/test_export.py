@@ -69,7 +69,7 @@ class TestExport(unittest.TestCase):
             storage_filename=os.path.join(self.temp_dir, "match_results.csv"),
             resolution="basic",
             stream=True,
-            chunksize=2
+            chunk_size=2
         )
         # assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
@@ -87,7 +87,7 @@ class TestExport(unittest.TestCase):
             storage_filename=os.path.join(self.temp_dir, "match_results_excel_streaming.csv"),
             resolution="basic",
             stream=True,
-            chunksize=2
+            chunk_size=2
         )
         # Assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
@@ -105,7 +105,7 @@ class TestExport(unittest.TestCase):
             storage_filename=os.path.join(self.temp_dir, "match_results_excel_no_streaming.csv"),
             resolution="basic",
             stream=False,
-            chunksize=2
+            chunk_size=2
         )
         # Assert that the result is stored in memory as a DataFrame
         self.assertIsInstance(pairwise_match.result, pd.DataFrame)
@@ -122,7 +122,7 @@ class TestExport(unittest.TestCase):
             storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_streaming.csv"),
             resolution="basic",
             stream=True,
-            chunksize=2
+            chunk_size=2
         )
         # Assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
@@ -142,7 +142,7 @@ class TestExport(unittest.TestCase):
             storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_no_streaming.csv"),
             resolution="basic",
             stream=False,
-            chunksize=2
+            chunk_size=2
         )
         # Assert that the result is stored in memory as a DataFrame
         self.assertIsInstance(pairwise_match.result, pd.DataFrame)
