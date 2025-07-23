@@ -69,6 +69,7 @@ class TestExport(unittest.TestCase):
             resolution="basic",
             stream=False
         )
+        pairwise_match.run()
         # assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
         # assert content of DataFrame
@@ -89,6 +90,7 @@ class TestExport(unittest.TestCase):
             stream=True,
             chunk_size=2
         )
+        pairwise_match.run()
         # assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
         # assert exception gets thrown when trying to access the streamed df
@@ -107,6 +109,7 @@ class TestExport(unittest.TestCase):
             stream=True,
             chunk_size=2
         )
+        pairwise_match.run()
         # Assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
         # Assert exception gets thrown when trying to access the streamed DataFrame
@@ -125,6 +128,7 @@ class TestExport(unittest.TestCase):
             stream=False,
             chunk_size=2
         )
+        pairwise_match.run()
         # Assert that the result is stored in memory as a DataFrame
         self.assertIsInstance(pairwise_match.result, pd.DataFrame)
         self.assertGreater(len(pairwise_match.result), 0)  # Ensure rows are present
@@ -142,6 +146,7 @@ class TestExport(unittest.TestCase):
             stream=True,
             chunk_size=2
         )
+        pairwise_match.run()
         # Assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
         # Assert that the file contains valid rows despite malformed data
@@ -162,6 +167,7 @@ class TestExport(unittest.TestCase):
             stream=False,
             chunk_size=2
         )
+        pairwise_match.run()
         # Assert that the result is stored in memory as a DataFrame
         self.assertIsInstance(pairwise_match.result, pd.DataFrame)
         self.assertGreater(len(pairwise_match.result), 0)  # Ensure rows are present
@@ -188,7 +194,7 @@ class TestExport(unittest.TestCase):
         source, target = _generate_tmp_file_source_and_target(source_df, target_df)
 
         with self.assertRaises(ValueError):
-            PairwiseMatch(
+            pairwise_match = PairwiseMatch(
                 source=source,
                 target=target,
                 storage_filename=os.path.join(
@@ -197,6 +203,8 @@ class TestExport(unittest.TestCase):
                 resolution="basic",
                 stream=False
             )
+            pairwise_match.run()
+
 
     def test_unexpected_locus_raises(self):
         """
@@ -222,8 +230,7 @@ class TestExport(unittest.TestCase):
 
         source, target = _generate_tmp_file_source_and_target(source_df, target_df)
 
-        with self.assertRaises(ValueError):
-            PairwiseMatch(
+        pairwise_match = PairwiseMatch(
                 source=source,
                 target=target,
                 storage_filename=os.path.join(
@@ -231,5 +238,11 @@ class TestExport(unittest.TestCase):
                 ),
                 resolution="basic",
                 stream=False
-            )
+        )
+        pairwise_match.run()
 
+        # B locus match for second locus should be non-determinable -> nan
+        df = pairwise_match.to_df()
+        self.assertIsInstance(df, pd.DataFrame)
+        self.assertEqual(df.shape[0], 2)
+        self.assertTrue(pd.isna(df['B'][1]))
