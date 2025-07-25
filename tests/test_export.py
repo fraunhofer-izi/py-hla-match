@@ -206,10 +206,9 @@ class TestExport(unittest.TestCase):
             pairwise_match.run()
 
 
-    def test_unexpected_locus_raises(self):
+    def test_unexpected_locus(self):
         """
-        Patient introduces a third locus in second row (by mistake). Export
-        raises ValueError.
+        Patient introduces a third locus in second row (by mistake).
         """
         source_df = pd.DataFrame(
             {
