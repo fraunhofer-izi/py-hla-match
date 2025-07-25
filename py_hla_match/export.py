@@ -1,4 +1,5 @@
 import logging
+import os
 from itertools import zip_longest
 
 import pandas as pd
@@ -74,6 +75,13 @@ class PairwiseMatch:
         Processes data in chunks and periodically flushes results to the output file.
         """
         logger.info("Starting pairwise match result calculation...")
+
+        # check if the specified dir for results file exists (if non-default), raise error if it does not
+        result_dir = os.path.dirname(self.result_file)
+        if result_dir and not os.path.exists(result_dir):
+            raise FileNotFoundError(
+                f"Specified result directory '{result_dir}' does not exist. "
+                f"Please create it before running the matcher.")
 
         # Parse source and target data
         source_data = self.source.parse(stream=self.stream, chunk_size=self.chunk_size)
