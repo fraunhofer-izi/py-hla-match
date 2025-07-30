@@ -8,8 +8,10 @@ from py_hla_match.export import PairwiseMatch
 from py_hla_match.parser import HLADataSource
 
 
-def _generate_tmp_file_source_and_target(source_df: pd.DataFrame,
-                                         target_df: pd.DataFrame) -> tuple[HLADataSource, HLADataSource]:
+def _generate_tmp_file_source_and_target(
+        source_df: pd.DataFrame,
+        target_df: pd.DataFrame
+) -> tuple[HLADataSource, HLADataSource]:
     """
     Generate temporary files for source and target HLA data.
     """
@@ -104,7 +106,9 @@ class TestExport(unittest.TestCase):
         pairwise_match = PairwiseMatch(
             source=source,
             target=target,
-            storage_filename=os.path.join(self.temp_dir, "match_results_excel_streaming.csv"),
+            storage_filename=os.path.join(
+                self.temp_dir, "match_results_excel_streaming.csv"
+            ),
             resolution="basic",
             stream=True,
             chunk_size=2
@@ -112,7 +116,8 @@ class TestExport(unittest.TestCase):
         pairwise_match.run()
         # Assert that the generated file exists
         self.assertTrue(os.path.exists(pairwise_match.result_file))
-        # Assert exception gets thrown when trying to access the streamed DataFrame
+        # Assert exception gets thrown when trying to access the streamed
+        # DataFrame
         with self.assertRaises(ValueError):
             pairwise_match.to_df()
 
@@ -123,7 +128,9 @@ class TestExport(unittest.TestCase):
         pairwise_match = PairwiseMatch(
             source=source,
             target=target,
-            storage_filename=os.path.join(self.temp_dir, "match_results_excel_no_streaming.csv"),
+            storage_filename=os.path.join(
+                self.temp_dir, "match_results_excel_no_streaming.csv"
+            ),
             resolution="basic",
             stream=False,
             chunk_size=2
@@ -131,8 +138,10 @@ class TestExport(unittest.TestCase):
         pairwise_match.run()
         # Assert that the result is stored in memory as a DataFrame
         self.assertIsInstance(pairwise_match.result, pd.DataFrame)
-        self.assertGreater(len(pairwise_match.result), 0)  # Ensure rows are present
-        self.assertGreater(len(pairwise_match.result.columns), 0)  # Ensure loci columns are present
+        # Ensure rows are #present
+        self.assertGreater(len(pairwise_match.result), 0)
+        # Ensure loci columns are present
+        self.assertGreater(len(pairwise_match.result.columns), 0)
 
     def test_invalid_csv_streaming(self):
         """Test parsing an invalid CSV file with streaming."""
@@ -141,7 +150,9 @@ class TestExport(unittest.TestCase):
         pairwise_match = PairwiseMatch(
             source=source,
             target=target,
-            storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_streaming.csv"),
+            storage_filename=os.path.join(
+                self.temp_dir, "match_results_invalid_csv_streaming.csv"
+            ),
             resolution="basic",
             stream=True,
             chunk_size=2
@@ -152,8 +163,10 @@ class TestExport(unittest.TestCase):
         # Assert that the file contains valid rows despite malformed data
         df = pd.read_csv(pairwise_match.result_file)
         self.assertIsInstance(df, pd.DataFrame)
-        self.assertGreater(len(df), 0)  # Ensure rows are written
-        self.assertGreater(len(df.columns), 0)  # Ensure loci columns are present
+        # Ensure rows are written
+        self.assertGreater(len(df), 0)
+        # Ensure loci columns are present
+        self.assertGreater(len(df.columns), 0)
 
     def test_invalid_csv_no_streaming(self):
         """Test parsing an invalid CSV file without streaming."""
@@ -162,7 +175,9 @@ class TestExport(unittest.TestCase):
         pairwise_match = PairwiseMatch(
             source=source,
             target=target,
-            storage_filename=os.path.join(self.temp_dir, "match_results_invalid_csv_no_streaming.csv"),
+            storage_filename=os.path.join(
+                self.temp_dir, "match_results_invalid_csv_no_streaming.csv"
+            ),
             resolution="basic",
             stream=False,
             chunk_size=2
@@ -170,13 +185,22 @@ class TestExport(unittest.TestCase):
         pairwise_match.run()
         # Assert that the result is stored in memory as a DataFrame
         self.assertIsInstance(pairwise_match.result, pd.DataFrame)
-        self.assertGreater(len(pairwise_match.result), 0)  # Ensure rows are present
-        self.assertGreater(len(pairwise_match.result.columns), 0)  # Ensure loci columns are present
+        # Ensure rows are present
+        self.assertGreater(len(pairwise_match.result), 0)
+        # Ensure loci columns are present
+        self.assertGreater(len(pairwise_match.result.columns), 0)
         # Assert that errors were logged for malformed data
-        with self.assertLogs("py_hla_match.parser", level="ERROR") as log_context:
+        with self.assertLogs(
+            "py_hla_match.parser", level="ERROR"
+        ) as log_context:
             source.parse(stream=False)
-            error_logs = [record for record in log_context.output if "Encountered malformed HLA String" in record]
-            self.assertGreater(len(error_logs), 0, "Expected malformed HLA string log entries")
+            error_logs = [
+                record for record in log_context.output
+                if "Encountered malformed HLA String" in record
+            ]
+            self.assertGreater(
+                len(error_logs), 0, "Expected malformed HLA string log entries"
+            )
 
     def test_length_mismatch_raises(self):
         """
@@ -191,7 +215,9 @@ class TestExport(unittest.TestCase):
              "A2": ["A*02:01", "A*02:01", "A*02:01"]}
         )  # 3 rows
 
-        source, target = _generate_tmp_file_source_and_target(source_df, target_df)
+        source, target = _generate_tmp_file_source_and_target(
+            source_df, target_df
+        )
 
         with self.assertRaises(ValueError):
             pairwise_match = PairwiseMatch(
@@ -204,7 +230,6 @@ class TestExport(unittest.TestCase):
                 stream=False
             )
             pairwise_match.run()
-
 
     def test_unexpected_locus(self):
         """
@@ -227,7 +252,9 @@ class TestExport(unittest.TestCase):
              }
         )
 
-        source, target = _generate_tmp_file_source_and_target(source_df, target_df)
+        source, target = _generate_tmp_file_source_and_target(
+            source_df, target_df
+        )
 
         pairwise_match = PairwiseMatch(
                 source=source,
