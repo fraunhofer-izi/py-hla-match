@@ -21,7 +21,8 @@ class PairwiseMatch:
     :param source: HLADataSource for the source dataset
     :param target: HLADataSource for the target dataset
     :param storage_filename: Name of the file to store the results
-    :param resolution: Resolution of the match results, can be 'basic', 'high', or 'full'
+    :param resolution: Resolution of the match results, can be 'basic', 'high',
+        or 'full'
     :param stream: If True, results will be streamed and not stored in memory
     :param chunk_size: Size of the chunks to read from the file (if streaming)
 
@@ -49,13 +50,11 @@ class PairwiseMatch:
         self.result_file = storage_filename
         self.result = None  # Placeholder for the result DataFrame
 
-
     def run(self) -> None:
         """
         Starts the pairwise match calculation.
         """
         self.calculate_result()
-
 
     def to_df(self) -> DataFrame:
         """
@@ -64,19 +63,22 @@ class PairwiseMatch:
         :return: DataFrame containing the match results
         """
         if self.stream:
-            raise ValueError("Cannot convert to DataFrame when streaming is enabled.")
+            raise ValueError(
+                "Cannot convert to DataFrame when streaming is enabled."
+            )
         return self.result
-
 
     def calculate_result(self) -> None:
         """
         Matches individuals from source and target datasets row-wise.
         Assumes that both datasets are aligned by index.
-        Processes data in chunks and periodically flushes results to the output file.
+        Processes data in chunks and periodically flushes results to the
+            output file.
         """
         logger.info("Starting pairwise match result calculation...")
 
-        # check if the specified dir for results file exists (if non-default), raise error if it does not
+        # check if the specified dir for results file exists (if non-default),
+        # raise error if it does not
         result_dir = os.path.dirname(self.result_file)
         if result_dir and not os.path.exists(result_dir):
             raise FileNotFoundError(
@@ -84,10 +86,15 @@ class PairwiseMatch:
                 f"Please create it before running the matcher.")
 
         # Parse source and target data
-        source_data = self.source.parse(stream=self.stream, chunk_size=self.chunk_size)
-        target_data = self.target.parse(stream=self.stream, chunk_size=self.chunk_size)
+        source_data = self.source.parse(
+            stream=self.stream, chunk_size=self.chunk_size
+        )
+        target_data = self.target.parse(
+            stream=self.stream, chunk_size=self.chunk_size
+        )
 
-        # Handle non-streaming case by converting lists to single-chunk iterators
+        # Handle non-streaming case by converting lists to single-chunk
+        # iterators
         if not self.stream:
             # Flatten the lists into iterables of Individual objects
             source_data = iter(source_data)
@@ -99,26 +106,37 @@ class PairwiseMatch:
 
         buffer = []
 
-        for idx, (source_ind, target_ind) in enumerate(zip_longest(source_data, target_data, fillvalue=None)):
+        for idx, (source_ind, target_ind) in enumerate(zip_longest(
+            source_data, target_data, fillvalue=None)
+        ):
 
             if source_ind is None:
-                raise ValueError(f"source_data exhausted before target_data at index {idx}")
+                raise ValueError(
+                    f"source_data exhausted before target_data at index {idx}"
+                )
             elif target_ind is None:
-                raise ValueError(f"target_data exhausted before source_data at index {idx}")
+                raise ValueError(
+                    f"target_data exhausted before source_data at index {idx}"
+                )
 
             # Process individual objects directly
-            match_results: List[MatchResult] = multi_locus_match(source_ind, target_ind)
+            match_results: List[MatchResult] = multi_locus_match(
+                source_ind, target_ind
+            )
             row = {}
             for result in match_results:
                 locus = result.patient.locus
-                row[locus] = result.get_match_level_for_resolution(self.resolution)
+                row[locus] = result.get_match_level_for_resolution(
+                    self.resolution
+                )
                 all_loci.add(locus)
             buffer.append(row)
 
             # If buffer is full, flush to file
             if self.stream and len(buffer) >= self.chunk_size:
                 chunk_df = pd.DataFrame(buffer)
-                chunk_df = chunk_df.reindex(columns=sorted(all_loci))  # Ensure all loci are included
+                # Ensure all loci are included
+                chunk_df = chunk_df.reindex(columns=sorted(all_loci))
                 new_headers = sorted(all_loci)
                 if is_first_chunk:
                     chunk_df.to_csv(self.result_file, index=False, mode='w')
@@ -127,12 +145,26 @@ class PairwiseMatch:
                 else:
                     if current_headers != new_headers:
                         existing_data = pd.read_csv(self.result_file)
-                        existing_data = existing_data.reindex(columns=new_headers, fill_value=None)
-                        existing_data.to_csv(self.result_file, index=False, mode='w')
-                        chunk_df.to_csv(self.result_file, index=False, mode='a', header=False)
+                        existing_data = existing_data.reindex(
+                            columns=new_headers, fill_value=None
+                        )
+                        existing_data.to_csv(
+                            self.result_file, index=False, mode='w'
+                        )
+                        chunk_df.to_csv(
+                            self.result_file,
+                            index=False,
+                            mode='a',
+                            header=False
+                        )
                         current_headers = new_headers
                     else:
-                        chunk_df.to_csv(self.result_file, index=False, mode='a', header=False)
+                        chunk_df.to_csv(
+                            self.result_file,
+                            index=False,
+                            mode='a',
+                            header=False
+                        )
                 buffer = []
 
             elif not self.stream:
@@ -142,7 +174,9 @@ class PairwiseMatch:
                 if self.result is None:
                     self.result = chunk_df
                 else:
-                    self.result = pd.concat([self.result, chunk_df], ignore_index=True)
+                    self.result = pd.concat(
+                        [self.result, chunk_df], ignore_index=True
+                    )
 
         # Flush any remaining buffer to file
         if self.stream and buffer:
@@ -154,11 +188,19 @@ class PairwiseMatch:
             else:
                 if current_headers != new_headers:
                     existing_data = pd.read_csv(self.result_file)
-                    existing_data = existing_data.reindex(columns=new_headers, fill_value=None)
-                    existing_data.to_csv(self.result_file, index=False, mode='w')
-                    chunk_df.to_csv(self.result_file, index=False, mode='a', header=False)
+                    existing_data = existing_data.reindex(
+                        columns=new_headers, fill_value=None
+                    )
+                    existing_data.to_csv(
+                        self.result_file, index=False, mode='w'
+                    )
+                    chunk_df.to_csv(
+                        self.result_file, index=False, mode='a', header=False
+                    )
                 else:
-                    chunk_df.to_csv(self.result_file, index=False, mode='a', header=False)
+                    chunk_df.to_csv(
+                        self.result_file, index=False, mode='a', header=False
+                    )
 
         # Write the accumulated results to the file in non-streaming mode
         if not self.stream and self.result is not None:
