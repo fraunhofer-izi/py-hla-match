@@ -1,5 +1,8 @@
 import unittest
-from py_hla_match.exceptions import MalformedHLAStringError
+from py_hla_match.exceptions import (
+    MalformedHLAStringError,
+    EmptyHLAStringError
+)
 from py_hla_match.hla import HLA
 
 

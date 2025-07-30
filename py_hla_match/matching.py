@@ -14,7 +14,7 @@ class AlleleMatchLevel(IntEnum):
     """
     Following hla nomenclature:
     LOCUS_MISMATCH: Mismatch at a particular HLA locus
-    ALLELE_GROUP_MISMATCH: Mismatch at the goup code
+    ALLELE_GROUP_MISMATCH: Mismatch at the group code
     ALLELE_MISMATCH: Mismatch at the allele level
     ARD_MATCH: ARD level match
     SYNONYMOUS_VARIANT_MATCH: Synonymous variant match

@@ -2,11 +2,15 @@ import logging
 import re
 from .singleton import get_ard_instance
 
-from py_hla_match.exceptions import MalformedHLAStringError
+from py_hla_match.exceptions import (
+    MalformedHLAStringError,
+    EmptyHLAStringError
+)
 
 logger = logging.getLogger(__name__)
 
 # regex pattern for HLA allele string
+# TODO: class Configuration():
 NOMENCLATURE_PATTERN = re.compile(
     r"""
     ^ (?:HLA-)?
@@ -21,7 +25,7 @@ NOMENCLATURE_PATTERN = re.compile(
         $ # must match to end of string
     |
         # 2: known nan
-        (?P<nan>NA|NE|NEW|UNKNOWN|ND|NULL)
+        (?P<nan>NA|NE|NEW|UNKNOWN|ND|NULL)  # user defined
         $
     |
         # 3: anything else - trigger MalformedHLAStringError
@@ -208,7 +212,7 @@ class HLA:
                 f"contains unparsable content: '{remainder}'"
             )
         else:
-            raise MalformedHLAStringError(
+            raise EmptyHLAStringError(
                 f"HLA string '{self.allele_string}' at locus"
                 f" '{self.locus}' is empty."
             )
