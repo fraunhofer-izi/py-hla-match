@@ -41,7 +41,8 @@ class TestParser(unittest.TestCase):
 
     def test_parse_malformed_hla_strings_get_logged(self):
         """
-        Test parsing an invalid CSV file logs MalformedHLAStringError twice.
+        Test parsing an invalid CSV  file with three incorrect fields logs
+        MalformedHLAStringError exactly three times.
         """
         parser = HLADataSource(self.invalid_csv)
         with self.assertLogs(
@@ -56,7 +57,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(
             len(error_logs),
             3,
-            "Expected exactly two malformed HLA string log entries"
+            "Expected exactly three malformed HLA string log entries"
         )
 
     def test_parse_valid_excel(self):

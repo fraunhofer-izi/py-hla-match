@@ -1,274 +1,209 @@
 import logging
-from itertools import islice
+import os
+from itertools import zip_longest
 
 import pandas as pd
 
-from abc import ABC, abstractmethod
-from typing import Iterator, Union
+from typing import List
+from pandas import DataFrame
 
-from py_hla_match.matching import multi_locus_match
-from py_hla_match.models import Individual
+from py_hla_match.matching import MatchResult, multi_locus_match
+from py_hla_match.parser import HLADataSource
 
 logger = logging.getLogger(__name__)
 
 
-class BaseMatchResult(ABC):
+class PairwiseMatch:
+    """
+    Match individuals row-wise based on two data sources - > indices of source
+    to same indices of target. Will store the results in a csv file.
+
+    :param source: HLADataSource for the source dataset
+    :param target: HLADataSource for the target dataset
+    :param storage_filename: Name of the file to store the results
+    :param resolution: Resolution of the match results, can be 'basic', 'high',
+        or 'full'
+    :param stream: If True, results will be streamed and not stored in memory
+    :param chunk_size: Size of the chunks to read from the file (if streaming)
+
+    :raises ValueError: If resolution is not one of 'basic', 'high', or 'full'
+    """
 
     def __init__(self,
-                 source: Union[Iterator[Individual], str],
-                 target: Union[Iterator[Individual], str],
+                 source: HLADataSource,
+                 target: HLADataSource,
+                 storage_filename: str = "match_results.csv",
                  resolution: str = "basic",
-                 chunksize: int = 10000):
+                 stream: bool = False,
+                 chunk_size: int = 10000):
 
         if resolution not in {"basic", "high", "full"}:
             raise ValueError(
                 "Resolution must be one of: 'basic', 'high', 'full'"
             )
 
-        self.source = self._load_data(source, chunksize)
-        self.target = self._load_data(target, chunksize)
+        self.source = source
+        self.target = target
         self.resolution = resolution
-        self.chunksize = chunksize
-        self.result_file = "match_results.csv"
+        self.stream = stream
+        self.chunk_size = chunk_size
+        self.result_file = storage_filename
+        self.result = None  # Placeholder for the result DataFrame
+
+    def run(self) -> None:
+        """
+        Starts the pairwise match calculation.
+        """
         self.calculate_result()
 
-    def _load_data(
-            self,
-            data: Union[Iterator[Individual], str],
-            chunksize: int
-    ) -> Iterator[pd.DataFrame]:
-        """Loads data either from memory or a file."""
-        # Data is a file path
-        if isinstance(data, str):
-            logger.info(f"Loading data from file {data}")
-            if data.endswith(".csv"):
-                return pd.read_csv(data, chunksize=chunksize)
-            elif data.endswith(".xlsx"):
-                # excel has no chunksize and needs custom handling
-                return self._excel_chunk_iterator(data, chunksize)
-            else:
-                raise ValueError(
-                    "Unsupported file format. Must be either CSV or Excel."
-                )
-        # Data is a list of Individual objects
-        return iter(data)
-
-    @abstractmethod
-    def process_chunk(
-        self,
-        source_chunk: Iterator[Individual],
-        target_chunk: Iterator[Individual]
-    ) -> pd.DataFrame:
-        """Processes a single chunk of data."""
-        pass
-
-    def _excel_chunk_iterator(
-            self, file_path: str, chunksize: int
-    ) -> Iterator[pd.DataFrame]:
+    def to_df(self) -> DataFrame:
         """
-        Creates an iterator that reads Excel files in chunks.
+        Converts the match results to a pandas DataFrame.
 
-        Args:
-            file_path: Path to the Excel file
-            chunksize: Number of rows to read in each chunk
-
-        Returns:
-            Iterator yielding DataFrames for each chunk
+        :return: DataFrame containing the match results
         """
-        # header with column info
-        excel_info = pd.read_excel(file_path, nrows=0)
-
-        # Read the file in chunks
-        skip = 0
-        while True:
-            # skip == 0 means header
-            if skip == 0:
-                df = pd.read_excel(file_path, nrows=chunksize)
-            else:
-                # chunks need to skip header and previous rows
-                df = pd.read_excel(
-                    file_path,
-                    skiprows=range(1, skip + 1),  # header and previous rows
-                    nrows=chunksize
-                )
-                # column names from header
-                df.columns = excel_info.columns
-
-            # break at file end
-            if len(df) == 0:
-                break
-            skip += len(df)
-            yield df
+        if self.stream:
+            raise ValueError(
+                "Cannot convert to DataFrame when streaming is enabled."
+            )
+        return self.result
 
     def calculate_result(self) -> None:
-        """Processes data in chunks and writes to a file."""
-        logger.info("Starting result calculation...")
-        with open(self.result_file, "w") as f:
-            first_chunk = True
-            current_chunk = 0
-            source_individuals = list(
-                islice(
-                    self.source,
-                    self.chunksize * current_chunk,
-                    self.chunksize * (current_chunk + 1)
+        """
+        Matches individuals from source and target datasets row-wise.
+        Assumes that both datasets are aligned by index.
+        Processes data in chunks and periodically flushes results to the
+            output file.
+        """
+        logger.info("Starting pairwise match result calculation...")
+
+        # check if the specified dir for results file exists (if non-default),
+        # raise error if it does not
+        result_dir = os.path.dirname(self.result_file)
+        if result_dir and not os.path.exists(result_dir):
+            raise FileNotFoundError(
+                f"Specified result directory '{result_dir}' does not exist. "
+                f"Please create it before running the matcher.")
+
+        # Parse source and target data
+        source_data = self.source.parse(
+            stream=self.stream, chunk_size=self.chunk_size
+        )
+        target_data = self.target.parse(
+            stream=self.stream, chunk_size=self.chunk_size
+        )
+
+        # Handle non-streaming case by converting lists to single-chunk
+        # iterators
+        if not self.stream:
+            # Flatten the lists into iterables of Individual objects
+            source_data = iter(source_data)
+            target_data = iter(target_data)
+
+        all_loci = set()
+        current_headers = None
+        is_first_chunk = True
+
+        buffer = []
+
+        for idx, (source_ind, target_ind) in enumerate(zip_longest(
+            source_data, target_data, fillvalue=None)
+        ):
+
+            if source_ind is None:
+                raise ValueError(
+                    f"source_data exhausted before target_data at index {idx}"
                 )
-            )
-            target_individuals = list(
-                islice(
-                    self.target,
-                    self.chunksize * current_chunk,
-                    self.chunksize * (current_chunk + 1)
+            elif target_ind is None:
+                raise ValueError(
+                    f"target_data exhausted before source_data at index {idx}"
                 )
-            )
-            # while there are still chunks to process
-            while len(source_individuals) > 0 and len(target_individuals) > 0:
-                result = self.process_chunk(
-                    source_individuals, target_individuals
-                )
-                if first_chunk:
-                    result.to_csv(f, index=False)
-                    first_chunk = False
-                else:
-                    result.to_csv(f, index=False, header=False)
-                current_chunk += 1
-                source_individuals = list(
-                    islice(
-                        self.source,
-                        self.chunksize * current_chunk,
-                        self.chunksize * (current_chunk + 1)
-                    )
-                )
-                target_individuals = list(
-                    islice(
-                        self.target,
-                        self.chunksize * current_chunk,
-                        self.chunksize * (current_chunk + 1)
-                    )
-                )
-        return pd.read_csv(self.result_file)
 
-    def to_df(self):
-        """Loads the final result from the saved CSV."""
-        return pd.read_csv(self.result_file)
-
-    def to_csv(self, filename: str) -> None:
-        """Saves results to a CSV file."""
-        pd.read_csv(self.result_file).to_csv(filename, index=False)
-
-    def to_excel(self, filename: str) -> None:
-        """Saves results to an Excel file."""
-        pd.read_csv(self.result_file).to_excel(filename, index=False)
-
-
-class PairwiseMatchResult(BaseMatchResult):
-    """
-    Match individuals row-wise based on two data sources - > indices of source
-    to same indices of target. Use case for this result would be the
-    evaluation of an already prepared match resource for several patients, i.e.
-    in a study setting.
-    """
-
-    def process_chunk(
-            self,
-            source_chunk: Iterator[Individual],
-            target_chunk: Iterator[Individual]
-    ) -> pd.DataFrame:
-        results = []
-        for idx, source_individual in enumerate(source_chunk):
-            target_individual = target_chunk[idx]
-            match_results = multi_locus_match(
-                source_individual, target_individual
+            # Process individual objects directly
+            match_results: List[MatchResult] = multi_locus_match(
+                source_ind, target_ind
             )
             row = {}
             for result in match_results:
                 locus = result.patient.locus
-                match_level = result.get_match_level_for_resolution(
+                row[locus] = result.get_match_level_for_resolution(
                     self.resolution
                 )
-                row[locus] = match_level
-            results.append(row)
-        df = pd.DataFrame(results)
-        return df
+                all_loci.add(locus)
+            buffer.append(row)
 
+            # If buffer is full, flush to file
+            if self.stream and len(buffer) >= self.chunk_size:
+                chunk_df = pd.DataFrame(buffer)
+                # Ensure all loci are included
+                chunk_df = chunk_df.reindex(columns=sorted(all_loci))
+                new_headers = sorted(all_loci)
+                if is_first_chunk:
+                    chunk_df.to_csv(self.result_file, index=False, mode='w')
+                    current_headers = new_headers
+                    is_first_chunk = False
+                else:
+                    if current_headers != new_headers:
+                        existing_data = pd.read_csv(self.result_file)
+                        existing_data = existing_data.reindex(
+                            columns=new_headers, fill_value=None
+                        )
+                        existing_data.to_csv(
+                            self.result_file, index=False, mode='w'
+                        )
+                        chunk_df.to_csv(
+                            self.result_file,
+                            index=False,
+                            mode='a',
+                            header=False
+                        )
+                        current_headers = new_headers
+                    else:
+                        chunk_df.to_csv(
+                            self.result_file,
+                            index=False,
+                            mode='a',
+                            header=False
+                        )
+                buffer = []
 
-class BestMatchResult(BaseMatchResult):
-    """
-    Find the best match for a single source Individual across a  target
-    dataset. Streams through the target in chunks and keeps track of the
-    overall best matching donor Individual.
-    """
-
-    def __init__(self,
-                 source: Individual,
-                 target: Union[Iterator[Individual], str],
-                 resolution: str = "basic",
-                 chunksize: int = 10000):
-        # Wrap the single source Individual into a 1‐element iterator
-        self._single_source = source
-        self.source = iter([source])
-        self.target = self._load_data(target, chunksize)
-        self.resolution = resolution
-        self.chunksize = chunksize
-        self.result_file = "best_match_result.csv"
-        self.best_match_idx = None
-        self.best_match_individual = None
-        self.calculate_result()
-
-    def get_best_match(self) -> Individual:
-        """
-        Returns the best matching donor Individual.
-        """
-        return self.best_match_individual
-
-    def get_best_match_target_idx(self) -> int:
-        """
-        Returns the index of the best matching donor Individual in the target
-        dataset.
-        """
-        return self.best_match_idx
-
-    def process_chunk(self) -> pd.DataFrame:
-        # not needed, handling logic in calculate result
-        return None
-
-    def calculate_result(self) -> None:
-        """
-        Loads the target data in chunks and processes each chunk to find the
-        best match.
-        """
-        best_score = -1
-        source_ind = self._single_source
-        with open(self.result_file, "w") as f:  # noqa: F841
-            current_chunk = 0
-            target_individuals = list(
-                islice(
-                    self.target,
-                    self.chunksize * current_chunk,
-                    self.chunksize * (current_chunk + 1)
-                )
-            )
-            # track global index over all chunks
-            current_idx = 0
-            # loop will stop when new chunk is attempted to be loaded but is
-            # empty
-            while len(target_individuals) > 0:
-                for idx, target_individual in enumerate(target_individuals):
-                    match_results = multi_locus_match(
-                        source_ind, target_individual
+            elif not self.stream:
+                # If streaming is disabled, accumulate results in memory
+                chunk_df = pd.DataFrame([row])
+                chunk_df = chunk_df.reindex(columns=sorted(all_loci))
+                if self.result is None:
+                    self.result = chunk_df
+                else:
+                    self.result = pd.concat(
+                        [self.result, chunk_df], ignore_index=True
                     )
-                    score = sum(
-                        result.allele_score for result in match_results
+
+        # Flush any remaining buffer to file
+        if self.stream and buffer:
+            chunk_df = pd.DataFrame(buffer)
+            chunk_df = chunk_df.reindex(columns=sorted(all_loci))
+            new_headers = sorted(all_loci)
+            if is_first_chunk:
+                chunk_df.to_csv(self.result_file, index=False, mode='w')
+            else:
+                if current_headers != new_headers:
+                    existing_data = pd.read_csv(self.result_file)
+                    existing_data = existing_data.reindex(
+                        columns=new_headers, fill_value=None
                     )
-                    if score > best_score:
-                        best_score = score
-                        self.best_match_idx = idx
-                        self.best_match_individual = target_individual
-                current_idx += idx
-                current_chunk += 1
-                target_individuals = list(
-                    islice(
-                        self.target,
-                        self.chunksize * current_chunk,
-                        self.chunksize * (current_chunk + 1)
+                    existing_data.to_csv(
+                        self.result_file, index=False, mode='w'
                     )
-                )
+                    chunk_df.to_csv(
+                        self.result_file, index=False, mode='a', header=False
+                    )
+                else:
+                    chunk_df.to_csv(
+                        self.result_file, index=False, mode='a', header=False
+                    )
+
+        # Write the accumulated results to the file in non-streaming mode
+        if not self.stream and self.result is not None:
+            self.result.to_csv(self.result_file, index=False)
+
+        logger.info("Pairwise match result calculation completed.")
