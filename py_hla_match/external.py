@@ -2,9 +2,36 @@
 import requests
 import logging
 from enum import Enum
+from dataclasses import dataclass
+from typing import Dict, Optional
 
 # Set up logging
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DPB1TCEConfig:
+    """Configuration for DPB1 TCE API endpoints and response keys"""
+    endpoints: Dict[str, str] = None
+    response_keys: Dict[str, str] = None
+
+    def __post_init__(self):
+        if self.endpoints is None:
+            self.endpoints = {
+                "2.0": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/"
+                "dpb1_tce_v2",
+                "2.1": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/"
+                "dpb1_tce_v21",
+                "3.0": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/"
+                "dpb1_tce_v3"
+            }
+
+        if self.response_keys is None:
+            self.response_keys = {
+                "2.0": "HLA-DPB1_TCE_report_V2.0",
+                "2.1": "HLA-DPB1_TCE_report_V2.1",
+                "3.0": "HLA-DPB1_TCE_report_V3.0"
+            }
 
 
 class DPB1TCEStatus(Enum):
@@ -27,7 +54,8 @@ def query_dpb1_tce(
         donor_dpb1: str,
         donor_dpb2: str,
         version: str = "2.1",
-        timeout: int = 10
+        timeout: int = 10,
+        config: Optional[DPB1TCEConfig] = None
 ) -> DPB1TCEStatus:
     """
     Query the EBI DPB1 TCE API for T-Cell Epitope matching.
@@ -39,39 +67,29 @@ def query_dpb1_tce(
         donor_dpb2: Donor's second DPB1 allele
         version: API version - "2.0", "2.1", or "3.0"
         timeout: API request timeout in seconds
+        config: Configuration object (default if None)
 
     Returns:
         DPB1TCEStatus enum
     """
-    # API configuration
-    ENDPOINTS = {
-        "2.0": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/dpb1_tce_v2",
-        "2.1": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/dpb1_tce_v21",
-        "3.0": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/dpb1_tce_v3"
-    }
-
-    RESPONSE_KEYS = {
-        "2.0": "HLA-DPB1_TCE_report_V2.0",
-        "2.1": "HLA-DPB1_TCE_report_V2.1",
-        "3.0": "HLA-DPB1_TCE_report_V3.0"
-    }
+    if config is None:
+        config = DPB1TCEConfig()
 
     # Keys vary by version
-    # NOTE: not anymore
-    DONORS_KEY = 'donors'  # if version in ["2.1", "3.0"] else 'donor'
-    RESULT_KEY = 'result'  # if version in ["2.1", "3.0"] else 'results'
+    DONORS_KEY = 'donors'
+    RESULT_KEY = 'result'
 
     # Validate API version
-    if version not in ENDPOINTS or version not in RESPONSE_KEYS:
+    if version not in config.endpoints or version not in config.response_keys:
         logger.error(
             f"Unsupported or misconfigured API version: {version}"
-            f" must be endpoins key: {list(ENDPOINTS.keys())}"
-            f" and response key: {list(RESPONSE_KEYS.keys())}"
+            f" must be endpoints key: {list(config.endpoints.keys())}"
+            f" and response key: {list(config.response_keys.keys())}"
         )
         return DPB1TCEStatus.CONFIGURATION_ERROR
 
     # Prepare request
-    url = ENDPOINTS[version]
+    url = config.endpoints[version]
     query_params = {
         'pid': 1,
         'patdpb1': patient_dpb1,
@@ -95,15 +113,13 @@ def query_dpb1_tce(
         response_json = response.json()
 
         # Navigate to the TCE prediction
-        report = response_json.get(RESPONSE_KEYS[version], {})
+        report = response_json.get(config.response_keys[version], {})
         if not report:
             logger.error(
-                f"Key '{RESPONSE_KEYS[version]}' not found in API "
+                f"Key '{config.response_keys[version]}' not found in API "
                 "response_json."
             )
             return DPB1TCEStatus.API_ERROR
-        # NOTE: if patient is needed uncomment
-        # patient = report.get('patient', {})
 
         donors_list = report.get(DONORS_KEY, [])
 
@@ -132,7 +148,6 @@ def query_dpb1_tce(
         # normalize
         normalized_prediction = tce_prediction.strip().lower()
 
-        # TODO: might want some clinician's feedback
         EXACT_TCE_MAPPINGS = {
             "permissive": DPB1TCEStatus.PERMISSIVE,
             "permissive (core)": DPB1TCEStatus.PERMISSIVE,

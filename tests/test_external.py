@@ -2,7 +2,11 @@ import unittest
 from unittest.mock import patch, Mock
 import requests
 
-from py_hla_match.external import query_dpb1_tce, DPB1TCEStatus
+from py_hla_match.external import (
+    query_dpb1_tce,
+    DPB1TCEStatus,
+    DPB1TCEConfig
+)
 
 
 class TestDPB1TCE(unittest.TestCase):
@@ -254,6 +258,120 @@ class TestDPB1TCE(unittest.TestCase):
 
         result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
         self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+    @patch('requests.get')
+    def test_none_input_parameters(self, mock_get):
+        """Test handling of None inputs"""
+        mock_get.side_effect = requests.RequestException(
+            "Invalid parameter"
+        )
+        result = query_dpb1_tce(None, "01:01", "02:01", "03:01")
+        self.assertEqual(result, DPB1TCEStatus.REQUEST_ERROR)
+
+    @patch('requests.get')
+    def test_empty_string_inputs(self, mock_get):
+        """Test handling of empty string inputs - API may reject these"""
+        mock_get.side_effect = requests.RequestException(
+            "Invalid allele format"
+        )
+        result = query_dpb1_tce("", "01:01", "02:01", "03:01")
+        self.assertEqual(result, DPB1TCEStatus.REQUEST_ERROR)
+
+    @patch('requests.get')
+    def test_whitespace_in_api_response(self, mock_get):
+        """Test API response with extra whitespace"""
+        mock_response = Mock()
+        mock_response.json.return_value = self.create_mock_response(
+            "  Permissive  "
+        )
+        mock_get.return_value = mock_response
+
+        result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
+        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+    @patch('requests.get')
+    def test_uppercase_api_response(self, mock_get):
+        """Test API response in uppercase"""
+        mock_response = Mock()
+        mock_response.json.return_value = self.create_mock_response(
+            "PERMISSIVE"
+        )
+        mock_get.return_value = mock_response
+
+        result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
+        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+    @patch('requests.get')
+    def test_empty_tce_prediction_string(self, mock_get):
+        """Test empty string vs None tce_prediction"""
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "HLA-DPB1_TCE_report_V2.1": {
+                'donors': [{
+                    'result': {
+                        'tce_prediction': ""  # Empty string
+                    }
+                }]
+            }
+        }
+        mock_get.return_value = mock_response
+
+        result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
+        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
+
+    @patch('requests.get')
+    def test_missing_result_key(self, mock_get):
+        """Test missing 'result' key in donor object"""
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "HLA-DPB1_TCE_report_V2.1": {
+                'donors': [{}]  # No 'result' key
+            }
+        }
+        mock_get.return_value = mock_response
+
+        result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
+        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
+
+    @patch('requests.get')
+    def test_multiple_donors_uses_first(self, mock_get):
+        """Test that function uses first donor when multiple present"""
+        mock_response = Mock()
+        mock_response.json.return_value = {
+            "HLA-DPB1_TCE_report_V2.1": {
+                'donors': [
+                    {'result': {'tce_prediction': 'Permissive'}},
+                    # Should be ignored
+                    {'result': {'tce_prediction': 'Non-Permissive GvH'}}
+                ]
+            }
+        }
+        mock_get.return_value = mock_response
+
+        result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
+        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+    def test_custom_configuration(self):
+        """Test custom configuration object"""
+        custom_config = DPB1TCEConfig(
+            endpoints={"2.1": "https://custom.api.com/dpb1"},
+            response_keys={"2.1": "custom_response_key"}
+        )
+
+        # This should not cause configuration error
+        with patch('requests.get') as mock_get:
+            mock_response = Mock()
+            mock_response.json.return_value = {
+                "custom_response_key": {
+                    'donors': [{'result': {'tce_prediction': 'Permissive'}}]
+                }
+            }
+            mock_get.return_value = mock_response
+
+            result = query_dpb1_tce(
+                "01:01", "02:01", "03:01", "04:01", config=custom_config
+            )
+            self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
 
 
 if __name__ == '__main__':
