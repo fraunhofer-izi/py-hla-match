@@ -48,7 +48,9 @@ class PairwiseMatch:
         self.stream = stream
         self.chunk_size = chunk_size
         self.result_file = storage_filename
+        self.raw_results = []  # Placeholder for raw results
         self.result = None  # Placeholder for the result DataFrame
+        self._result_buffer = []
 
     def run(self) -> None:
         """
@@ -67,6 +69,32 @@ class PairwiseMatch:
                 "Cannot convert to DataFrame when streaming is enabled."
             )
         return self.result
+
+    def raw_to_df(self) -> pd.DataFrame:
+        """
+        Return one row per patient–donor pair containing the per-allele
+        match levels.
+
+        Columns are named <locus>_1 and <locus>_2, e.g.  A_1, A_2, B_1, B_2 …
+        """
+        rows = []
+        all_cols = set()
+
+        for pair_idx, match_list in enumerate(self.raw_results):
+            row = {"pair": pair_idx}
+            for res in match_list:
+                locus = res.patient.locus
+                allele_lvl_1, allele_lvl_2 = res.allele_match_levels
+                col_1 = f"{locus}_1"
+                col_2 = f"{locus}_2"
+                row[col_1] = allele_lvl_1.name
+                row[col_2] = allele_lvl_2.name
+                all_cols.update([col_1, col_2])
+            rows.append(row)
+
+        df = pd.DataFrame(rows)
+        ordered_cols = sorted(all_cols)
+        return df.reindex(columns=ordered_cols)
 
     def calculate_result(self) -> None:
         """
@@ -123,6 +151,7 @@ class PairwiseMatch:
             match_results: List[MatchResult] = multi_locus_match(
                 source_ind, target_ind
             )
+            self.raw_results.append(match_results)
             row = {}
             for result in match_results:
                 locus = result.patient.locus
