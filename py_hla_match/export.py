@@ -198,14 +198,7 @@ class PairwiseMatch:
 
             elif not self.stream:
                 # If streaming is disabled, accumulate results in memory
-                chunk_df = pd.DataFrame([row])
-                chunk_df = chunk_df.reindex(columns=sorted(all_loci))
-                if self.result is None:
-                    self.result = chunk_df
-                else:
-                    self.result = pd.concat(
-                        [self.result, chunk_df], ignore_index=True
-                    )
+                self._result_buffer.append(row)
 
         # Flush any remaining buffer to file
         if self.stream and buffer:
@@ -232,7 +225,11 @@ class PairwiseMatch:
                     )
 
         # Write the accumulated results to the file in non-streaming mode
-        if not self.stream and self.result is not None:
+        if not self.stream and self._result_buffer:
+            self.result = pd.DataFrame(self._result_buffer)
+            self.result = self.result.reindex(
+                columns=sorted(all_loci), fill_value=None
+            )
             self.result.to_csv(self.result_file, index=False)
 
         logger.info("Pairwise match result calculation completed.")
