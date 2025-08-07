@@ -206,11 +206,11 @@ class HLA:
             self.group_code = match.group('group_code')
             if self.group_code == 'G' and allele_fields.count(':') != 2:
                 raise MalformedHLAStringError(
-                    f"'{self.allele_string}' – 'G' group needs ≥3 fields."
+                    f"'{self.allele_string}' – 'G' group must have 3 fields."
                 )
             if self.group_code == 'P' and allele_fields.count(':') != 1:
                 raise MalformedHLAStringError(
-                    f"'{self.allele_string}' – 'P' group needs ≥2 fields."
+                    f"'{self.allele_string}' – 'P' group must have 2 fields."
                 )
             # extract details from allele fields
             field_contents = allele_fields.split(':')
