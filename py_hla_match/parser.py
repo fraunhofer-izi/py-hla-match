@@ -3,8 +3,11 @@ from collections import defaultdict
 from typing import Iterable, Union
 from openpyxl import load_workbook
 
-from py_hla_match.exceptions import MalformedHLAStringError, \
+from py_hla_match.exceptions import (
+    MalformedHLAStringError,
     MalformedHLADataSourceError
+)
+from pyard.exceptions import InvalidAlleleError
 from py_hla_match.hla import HLA
 from py_hla_match.models import Individual, HLAPair
 
@@ -153,6 +156,12 @@ class HLADataSource:
                     f'row {idx}. Skipping Allele.'
                 )
                 continue
+            except InvalidAlleleError:
+                logger.error(
+                    f'Encountered invalid HLA Allele {hla_string} in '
+                    f'row {idx}. Skipping Allele.'
+                )
+                continue
 
         for locus, alleles in locus_map.items():
             if len(alleles) > 2:
@@ -196,6 +205,12 @@ class HLADataSource:
                     logger.error(
                         f'Encountered malformed HLA String {hla_string} in row'
                         f' {idx}. Skipping Allele.'
+                    )
+                    continue
+                except InvalidAlleleError:
+                    logger.error(
+                        f'Encountered invalid HLA Allele {hla_string} in '
+                        f'row {idx}. Skipping Allele.'
                     )
                     continue
             # now: Match HLA pairs based on locus
