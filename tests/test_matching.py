@@ -1,9 +1,12 @@
-from typing import List
 import unittest
 
 from py_hla_match.hla import HLA
 from py_hla_match.matching import (
-    allele_match, allele_pair_match, AlleleMatchLevel, MatchResult,
+    allele_match,
+    _get_correct_allele_pairing,
+    allele_pair_match,
+    AlleleMatchLevel,
+    MatchResult,
     multi_locus_match
 )
 from py_hla_match.exceptions import (
@@ -151,44 +154,44 @@ class TestAlleleMatch(unittest.TestCase):
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_valid_ard_match_with_Q_suffix(self):
+    def test_not_applicable_with_Q_suffix(self):
         """
         Test Case: ARD match with Q suffix
         Allele 1: A*01:436Q
         Allele 2: A*01:01:70
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: NOT_APPLICABLE
         """
         allele1 = HLA("A*01:436Q")
         allele2 = HLA("A*01:01:70")
-        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_valid_ard_match_with_L_suffix(self):
+    def test_valid_allele_mismatch_with_L_suffix(self):
         """
         Test Case: ARD match with L suffix
         Allele 1: B*38:68L
         Allele 2: B*38:01P
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: ALLELE_MISMATCH (2)
         """
         allele1 = HLA("B*38:68L")
         allele2 = HLA("B*38:01P")
-        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        expected_match_level = AlleleMatchLevel.ALLELE_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_valid_ard_match_with_N_suffix(self):
+    def test_valid_allele_mismatch_with_N_suffix(self):
         """
         Test Case: ARD match with N suffix
         Allele 1: C*03:693
         Allele 2: C*03:20N
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: ALLELE_MISMATCH (2)
         """
         # TODO: external validation of correct logic required
         # currently resolved to ARD_MATCH, solely relying on py-ard
         allele1 = HLA("C*03:693")
         allele2 = HLA("C*03:20N")
-        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        expected_match_level = AlleleMatchLevel.ALLELE_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -218,6 +221,159 @@ class TestAlleleMatch(unittest.TestCase):
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
+    def test_not_applicable_due_to_nan(self):
+        """
+        Test Case: missing allele data *NE
+        Allele 1: A*NE
+        Allele 2: A*01:01
+        Expected Match Level: NOT_APPLICABLE
+        """
+        allele1 = HLA("A*NE")
+        allele2 = HLA("A*01:01")
+        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+    def test_one_field_vs_two_field_same_group_not_applicable(self):
+        """
+        Test Case: 1-field vs 2-field with same group
+        Allele 1: B*07
+        Allele 2: B*07:05
+        Expected Match Level: NOT_APPLICABLE
+        """
+        allele1 = HLA("B*07")
+        allele2 = HLA("B*07:05")
+        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+    def test_allele_group_mismatch_with_one_field(self):
+        """
+        Test Case: 1-field vs 1-field with different groups
+        Allele 1: C*01
+        Allele 2: C*02
+        Expected Match Level: ALLELE_GROUP_MISMATCH
+        """
+        allele1 = HLA("C*01")
+        allele2 = HLA("C*02")
+        expected_match_level = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+    def test_not_applicable_with_suffix_Q(self):
+        """
+        Test Case: Suffix does match beyond ARD_MATCH
+        Allele 1: A*24:473Q
+        Allele 2: A*02:99
+        Expected Match Level: ARD_MATCH
+        """
+        allele1 = HLA("A*24:473Q")
+        allele2 = HLA("A*24:02P")
+        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+    def test_ard_match_with_different_group_codes(self):
+        """
+        Test Case: ARD match with G vs P group-codes
+        Allele 1: A*01:02P
+        Allele 2: A*01:02:01G
+        Expected Match Level: ARD_MATCH
+        """
+        allele1 = HLA("A*01:02P")
+        allele2 = HLA("A*01:02:01G")
+        expected_match_level = AlleleMatchLevel.ARD_MATCH
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+    def test_synonymous_vs_full_variant(self):
+        """
+        Test Case: 3-field vs 4-field with equal synonymous variant
+        Allele 1: DQA1*01:01:02
+        Allele 2: DQA1*01:01:02:07
+        Expected Match Level: SYNONYMOUS_VARIANT_MATCH
+        """
+        allele1 = HLA("DQA1*01:01:02")
+        allele2 = HLA("DQA1*01:01:02:07")
+        expected_match_level = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        result = allele_match(allele1, allele2)
+        self.assertEqual(result, expected_match_level)
+
+
+class TestGetCorrectAllelePairing(unittest.TestCase):
+    def test_tie_on_score_keeps_first_pairing(self):
+        """
+        Test Case: Tie on pairing score
+        Patient Alleles: A*01:01:01:01, A*02:01
+        Donor Alleles:   A*01:01:01:01, A*01:01:01:01
+        Expected Pairing Levels: (allele_match(p1, d1), allele_match(p2, d2))
+        Expected Best Score: sum(expected_pairing_levels)
+        """
+        p1, p2 = HLA("A*01:01:01:01"), HLA("A*02:01")
+        d1, d2 = HLA("A*01:01:01:01"), HLA("A*01:01:01:01")
+        patient = HLAPair(p1, p2)
+        donor = HLAPair(d1, d2)
+
+        best_score, chosen_pairing = \
+            _get_correct_allele_pairing(patient, donor)
+
+        expected_pairing = (
+            allele_match(p1, d1),
+            allele_match(p2, d2),
+        )
+        self.assertEqual(chosen_pairing, expected_pairing)
+        self.assertEqual(best_score, sum(expected_pairing))
+
+    def test_all_not_applicable_pairing_score(self):
+        """
+        Test Case: NOT_APPLICABLE twice
+        Patient Alleles: B*NA, B*NA
+        Donor Alleles:   B*NA, B*NA
+        Expected Best Score: AlleleMatchLevel.NOT_APPLICABLE * 2
+        Expected Pairing Levels:
+            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE)
+        """
+        p1 = p2 = HLA("B*NA")
+        d1 = d2 = HLA("B*NA")
+        patient = HLAPair(p1, p2)
+        donor = HLAPair(d1, d2)
+
+        best_score, levels = _get_correct_allele_pairing(patient, donor)
+
+        self.assertEqual(best_score, AlleleMatchLevel.NOT_APPLICABLE * 2)
+        self.assertEqual(
+            levels,
+            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE),
+        )
+
+    def test_pairing_prefers_lower_negative_penalty(self):
+        """
+        Test Case: Two possible pairings – one sums to 0, the other to +1.
+        """
+        p = HLAPair(HLA("B*07"),     HLA("B*07:02"))
+        d = HLAPair(HLA("B*07:02"),  HLA("B*07"))
+
+        best_score, levels = _get_correct_allele_pairing(p, d)
+        self.assertEqual(best_score, 1)
+        self.assertEqual(
+            levels,
+            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.ARD_MATCH)
+        )
+
+    def test_correct_pairing_with_ambiguous_alleles(self):
+        """
+        Test Case: pairing prefers NOT_APPLICABLE over any mismatch
+        """
+        p = HLAPair(HLA("B*07"),     HLA("B*01"))
+        d = HLAPair(HLA("B*07"),  HLA("B*01"))
+
+        best_score, levels = _get_correct_allele_pairing(p, d)
+        self.assertEqual(best_score, 0)
+        self.assertEqual(
+            levels,
+            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE)
+        )
+
 
 class TestAllelePairMatch(unittest.TestCase):
     def test_valid_match_without_swapping(self):
@@ -239,12 +395,12 @@ class TestAllelePairMatch(unittest.TestCase):
         result = allele_pair_match(patient, donor)
 
         expected_score = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH * 2
-        expected_match_levels = [
+        expected_match_levels = (
             AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
             AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        ]
+        )
 
-        self.assertEqual(result.allele_score, expected_score)
+        self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_match_levels)
 
     def test_valid_match_with_suffixes_G_and_P(self):
@@ -266,12 +422,12 @@ class TestAllelePairMatch(unittest.TestCase):
         result = allele_pair_match(patient, donor)
 
         expected_score = AlleleMatchLevel.ARD_MATCH * 2
-        expected_match_levels = [
+        expected_match_levels = (
             AlleleMatchLevel.ARD_MATCH,
             AlleleMatchLevel.ARD_MATCH
-        ]
+        )
 
-        self.assertEqual(result.allele_score, expected_score)
+        self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_match_levels)
 
     def test_valid_match_with_swapping(self):
@@ -294,13 +450,13 @@ class TestAllelePairMatch(unittest.TestCase):
 
         result = allele_pair_match(patient, donor)
 
-        expected_match_levels = [
+        expected_match_levels = (
             AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
             AlleleMatchLevel.ARD_MATCH
-        ]
+        )
         expected_score = sum(expected_match_levels)
 
-        self.assertEqual(result.allele_score, expected_score)
+        self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(
             result.allele_match_levels,
             expected_match_levels
@@ -325,12 +481,12 @@ class TestAllelePairMatch(unittest.TestCase):
         result = allele_pair_match(patient, donor)
 
         expected_score = AlleleMatchLevel.ALLELE_MISMATCH * 2
-        expected_match_levels = [
+        expected_match_levels = (
             AlleleMatchLevel.ALLELE_MISMATCH,
             AlleleMatchLevel.ALLELE_MISMATCH
-        ]
+        )
 
-        self.assertEqual(result.allele_score, expected_score)
+        self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_match_levels)
 
     def test_valid_allele_group_mismatch_and_allele_mismatch_swapping(self):
@@ -351,13 +507,13 @@ class TestAllelePairMatch(unittest.TestCase):
 
         result = allele_pair_match(patient, donor)
 
-        expected_match_levels = [
+        expected_match_levels = (
             AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
             AlleleMatchLevel.ALLELE_MISMATCH
-        ]
+        )
         expected_score = sum(expected_match_levels)
 
-        self.assertEqual(result.allele_score, expected_score)
+        self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_match_levels)
 
     def test_valid_ard_match_and_allele_mismatch_swapping(self):
@@ -377,14 +533,112 @@ class TestAllelePairMatch(unittest.TestCase):
 
         result = allele_pair_match(patient, donor)
 
-        expected_match_levels = [
+        expected_match_levels = (
             AlleleMatchLevel.ARD_MATCH,
             AlleleMatchLevel.ALLELE_MISMATCH
-        ]
+        )
         expected_score = sum(expected_match_levels)
 
-        self.assertEqual(result.allele_score, expected_score)
+        self.assertEqual(result.pairing_score, expected_score)
         self.assertEqual(result.allele_match_levels, expected_match_levels)
+
+    def test_homozygous_patient_flag_true(self):
+        """
+        Test Case: Patient homozygous
+        Patient Alleles: C*03:04:01, C*03:04:01
+        Donor Alleles:   C*03:04:01, C*04:01:01
+        Expected: is_homozygous_patient == True
+        """
+        allele1 = HLA("C*03:04:01")
+        allele2 = HLA("C*03:04:01")
+        allele3 = HLA("C*03:04:01")
+        allele4 = HLA("C*04:01:01")
+        patient = HLAPair(allele1, allele2)
+        donor = HLAPair(allele3, allele4)
+
+        result = allele_pair_match(patient, donor)
+        self.assertTrue(result.is_homozygous_patient)
+
+    def test_negative_score_when_not_applicable(self):
+        """
+        Test Case: Both comparisons NOT_APPLICABLE
+        Patient Alleles: E*NE, E*NE
+        Donor Alleles:   E*NE, E*NE
+        Expected Pairing Score: AlleleMatchLevel.NOT_APPLICABLE * 2
+        Expected Match Levels: (NOT_APPLICABLE, NOT_APPLICABLE)
+        """
+        na1 = HLA("E*NE")
+        na2 = HLA("E*NE")
+        na3 = HLA("E*NE")
+        na4 = HLA("E*NE")
+        patient = HLAPair(na1, na2)
+        donor = HLAPair(na3, na4)
+
+        result = allele_pair_match(patient, donor)
+
+        expected_score = AlleleMatchLevel.NOT_APPLICABLE * 2
+        expected_levels = (
+            AlleleMatchLevel.NOT_APPLICABLE,
+            AlleleMatchLevel.NOT_APPLICABLE
+        )
+
+        self.assertEqual(result.pairing_score, expected_score)
+        self.assertEqual(result.allele_match_levels, expected_levels)
+
+    def test_equal_null_suffix_returns_not_applicable(self):
+        """
+        Case: two alleles, with risk suffix 'N'
+        Allele-1: A*24:09N
+        Allele-2: A*24:23N
+        Expected: NOT_APPLICABLE
+        """
+        allele1 = HLA("A*24:09N")
+        allele2 = HLA("A*24:09N")
+        self.assertEqual(
+            allele_match(allele1, allele2),
+            AlleleMatchLevel.NOT_APPLICABLE
+        )
+
+    def test_identical_g_group_codes_caps_at_ard_match(self):
+        """
+        Case: both alleles have 'G' group-code
+        Allele-1: DQB1*06:02:01G
+        Allele-2: DQB1*06:02:02G
+        Expected: ARD_MATCH (3)
+        """
+        a1 = HLA("DQB1*06:02:01G")
+        a2 = HLA("DQB1*06:02:02G")
+        self.assertEqual(allele_match(a1, a2), AlleleMatchLevel.ARD_MATCH)
+
+    def test_invalid_single_field_p_group_raises(self):
+        """
+        Case: 'P' group with only one numeric field
+        Allele: DQA1*05P
+        Expected: MalformedHLAStringError during parsing.
+        """
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("DQA1*05P")
+
+    # TODO: this test is currently not satisfied and will be fixed in the
+    # future
+    # def test_compressed_allele_without_colon_is_rejected(self):
+    #     """
+    #     Case: historical 'compressed' notation without ':'
+    #     Allele: A*0101
+    #     Expected: MalformedHLAStringError.
+    #     """
+    #     with self.assertRaises(MalformedHLAStringError):
+    #         HLA("A*0101")
+
+    def test_non_breaking_space_is_rejected(self):
+        """
+        Case: allele string contains a non-breaking space (NBSP, U+00A0)
+        Allele: 'A*01:01\u00A0'
+        Expected: MalformedHLAStringError.
+        """
+        bad = "A*01:01\u00A0"
+        with self.assertRaises(MalformedHLAStringError):
+            HLA(bad)
 
     def test_allele_pair_match_propagates_exceptions(self):
         """
@@ -427,7 +681,7 @@ class TestAllelePairMatch(unittest.TestCase):
 dummy_MatchResult = MatchResult(
                     patient=HLAPair(hla1=HLA('A*01:01'), hla2=HLA('A*01:01')),
                     donor=HLAPair(hla1=HLA('A*01:01'), hla2=HLA('A*01:01')),
-                    score=0,
+                    pairing_score=0,
                     allele_match_levels=[
                         AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH
                     ]
@@ -1065,6 +1319,9 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
             f"{type(level2)}."
         )
 
+
+class TestMultiLocusMatch(unittest.TestCase):
+
     def test_multi_locus_match(self):
         """
         Test match results for multiple pairs of alleles stored in an
@@ -1098,17 +1355,17 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
 
         self.assertEqual(
             result[0].allele_match_levels,
-            [
+            (
                 AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
                 AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-            ]
+            )
         )
         self.assertEqual(
             result[1].allele_match_levels,
-            [
+            (
                 AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
                 AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-            ]
+            )
         )
 
     def test_multi_locus_match_missing_donor_locus(self):
@@ -1141,19 +1398,56 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
 
         # check if correct warning were raised during execution
         with self.assertLogs("py_hla_match.matching", level="WARNING") as cm:
-            result: List[MatchResult] = multi_locus_match(patient, donor)
-            self.assertEqual(len(cm.output), 1)
-            self.assertEqual(
+            result = multi_locus_match(patient, donor)
+            self.assertEqual(len(cm.output), 2)
+            self.assertIn(
+                "matching will be reported as NOT_APPLICABLE",
                 cm.output[0],
-                "WARNING:py_hla_match.matching:Locus B not found in donor data"
-                " and will be excluded from the results.",
             )
 
-        # result should now only contain a single matched locus
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].allele_match_levels,
-                         [AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-                          AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(
+            result[0].allele_match_levels,
+            (
+                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+            )
+        )
+
+    def test_donor_extra_locus_is_ignored(self):
+        # patient: locus A only
+        patient_pair = HLAPair(HLA("A*01:01"), HLA("A*01:01"))
+        patient = Individual([patient_pair])
+
+        # donor: locus A + extra locus B
+        donor_pair_a = HLAPair(HLA("A*01:01"), HLA("A*01:01"))
+        donor_pair_b = HLAPair(HLA("B*07:02"), HLA("B*07:02"))
+        donor = Individual([donor_pair_a, donor_pair_b])
+
+        result = multi_locus_match(patient, donor)
+        self.assertEqual(len(result), 1)            # only locus A evaluated
+        self.assertEqual(result[0].patient.locus, "A")
+
+    def test_insufficient_resolution_logs_warning(self):
+        patient_pair = HLAPair(HLA("C*NA"), HLA("C*NA"))
+        donor_pair = HLAPair(HLA("C*01:02"), HLA("C*01:02"))
+        patient = Individual([patient_pair])
+        donor = Individual([donor_pair])
+
+        with self.assertLogs("py_hla_match.matching", level="WARNING") as cm:
+            result = multi_locus_match(patient, donor)
+
+        # at least one warning about insufficient resolution
+        self.assertTrue(
+            any("insufficient" in msg.lower() for msg in cm.output)
+        )
+        self.assertEqual(
+            result[0].allele_match_levels,
+            (
+                AlleleMatchLevel.NOT_APPLICABLE,
+                AlleleMatchLevel.NOT_APPLICABLE
+            ),
+        )
 
 
 if __name__ == "__main__":

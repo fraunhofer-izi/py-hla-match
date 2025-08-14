@@ -242,6 +242,39 @@ class TestHLA(unittest.TestCase):
         with self.assertRaises(MalformedHLAStringError):
             HLA("HLA-A*02:01X:01")
 
+    def test_invalid_unknown_locus(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("Z*01:01")
+
+    def test_invalid_lower_case_locus(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("a*01:01")
+
+    def test_invalid_lower_case_prefix(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("hla-A*01:01")
+
+    def test_invalid_locus_only_string(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*")
+
+    def test_invalid_single_digit_field(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*1:01")
+
+    def test_invalid_multiple_asterisks(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*01*01")
+
+    def test_invalid_tab_whitespace(self):
+        # \t erzeugt internes Whitespace
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*\t01:01")
+
+    def test_invalid_newline_whitespace(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*01:\n01")
+
     def test_invalid_group_code_and_suffix_combinations(self):
         invalid_combinations = [
                 "DQB1*06:02:01GN",
@@ -262,6 +295,14 @@ class TestHLA(unittest.TestCase):
                 with self.assertRaises(MalformedHLAStringError):
                     HLA(hla_string)
 
+    def test_invalid_four_field_g_group(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("C*07:02:01:01G")
+
+    def test_invalid_three_field_p_group(self):
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("A*02:01:01P")
+
     def test_nan_logs_info(self):
         """Test known nan log info."""
         with self.assertLogs('py_hla_match.hla', level='INFO') as captured:
@@ -279,9 +320,18 @@ class TestHLA(unittest.TestCase):
         # locus still extracted correctly
         self.assertEqual(hla.locus, 'A')
 
-    def test_invalid_hla_with_empty_fields(self):
-        with self.assertRaises(EmptyHLAStringError):
-            HLA("HLA-A*")
+    def test_all_known_nan_tokens(self):
+        NAN_TOKENS = ["NA", "NEW", "UNKNOWN", "ND", "NULL"]
+        for token in NAN_TOKENS:
+            with self.subTest(token=token):
+                with self.assertLogs('py_hla_match.hla', level='INFO') as log:
+                    hla = HLA(f"A*{token}")
+                self.assertEqual(hla.locus, "A")
+                self.assertEqual(hla.has_resolution_level(), 0)
+                self.assertTrue(
+                    any(token in msg for msg in log.output),
+                    f"Expected error message for {token} is missing."
+                )
 
     def test_repr(self):
         hla = HLA("HLA-A*32:11Q")
