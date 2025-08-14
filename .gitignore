@@ -76,7 +76,7 @@ py_hla_match/main.py
 
 # data files
 tests/resources/real_data
-demo/data
+demo
 
 # output files
 output

@@ -144,8 +144,8 @@ class HLA:
         )
 
     def __new__(cls, allele_string: str):
-        """Thread-safe factory method with caching"""
-        # Thread-safe cache check and insertion
+        """Thread-safe caching"""
+        # Thread-safe caching
         with cls._cache_lock:
             if allele_string in cls._cache:
                 return cls._cache[allele_string]
@@ -326,7 +326,7 @@ class HLA:
             if len(field_contents) > 1:
                 allele = field_contents[1]
 
-        # Thread-safe cache insertion and attribute setting
+        # Thread-safe caching
         with self._redux_cache_lock:
             # Double-check pattern: another thread might have computed this
             # while we were working

@@ -72,10 +72,9 @@ class PairwiseMatch:
 
     def raw_to_df(self) -> pd.DataFrame:
         """
-        Return one row per patient–donor pair containing the per-allele
-        match levels.
+        Converts the raw allele match results to a pandas DataFrame.
 
-        Columns are named <locus>_1 and <locus>_2, e.g.  A_1, A_2, B_1, B_2 …
+        Columns are named <locus>_1 and <locus>_2.
         """
         rows = []
         all_cols = set()
