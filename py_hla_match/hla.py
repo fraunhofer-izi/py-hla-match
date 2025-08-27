@@ -1,5 +1,6 @@
 import logging
 import re
+import threading
 from .singleton import get_ard_instance
 
 from py_hla_match.exceptions import (
@@ -102,6 +103,11 @@ DRB345_SUB_LOCI = {
 
 
 class HLA:
+    _cache = {}
+    _redux_cache = {}
+    _cache_lock = threading.RLock()
+    _redux_cache_lock = threading.RLock()
+
     __slots__ = (
         # original allele string
         'allele_string',
@@ -137,7 +143,22 @@ class HLA:
             f"{self.__class__.__name__} instances are immutable"
         )
 
+    def __new__(cls, allele_string: str):
+        """Thread-safe caching"""
+        # Thread-safe caching
+        with cls._cache_lock:
+            if allele_string in cls._cache:
+                return cls._cache[allele_string]
+
+            # Create new instance only if not cached
+            instance = super().__new__(cls)
+            cls._cache[allele_string] = instance
+            return instance
+
     def __init__(self, allele_string: str) -> None:
+        # Skip initialization if already initialized (cached object)
+        if hasattr(self, '_locked') and self._locked:
+            return
         super().__setattr__('allele_string', allele_string)
         # set None as default for missing slot members
         for attr in self.__slots__:
@@ -185,11 +206,11 @@ class HLA:
             self.group_code = match.group('group_code')
             if self.group_code == 'G' and allele_fields.count(':') != 2:
                 raise MalformedHLAStringError(
-                    f"'{self.allele_string}' – 'G' group needs ≥3 fields."
+                    f"'{self.allele_string}' – 'G' group must have 3 fields."
                 )
             if self.group_code == 'P' and allele_fields.count(':') != 1:
                 raise MalformedHLAStringError(
-                    f"'{self.allele_string}' – 'P' group needs ≥2 fields."
+                    f"'{self.allele_string}' – 'P' group must have 2 fields."
                 )
             # extract details from allele fields
             field_contents = allele_fields.split(':')
@@ -271,28 +292,60 @@ class HLA:
         return locus in VALID_HLA_LOCI
 
     def _ard_redux(self):
-        """
-        Reduce Allele to 2 field ARD level using the wonderful py-ard package
-        For further information: https://github.com/nmdp-bioinformatics/py-ard
-        """
-        ard = get_ard_instance()
+        """Thread-safe ARD redux with caching"""
         redux_type = 'lgx'
-        self.ard_redux_allele_string = ard.redux(
-            self.allele_string, redux_type
-        ).strip()
-        match = REDUX_PATTERN.match(self.ard_redux_allele_string)
+        cache_key = (self.allele_string, redux_type)
+
+        # Thread-safe cache check
+        with self._redux_cache_lock:
+            if cache_key in self._redux_cache:
+                cached_result = self._redux_cache[cache_key]
+                self.ard_redux_allele_string = cached_result['redux_string']
+                self.ard_redux_allele_group = cached_result['allele_group']
+                self.ard_redux_allele = cached_result['allele']
+                return
+
+        ard = get_ard_instance()
+        redux_string = ard.redux(self.allele_string, redux_type).strip()
+
+        # Parse the result
+        match = REDUX_PATTERN.match(redux_string)
         if not match:
             raise MalformedHLAStringError(
                 "py-ard reports unexpected string not matching regex "
-                f"'{self.ard_redux_allele_string}'."
+                f"'{redux_string}'."
             )
+
+        allele_group = None
+        allele = None
         if match:
             allele_fields = match.group('allele_fields')
             field_contents = allele_fields.split(':')
             if len(field_contents) > 0:
-                self.ard_redux_allele_group = field_contents[0]
+                allele_group = field_contents[0]
             if len(field_contents) > 1:
-                self.ard_redux_allele = field_contents[1]
+                allele = field_contents[1]
+
+        # Thread-safe caching
+        with self._redux_cache_lock:
+            # Double-check pattern: another thread might have computed this
+            # while we were working
+            if cache_key in self._redux_cache:
+                cached_result = self._redux_cache[cache_key]
+                self.ard_redux_allele_string = cached_result['redux_string']
+                self.ard_redux_allele_group = cached_result['allele_group']
+                self.ard_redux_allele = cached_result['allele']
+            else:
+                # We're the first to compute this, cache it
+                self.ard_redux_allele_string = redux_string
+                self.ard_redux_allele_group = allele_group
+                self.ard_redux_allele = allele
+
+                self._redux_cache[cache_key] = {
+                    'redux_string': redux_string,
+                    'allele_group': allele_group,
+                    'allele': allele
+                }
 
     def has_resolution_level(self) -> int:
         """

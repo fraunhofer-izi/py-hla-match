@@ -48,7 +48,9 @@ class PairwiseMatch:
         self.stream = stream
         self.chunk_size = chunk_size
         self.result_file = storage_filename
+        self.raw_results = []  # Placeholder for raw results
         self.result = None  # Placeholder for the result DataFrame
+        self._result_buffer = []
 
     def run(self) -> None:
         """
@@ -67,6 +69,31 @@ class PairwiseMatch:
                 "Cannot convert to DataFrame when streaming is enabled."
             )
         return self.result
+
+    def raw_to_df(self) -> pd.DataFrame:
+        """
+        Converts the raw allele match results to a pandas DataFrame.
+
+        Columns are named <locus>_1 and <locus>_2.
+        """
+        rows = []
+        all_cols = set()
+
+        for pair_idx, match_list in enumerate(self.raw_results):
+            row = {"pair": pair_idx}
+            for res in match_list:
+                locus = res.patient.locus
+                allele_lvl_1, allele_lvl_2 = res.allele_match_levels
+                col_1 = f"{locus}_1"
+                col_2 = f"{locus}_2"
+                row[col_1] = allele_lvl_1.name
+                row[col_2] = allele_lvl_2.name
+                all_cols.update([col_1, col_2])
+            rows.append(row)
+
+        df = pd.DataFrame(rows)
+        ordered_cols = sorted(all_cols)
+        return df.reindex(columns=ordered_cols)
 
     def calculate_result(self) -> None:
         """
@@ -123,6 +150,7 @@ class PairwiseMatch:
             match_results: List[MatchResult] = multi_locus_match(
                 source_ind, target_ind
             )
+            self.raw_results.append(match_results)
             row = {}
             for result in match_results:
                 locus = result.patient.locus
@@ -169,14 +197,7 @@ class PairwiseMatch:
 
             elif not self.stream:
                 # If streaming is disabled, accumulate results in memory
-                chunk_df = pd.DataFrame([row])
-                chunk_df = chunk_df.reindex(columns=sorted(all_loci))
-                if self.result is None:
-                    self.result = chunk_df
-                else:
-                    self.result = pd.concat(
-                        [self.result, chunk_df], ignore_index=True
-                    )
+                self._result_buffer.append(row)
 
         # Flush any remaining buffer to file
         if self.stream and buffer:
@@ -203,7 +224,11 @@ class PairwiseMatch:
                     )
 
         # Write the accumulated results to the file in non-streaming mode
-        if not self.stream and self.result is not None:
+        if not self.stream and self._result_buffer:
+            self.result = pd.DataFrame(self._result_buffer)
+            self.result = self.result.reindex(
+                columns=sorted(all_loci), fill_value=None
+            )
             self.result.to_csv(self.result_file, index=False)
 
         logger.info("Pairwise match result calculation completed.")

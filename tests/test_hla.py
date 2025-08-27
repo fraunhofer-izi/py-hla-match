@@ -1,7 +1,6 @@
 import unittest
 from py_hla_match.exceptions import (
-    MalformedHLAStringError,
-    EmptyHLAStringError
+    MalformedHLAStringError
 )
 from py_hla_match.hla import HLA
 
@@ -267,7 +266,7 @@ class TestHLA(unittest.TestCase):
             HLA("A*01*01")
 
     def test_invalid_tab_whitespace(self):
-        # \t erzeugt internes Whitespace
+        # internal Whitespace
         with self.assertRaises(MalformedHLAStringError):
             HLA("A*\t01:01")
 
