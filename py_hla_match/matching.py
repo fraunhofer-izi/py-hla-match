@@ -21,7 +21,7 @@ class AlleleMatchLevel(IntEnum):
     NON_CODING_VARIANT_MATCH: Non-coding variant match
     cf.https://hla.alleles.org/nomenclature/naming.html
     """
-    # NOTE: no clean seperation for now
+    # NOTE: no clean seperation for now between match codes and not applicable
     NOT_APPLICABLE = 0
 
     # clean AlleleMatchLevel
