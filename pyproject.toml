@@ -18,6 +18,7 @@ requests = "^2.32"
 pytest = "^7.0"
 pytest-cov = "^4.0"
 coverage = "^7.10.2"
+pip-licenses = "^5.0.0"
 
 [build-system]
 requires = ["poetry>=1.0.0"]
