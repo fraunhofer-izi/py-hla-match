@@ -1,37 +1,17 @@
 import logging
 from py_hla_match.models import HLAPair, Individual
 from py_hla_match.hla import HLA
-from enum import IntEnum
-from typing import List, Tuple, Optional, Set
+from typing import List, Tuple, Optional
 
+from py_hla_match.policy import AlleleMatchLevel, ExpressionSuffixMatchLevel
+from py_hla_match.config import (
+    get_config,
+    HLAMatchConfig,
+)
 from py_hla_match.exceptions import InvalidLocusComparisonError
 from py_hla_match.external import DPB1TCEStatus, query_dpb1_tce
 
 logger = logging.getLogger(__name__)
-
-
-class AlleleMatchLevel(IntEnum):
-    """
-    Following hla nomenclature:
-    LOCUS_MISMATCH: Mismatch at a particular HLA locus
-    ALLELE_GROUP_MISMATCH: Mismatch at the group code
-    ALLELE_MISMATCH: Mismatch at the allele level
-    ARD_MATCH: ARD level match
-    SYNONYMOUS_VARIANT_MATCH: Synonymous variant match
-    NON_CODING_VARIANT_MATCH: Non-coding variant match
-    cf.https://hla.alleles.org/nomenclature/naming.html
-    """
-    # NOTE: no clean seperation for now between match codes and not applicable
-    NOT_APPLICABLE = 0
-
-    # clean AlleleMatchLevel
-    LOCUS_MISMATCH = -3
-    ALLELE_GROUP_MISMATCH = -2
-    ALLELE_MISMATCH = -1
-    # NOTE: seperating mismatches from matches based on ARD
-    ARD_MATCH = 1
-    SYNONYMOUS_VARIANT_MATCH = 2
-    NON_CODING_VARIANT_MATCH = 3
 
 
 class MatchResult:
@@ -350,6 +330,53 @@ class MatchResult:
         return self.dpb1_tce_status
 
 
+def _map_expression_decision(
+    decision: ExpressionSuffixMatchLevel,
+) -> Optional[AlleleMatchLevel]:
+    if decision is ExpressionSuffixMatchLevel.IGNORE:
+        return None
+    mapping = {
+        ExpressionSuffixMatchLevel.NOT_APPLICABLE:
+            AlleleMatchLevel.NOT_APPLICABLE,
+        ExpressionSuffixMatchLevel.ALLELE_MISMATCH:
+            AlleleMatchLevel.ALLELE_MISMATCH,
+        ExpressionSuffixMatchLevel.ALLELE_GROUP_MISMATCH:
+            AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
+        ExpressionSuffixMatchLevel.ARD_MATCH:
+            AlleleMatchLevel.ARD_MATCH,
+    }
+    return mapping[decision]
+
+
+def _apply_expression_suffix_policy(
+    hla1: HLA, hla2: HLA, cfg: HLAMatchConfig
+) -> Optional[AlleleMatchLevel]:
+    """
+    Apply configurable expression-suffix policy once ARD is equivalent.
+    """
+    suffix1, suffix2 = hla1.suffix, hla2.suffix
+    if suffix1 is None and suffix2 is None:
+        return None
+    rules = cfg.expression_suffix_policy
+    # Any 'Q' present (defaults to NOT_APPLICABLE)
+    if (
+            (suffix1 in rules.ambiguous_suffixes) or
+            (suffix2 in rules.ambiguous_suffixes)
+    ):
+        return _map_expression_decision(rules.q_present)
+    # Any risk suffixes present
+    risk = rules.risk_suffixes
+    risk1 = suffix1 in risk if suffix1 is not None else False
+    risk2 = suffix2 in risk if suffix2 is not None else False
+    if risk1 and risk2:
+        if suffix1 == suffix2:
+            return _map_expression_decision(rules.equal_risk)
+        return _map_expression_decision(rules.risk_vs_different_risk)
+    if (risk1 and suffix2 is None) or (risk2 and suffix1 is None):
+        return _map_expression_decision(rules.risk_vs_none)
+    return None
+
+
 def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     """
     Compares two HLA alleles and returns a MatchLevel
@@ -374,6 +401,8 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
         raise TypeError(
             f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
         )
+
+    # (1) ARD COMPARISON
 
     # first check if loci match (NOTE: DRB3/4/5 hard coded to locus DRB345)
     if hla1.locus != hla2.locus:
@@ -411,51 +440,29 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
         )
 
     if hla1.ard_redux_allele_group != hla2.ard_redux_allele_group:
+        # NOTE: this should never happen (!) since we check allele_group above
         return AlleleMatchLevel.ALLELE_GROUP_MISMATCH
 
     if hla1.ard_redux_allele != hla2.ard_redux_allele:
         return AlleleMatchLevel.ALLELE_MISMATCH
+
+    # (2) EXPRESSION COMPARISON (suffixes)
 
     # Check for suffix
     if (
             hla1.suffix is not None
             or hla2.suffix is not None
     ):
-        if hla1.suffix != hla2.suffix:
-            # consensus says mismatch
-            # Fleischhauer, D. G. I. K., et al. "Deutscher Konsensus 2021
-            # zur Spenderauswahl für die allogene Stammzelltransplantation."
-            risk_suffixes: Set[str] = {"N", "L", "S", "C", "A"}
-            ambiguous_suffixes: Set[str] = {"Q"}
-            if (
-                (hla1.suffix in risk_suffixes)
-                or (hla2.suffix in risk_suffixes)
-            ):
-                return AlleleMatchLevel.ALLELE_MISMATCH
-                # TODO: or return AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-            elif (
-                (hla1.suffix in ambiguous_suffixes)
-                or (hla2.suffix in ambiguous_suffixes)
-            ):
-                # warn about "questionable" suffix
-                logger.warning(
-                    f"Questionable suffix found in alleles "
-                    f"{hla1.allele_string} and/or {hla2.allele_string}"
-                    " - cannot safely determine a general match level. "
-                    "Matching will be reported as "
-                    f"{AlleleMatchLevel.NOT_APPLICABLE.name}."
-                )
-                return AlleleMatchLevel.NOT_APPLICABLE
-        else:  # equal suffixes
-            logger.debug(
-                "Identical suffix '%s' in %s and %s – cannot safely determine "
-                "a general match level. Matching will be reported as "
-                f"{AlleleMatchLevel.NOT_APPLICABLE.name}.",
-                hla1.suffix, hla1.allele_string, hla2.allele_string
-            )
-            return AlleleMatchLevel.NOT_APPLICABLE
+        suffix_level = _apply_expression_suffix_policy(
+            hla1, hla2, get_config()
+        )
+        if suffix_level is not None:
+            return suffix_level
 
-    # from here on we have at least an ARD level match
+    # from here on we have at least an ARD level match that is NOT effected by
+    # expression differences (suffixes)
+
+    # (3) FULL ALLELE COMPARISON
 
     # Check for group code
     if (

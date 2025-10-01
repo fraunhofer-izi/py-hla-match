@@ -1,41 +1,19 @@
 import logging
 import re
 import threading
-from .singleton import get_ard_instance
+from typing import Optional
 
+from py_hla_match.singleton import get_ard_instance
+from py_hla_match.config import (
+    get_config,
+    get_config_version
+)
 from py_hla_match.exceptions import (
     MalformedHLAStringError,
     EmptyHLAStringError
 )
 
 logger = logging.getLogger(__name__)
-
-# regex pattern for HLA allele string
-# TODO: class Configuration():
-NOMENCLATURE_PATTERN = re.compile(
-    r"""
-    ^ (?:HLA-)?
-    (?P<locus>[A-Z0-9]+) # locus always required
-    \* # asterisk always required
-    ( # three alternatives
-        # 1: well-formed allele
-        (?P<allele_fields>\d{2,4}(?::\d{2,4}){0,3})
-        (?![NLSCAQ][GP]|[GP][NLSCAQ])  # no suffix AND group code
-        (?P<suffix>[NLSCAQ])?
-        (?P<group_code>[GP])?
-        $ # must match to end of string
-    |
-        # 2: known nan
-        (?P<nan>NA|NE|NEW|UNKNOWN|ND|NULL)  # user defined
-        $
-    |
-        # 3: anything else - trigger MalformedHLAStringError
-        (?P<remainder>.*) # anything else
-        $ # must match to end of string
-    )
-    """,
-    re.VERBOSE
-)
 
 # regex pattern for ARD redux allele string
 REDUX_PATTERN = re.compile(
@@ -56,57 +34,13 @@ REDUX_PATTERN = re.compile(
     re.VERBOSE
 )
 
-VALID_HLA_LOCI = frozenset({
-    'A', 'B', 'C',  # NOTE: standard HLA Class I loci
-    'DRB1',  # NOTE: standard HLA Class II locus
-    'DQB1',  # NOTE: standard HLA Class II locus
-    'DPB1',  # NOTE: not standard but often discussed
-    'DQA1',  # NOTE: interesting candidate
-    'DPA1',  # NOTE: interesting candidate
-    'DRB3', 'DRB4', 'DRB5',  # NOTE: interesting candidate(s)
-    'DRB345',  # NOTE: NOT A LOCUS, but used here as generic DRB3/4/5
-    'DRBX',  # NOTE: NOT A LOCUS, but often used to indicate missing DRB3/4/5
-    # However, DRB3/4/5 may need special hadling
-
-    'MICA', 'MICB',  # NOTE: interesting candidates
-    'DMA', 'DMB', 'DOA', 'DOB',  # NOTE: interesting candidates
-    # the exhaustive list of all known HLA loci
-    # should be considered non-standard or experimental
-
-    'E', 'F', 'G',  # limited data
-    'DQA2', 'DQB2',  # limited data
-
-    # currently not considered for matching ---
-
-    # 'MICC', 'MICD', 'MICE'  # non functional related to MICA/MICB
-    # 'TAP1', 'TAP2',  # not direct cell-surface targets
-    # 'PSMB9', 'PSMB8',  # not direct cell-surface targets
-    # 'HFE',  # hemochromatosis locus, not relevant to HLA matching
-    # 'DRA',  # largely monomorphic/minimally polymorphic DR alpha chain
-    # likely pseudogenes ---
-    # 'DPA2', 'DPB2', 'DPA3', 'DQB3',
-    # --- likely pseudogenes
-    # pseudogenes ---
-    # 'DRB2', 'DRB6', 'DRB7', 'DRB8', 'DRB9',
-    # 'H', 'J', 'K', 'L', 'N', 'P', 'R', 'S', 'T',
-    # 'U', 'V', 'W', 'X', 'Y', 'Z',
-    # --- pseudogenes
-
-    # --- currently not considered for matching
-})
-
-# we now support processing of DRB345
-DRB345_SUB_LOCI = {
-    'DRB3', 'DRB4', 'DRB5',
-    'DRBX'  # generic locus indicating "missing"
-}
-
 
 class HLA:
     _cache = {}
     _redux_cache = {}
     _cache_lock = threading.RLock()
     _redux_cache_lock = threading.RLock()
+    _config_version: Optional[int] = None
 
     __slots__ = (
         # original allele string
@@ -145,8 +79,13 @@ class HLA:
 
     def __new__(cls, allele_string: str):
         """Thread-safe caching"""
-        # Thread-safe caching
         with cls._cache_lock:
+            # Invalidate cache if config version changed
+            current_ver = get_config_version()
+            if cls._config_version != current_ver:
+                cls._cache.clear()
+                cls._redux_cache.clear()
+                cls._config_version = current_ver
             if allele_string in cls._cache:
                 return cls._cache[allele_string]
 
@@ -189,10 +128,10 @@ class HLA:
         # validate the allele string
         match = self._validate_nomenclature()
 
-        # extract locuse
+        # extract locus
         self.locus = match.group('locus')
         # handle DRB3/4/5 region
-        if self.locus in DRB345_SUB_LOCI:
+        if self.locus in get_config().drb345_sub_loci:
             # if locus is DRB3/4/5, set the sub-locus
             self.drb_sub_locus = self.locus
             self.locus = 'DRB345'
@@ -270,7 +209,7 @@ class HLA:
                     f"string '{allele_string}'."
                 )
 
-        match = NOMENCLATURE_PATTERN.match(self.allele_string)
+        match = get_config().nomenclature_pattern.match(self.allele_string)
         if not match:
             raise MalformedHLAStringError(
                 f"Invalid HLA allele string: {self.allele_string}"
@@ -289,7 +228,7 @@ class HLA:
 
     def _is_valid_locus(self, locus: str) -> bool:
         """Locus validation using known loci."""
-        return locus in VALID_HLA_LOCI
+        return locus in get_config().effective_valid_loci
 
     def _ard_redux(self):
         """Thread-safe ARD redux with caching"""

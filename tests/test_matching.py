@@ -14,9 +14,21 @@ from py_hla_match.exceptions import (
 )
 from pyard.exceptions import InvalidAlleleError
 from py_hla_match.models import HLAPair, Individual
+from py_hla_match.policy import (
+    ExpressionSuffixPolicy,
+    ExpressionSuffixMatchLevel
+)
+from py_hla_match.config import (
+    HLAMatchConfig,
+    set_config
+)
 
 
 class TestAlleleMatch(unittest.TestCase):
+
+    def tearDown(self) -> None:
+        set_config(HLAMatchConfig())
+
     def test_invalid_hla_object(self):
         # Test with hla1 None
         allele1 = None
@@ -298,6 +310,68 @@ class TestAlleleMatch(unittest.TestCase):
         expected_match_level = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
+
+    def test_equal_risk_suffix_policy_can_be_set_to_mismatch(self):
+        # Configure equal risk (e.g., N vs N) to ALLELE_MISMATCH instead of
+        # default NOT_APPLICABLE
+        pol = ExpressionSuffixPolicy(
+            equal_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            risk_vs_none=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            q_present=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+        )
+        set_config(HLAMatchConfig(expression_suffix_policy=pol))
+        a1 = HLA("A*24:09N")
+        a2 = HLA("A*24:09N")
+        self.assertEqual(
+            allele_match(a1, a2), AlleleMatchLevel.ALLELE_MISMATCH
+        )
+
+    def test_q_present_policy_can_be_set_to_mismatch(self):
+        # Configure Q present to be treated as mismatch rather than default
+        # NOT_APPLICABLE
+        pol = ExpressionSuffixPolicy(
+            equal_risk=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            risk_vs_none=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            q_present=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+        )
+        set_config(HLAMatchConfig(expression_suffix_policy=pol))
+        a1 = HLA("A*01:436Q")
+        a2 = HLA("A*01:01:70")
+        self.assertEqual(
+            allele_match(a1, a2), AlleleMatchLevel.ALLELE_MISMATCH
+        )
+
+    def test_risk_vs_none_policy_can_be_set_to_not_applicable(self):
+        # Configure risk vs none (e.g., N vs none) to NOT_APPLICABLE after
+        # ARD-equivalence
+        pol = ExpressionSuffixPolicy(
+            equal_risk=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            risk_vs_none=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            q_present=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+        )
+        set_config(HLAMatchConfig(expression_suffix_policy=pol))
+        # ARD-equivalent: A*24:09N reduces to A*24:02; compared to A*24:02
+        a1 = HLA("A*24:09N")
+        a2 = HLA("A*24:02")
+        self.assertEqual(allele_match(a1, a2), AlleleMatchLevel.NOT_APPLICABLE)
+
+    def test_suffix_policy_does_not_override_group_mismatch_severity(self):
+        # Even with aggressive suffix policy, group mismatch must dominate
+        pol = ExpressionSuffixPolicy(
+            equal_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            risk_vs_none=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            q_present=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+        )
+        set_config(HLAMatchConfig(expression_suffix_policy=pol))
+        a1 = HLA("A*23:41")   # group 23
+        a2 = HLA("A*24:09N")   # group 24
+        self.assertEqual(
+            allele_match(a1, a2), AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        )
 
 
 class TestGetCorrectAllelePairing(unittest.TestCase):

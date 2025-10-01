@@ -3,9 +3,17 @@ from py_hla_match.exceptions import (
     MalformedHLAStringError
 )
 from py_hla_match.hla import HLA
+from py_hla_match.config import (
+    HLAMatchConfig,
+    set_config
+)
 
 
 class TestHLA(unittest.TestCase):
+
+    def tearDown(self) -> None:
+        # Reset config after each test to avoid cross-test effects
+        set_config(HLAMatchConfig())
 
     def test_valid_hla_with_suffix(self):
         hla = HLA("HLA-A*32:11Q")
@@ -342,6 +350,29 @@ class TestHLA(unittest.TestCase):
             "ard_redux_allele_group='32', ard_redux_allele='11')"
         )
         self.assertEqual(repr(hla), expected_repr)
+
+    def test_custom_na_tokens_override(self):
+        # Override NA tokens to include 'NONE' and exclude 'NE'
+        set_config(HLAMatchConfig(na_tokens=frozenset({"NA", "NONE"})))
+        hla_none = HLA("B*NONE")
+        self.assertEqual(hla_none.locus, "B")
+        self.assertEqual(hla_none.has_resolution_level(), 0)
+        with self.assertRaises(MalformedHLAStringError):
+            HLA("C*NE")
+
+    def test_extra_valid_loci_requires_non_strict(self):
+        # Strict mode rejects extra_valid_loci
+        with self.assertRaises(ValueError):
+            set_config(HLAMatchConfig(extra_valid_loci=frozenset({"DRA"})))
+        # Allow extras when strict_loci=False
+        set_config(
+            HLAMatchConfig(
+                extra_valid_loci=frozenset({"DRA"}), strict_loci=False
+            )
+        )
+        hla = HLA("DRA*NA")
+        self.assertEqual(hla.locus, "DRA")
+        self.assertEqual(hla.has_resolution_level(), 0)
 
 
 class TestHLAImmutability(unittest.TestCase):

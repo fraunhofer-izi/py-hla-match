@@ -1,0 +1,99 @@
+import unittest
+
+from py_hla_match.policy import (
+    ExpressionSuffixPolicy,
+    ExpressionSuffixMatchLevel
+)
+from py_hla_match.config import (
+    HLAMatchConfig,
+    CANONICAL_HLA_LOCI,
+    get_config,
+    get_config_version,
+    set_config,
+)
+
+
+class TestConfigDefaults(unittest.TestCase):
+    """Basic defaults and invariants."""
+
+    def tearDown(self):
+        # Reset to library defaults to avoid side effects across tests
+        set_config(HLAMatchConfig())
+
+    def test_default_config_values(self):
+        config = get_config()
+        self.assertTrue(config.strict_loci)
+        self.assertIsInstance(
+            config.expression_suffix_policy, ExpressionSuffixPolicy
+        )
+        self.assertIsNotNone(config.nomenclature_pattern)
+        self.assertIsInstance(get_config_version(), int)
+
+    def test_effective_valid_loci_contains_canonical(self):
+        config = get_config()
+        effective_loci = config.effective_valid_loci
+        self.assertIsInstance(effective_loci, frozenset)
+        # canonical loci are included
+        for locus in ["A", "B", "C", "DRB1", "DQB1", "DPB1", "DRB345", "DRBX"]:
+            self.assertIn(locus, effective_loci)
+        # canonical set equals subset of effective
+        self.assertTrue(set(CANONICAL_HLA_LOCI).issubset(set(effective_loci)))
+
+
+class TestConfigSetBehavior(unittest.TestCase):
+    """set_config warnings/errors and version bump."""
+
+    def tearDown(self):
+        set_config(HLAMatchConfig())
+
+    def test_strict_loci_rejects_extras(self):
+        config = HLAMatchConfig(
+            extra_valid_loci=frozenset({"DRA"}), strict_loci=True
+        )
+        with self.assertRaises(ValueError):
+            set_config(config)
+
+    def test_additive_extras_warn_and_update_effective(self):
+        prev_ver = get_config_version()
+        config = HLAMatchConfig(
+            extra_valid_loci=frozenset({"DRA"}), strict_loci=False
+        )
+        with self.assertLogs("py_hla_match.config", level="WARNING") as cm:
+            set_config(config)
+        self.assertTrue(any("extra_valid_loci" in msg for msg in cm.output))
+        self.assertIn("DRA", get_config().effective_valid_loci)
+        self.assertEqual(get_config_version(), prev_ver + 1)
+
+
+class TestExpressionSuffixPolicy(unittest.TestCase):
+    """Explicit policy decisions remain configurable."""
+
+    def tearDown(self):
+        set_config(HLAMatchConfig())
+
+    def test_policy_defaults(self):
+        policy = get_config().expression_suffix_policy
+        self.assertEqual(
+            policy.equal_risk, ExpressionSuffixMatchLevel.NOT_APPLICABLE
+        )
+        self.assertEqual(
+            policy.risk_vs_none, ExpressionSuffixMatchLevel.ALLELE_MISMATCH
+        )
+        self.assertEqual(
+            policy.risk_vs_different_risk,
+            ExpressionSuffixMatchLevel.ALLELE_MISMATCH
+        )
+        self.assertEqual(
+            policy.q_present, ExpressionSuffixMatchLevel.NOT_APPLICABLE
+        )
+
+    def test_set_explicit_policy(self):
+        policy = ExpressionSuffixPolicy(
+            equal_risk=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            risk_vs_none=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
+            q_present=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+        )
+        config = HLAMatchConfig(expression_suffix_policy=policy)
+        set_config(config)
+        self.assertIs(get_config().expression_suffix_policy, policy)
