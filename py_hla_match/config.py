@@ -62,6 +62,10 @@ CANONICAL_DRB345_SUB_LOCI = {
 
 @dataclass
 class HLAMatchConfig:
+    # ARD configuration (read once at singleton creation)
+    ard_imgt_version: str = "Latest"
+    ard_data_dir: Optional[str] = None
+
     # Extensions only, canonical set remains owned by the library
     extra_valid_loci: FrozenSet[str] = field(default_factory=frozenset)
     strict_loci: bool = True  # must be set to False, by user
