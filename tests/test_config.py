@@ -1,4 +1,6 @@
 import unittest
+import threading
+from dataclasses import FrozenInstanceError
 
 from py_hla_match.policy import (
     ExpressionSuffixPolicy,
@@ -10,6 +12,7 @@ from py_hla_match.config import (
     get_config,
     get_config_version,
     set_config,
+    config_context
 )
 
 
@@ -97,3 +100,62 @@ class TestExpressionSuffixPolicy(unittest.TestCase):
         config = HLAMatchConfig(expression_suffix_policy=policy)
         set_config(config)
         self.assertIs(get_config().expression_suffix_policy, policy)
+
+
+class TestConfigContextAndThreadLocal(unittest.TestCase):
+    def tearDown(self):
+        set_config(HLAMatchConfig())
+
+    def test_scoped_override_and_restore(self):
+        base = HLAMatchConfig()
+        set_config(base)
+        self.assertTrue(get_config().strict_loci)
+        temp = HLAMatchConfig(strict_loci=False)
+        with config_context(temp):
+            self.assertFalse(get_config().strict_loci)
+        # restored
+        self.assertTrue(get_config().strict_loci)
+
+    def test_nested_contexts_restore(self):
+        base = HLAMatchConfig(na_tokens=frozenset({"NA", "NE"}))
+        set_config(base)
+        outer = HLAMatchConfig(na_tokens=frozenset({"NA"}))
+        inner = HLAMatchConfig(na_tokens=frozenset({"NA", "NONE"}))
+        with config_context(outer):
+            self.assertEqual(get_config().na_tokens, frozenset({"NA"}))
+            with config_context(inner):
+                self.assertEqual(
+                    get_config().na_tokens, frozenset({"NA", "NONE"})
+                )
+            # restored to outer
+            self.assertEqual(get_config().na_tokens, frozenset({"NA"}))
+        # restored to base
+        self.assertEqual(get_config().na_tokens, frozenset({"NA", "NE"}))
+
+    def test_thread_local_isolation(self):
+        # main thread remains with strict_loci=True
+        set_config(HLAMatchConfig(strict_loci=True))
+        result = {"child_strict": None}
+
+        def worker():
+            set_config(HLAMatchConfig(strict_loci=False))
+            result["child_strict"] = get_config().strict_loci
+
+        t = threading.Thread(target=worker)
+        t.start()
+        t.join()
+
+        # Child thread had False, main thread stays True
+        self.assertFalse(result["child_strict"])
+        self.assertTrue(get_config().strict_loci)
+
+
+class TestConfigImmutability(unittest.TestCase):
+    def tearDown(self):
+        set_config(HLAMatchConfig())
+
+    def test_get_config_is_not_mutable(self):
+        cfg = get_config()
+        with self.assertRaises(FrozenInstanceError):
+            # direct mutation must be disallowed; use set_config instead
+            cfg.strict_loci = False

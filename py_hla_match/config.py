@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import re
+import threading
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import FrozenSet, Optional, Pattern
 
@@ -60,7 +62,7 @@ CANONICAL_DRB345_SUB_LOCI = {
 }
 
 
-@dataclass
+@dataclass(frozen=True)
 class HLAMatchConfig:
     # ARD configuration (read once at singleton creation)
     ard_imgt_version: str = "Latest"
@@ -93,8 +95,12 @@ class HLAMatchConfig:
     @property
     def effective_valid_loci(self) -> FrozenSet[str]:
         if self._effective_valid_loci is None:
-            self._effective_valid_loci = frozenset(
-                set(CANONICAL_HLA_LOCI) | set(self.extra_valid_loci)
+            object.__setattr__(
+                self,
+                "_effective_valid_loci",
+                frozenset(
+                    set(CANONICAL_HLA_LOCI) | set(self.extra_valid_loci)
+                ),
             )
         return self._effective_valid_loci
 
@@ -148,18 +154,45 @@ class HLAMatchConfig:
         return self._nomenclature_pattern
 
     def recompile_patterns(self) -> None:
-        self._nomenclature_pattern = self._compile_nomenclature_pattern()
+        object.__setattr__(
+            self, "_nomenclature_pattern", self._compile_nomenclature_pattern()
+        )
         # Invalidate effective loci cache in case config changed
-        self._effective_valid_loci = None
+        object.__setattr__(self, "_effective_valid_loci", None)
 
 
-# Version token for cache invalidation on config changes
-_CONFIG: HLAMatchConfig = HLAMatchConfig()
+# local config storage from global defaults
+_THREADLOCAL = threading.local()
+_GLOBAL_DEFAULTS: HLAMatchConfig = HLAMatchConfig()
+# global version token for cache invalidation
 _CONFIG_VERSION: int = 1
 
 
+def _get_threadlocal_config() -> HLAMatchConfig:
+    """
+    Get (thread-)local HLAMatchConfig, from _GLOBAL_DEFAULTS on first access
+    for thread.
+    """
+    if not hasattr(_THREADLOCAL, "config"):
+        # new instance seeded from defaults
+        _THREADLOCAL.config = HLAMatchConfig(
+            ard_imgt_version=_GLOBAL_DEFAULTS.ard_imgt_version,
+            ard_data_dir=_GLOBAL_DEFAULTS.ard_data_dir,
+            extra_valid_loci=_GLOBAL_DEFAULTS.extra_valid_loci,
+            strict_loci=_GLOBAL_DEFAULTS.strict_loci,
+            na_tokens=_GLOBAL_DEFAULTS.na_tokens,
+            expression_suffix_policy=_GLOBAL_DEFAULTS.expression_suffix_policy,
+        )
+        _THREADLOCAL.config.recompile_patterns()
+    return _THREADLOCAL.config
+
+
+def _set_threadlocal_config(config: HLAMatchConfig) -> None:
+    _THREADLOCAL.config = config
+
+
 def get_config() -> HLAMatchConfig:
-    return _CONFIG
+    return _get_threadlocal_config()
 
 
 def get_config_version() -> int:
@@ -167,7 +200,8 @@ def get_config_version() -> int:
 
 
 def set_config(config: HLAMatchConfig) -> None:
-    global _CONFIG, _CONFIG_VERSION
+    global _CONFIG_VERSION
+    previous_config = _get_threadlocal_config()
     if config.extra_valid_loci:
         if config.strict_loci:
             raise ValueError(
@@ -179,7 +213,35 @@ def set_config(config: HLAMatchConfig) -> None:
             sorted(config.extra_valid_loci),
         )
 
-    _CONFIG = config
-    _CONFIG.recompile_patterns()
+    # new (thread-)local config
+    _set_threadlocal_config(config)
+    config.recompile_patterns()
     # bump version to signal cache invalidation
     _CONFIG_VERSION += 1
+
+    # reset singleton if ARD defaults changed
+    try:
+        if (
+            previous_config.ard_imgt_version != config.ard_imgt_version
+            or previous_config.ard_data_dir != config.ard_data_dir
+        ):
+            # late import to prevent circular import at module import
+            from .singleton import _reset_ard_instance
+            _reset_ard_instance()
+    except Exception:
+        # log instead of fail ARD set_config on reset issues
+        logger.debug("Optional ARD singleton reset failed.", exc_info=True)
+
+
+@contextmanager
+def config_context(config: HLAMatchConfig):
+    """
+    Context manager to temporarily override (thread-)local config.
+    The previous (potentially default) config is restored on exit or exception.
+    """
+    previous_config = _get_threadlocal_config()
+    set_config(config)
+    try:
+        yield
+    finally:
+        set_config(previous_config)
