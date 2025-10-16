@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "py-hla-match"
-version = "0.1.1"
+version = "1.0.0"
 description = "A Python package for HLA matching"
 authors = ["Tim Adams <tim.adams@scai.fraunhofer.de>", "Georg Popp <georg.popp@izi.fraunhofer.de>"]
 license = "MIT"
@@ -10,7 +10,7 @@ packages = [{include = "py_hla_match"}]
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 pandas = "^2.2.2"
-py-ard = "^1.5.3"
+py-ard = "^1.5.5"
 openpyxl = "^3.1.0"
 requests = "^2.32"
 
@@ -18,6 +18,7 @@ requests = "^2.32"
 pytest = "^7.0"
 pytest-cov = "^4.0"
 coverage = "^7.10.2"
+pip-licenses = "^5.0.0"
 
 [build-system]
 requires = ["poetry>=1.0.0"]
