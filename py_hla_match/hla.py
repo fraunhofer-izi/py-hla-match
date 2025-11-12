@@ -10,7 +10,7 @@ from py_hla_match.config import (
 )
 from py_hla_match.exceptions import (
     MalformedHLAStringError,
-    EmptyHLAStringError
+    EmptyHLAStringError, PyardLibraryError
 )
 
 logger = logging.getLogger(__name__)
@@ -244,8 +244,14 @@ class HLA:
                 self.ard_redux_allele = cached_result['allele']
                 return
 
-        ard = get_ard_instance()
-        redux_string = ard.redux(self.allele_string, redux_type).strip()
+        try:
+            ard = get_ard_instance()
+            redux_string = ard.redux(self.allele_string, redux_type).strip()
+        except Exception as e:
+            raise PyardLibraryError(
+                f"Failed during allele reduction for '{self.allele_string}' with redux_type '{redux_type}'.",
+                details=str(e)
+            ) from e
 
         # Parse the result
         match = REDUX_PATTERN.match(redux_string)

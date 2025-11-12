@@ -69,3 +69,21 @@ class MalformedHLADataSourceError(Exception):
         if self.details:
             return f"{base_message} (Details: {self.details})"
         return base_message
+
+class PyardLibraryError(Exception):
+    """
+    Error raised when the external 'pyard' library fails unexpectedly.
+    """
+    def __init__(self, message, details=None):
+        """
+        :param message: Error message describing the failure.
+        :param details: Optional additional context or traceback details.
+        """
+        super().__init__(f"pyard error: {message}")
+        self.details = details
+
+    def __str__(self):
+        base_message = super().__str__()
+        if self.details:
+            return f"{base_message} (Details: {self.details})"
+        return base_message
