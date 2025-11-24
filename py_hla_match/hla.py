@@ -3,6 +3,8 @@ import re
 import threading
 from typing import Optional
 
+from pyard.exceptions import InvalidAlleleError
+
 from py_hla_match.singleton import get_ard_instance
 from py_hla_match.config import (
     get_config,
@@ -247,7 +249,11 @@ class HLA:
         try:
             ard = get_ard_instance()
             redux_string = ard.redux(self.allele_string, redux_type).strip()
+        except InvalidAlleleError as e:
+            # propagate allele specific exception
+            raise e
         except Exception as e:
+            # catch and re-raise any other (library specific) exceptions
             raise PyardLibraryError(
                 f"Failed during allele reduction for '{self.allele_string}' with redux_type '{redux_type}'.",
                 details=str(e)
