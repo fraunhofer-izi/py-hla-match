@@ -70,6 +70,7 @@ class MalformedHLADataSourceError(Exception):
             return f"{base_message} (Details: {self.details})"
         return base_message
 
+
 class PyardLibraryError(Exception):
     """
     Error raised when the external 'pyard' library fails unexpectedly.
