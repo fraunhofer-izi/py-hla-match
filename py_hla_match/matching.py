@@ -16,17 +16,16 @@ logger = logging.getLogger(__name__)
 
 class MatchResult:
     """
-    Report class on patient/donor compatibility for a single HLA locus
+    Result object for comparing two HLA genotype pairs at a single locus.
+
+    This class is designed for research use to describe HLA match or
+    mismatch categories between two individuals.
 
     Attributes:
-        patient (HLAPair): Patient object (HLA alleles)
-        donor (HLAPair): Donor object (HLA alleles)
-        score (int): (internal) score of correct allele pairing (patient/donor)
-        allele_matches (Tuple[AlleleMatchLevel, AlleleMatchLevel]): Match
-        results
-
-    Negative score indicates missing HLA allele information crucial for
-    matching. This means HLA matching was (partially) not possible.
+        patient (HLAPair): HLA allele pair in the 'patient' role
+        donor (HLAPair): HLA allele pair in the 'donor' role
+        pairing_score (int): internal, ordinal score summarising the two
+            AlleleMatchLevel values.
     """
 
     def __init__(
@@ -110,7 +109,7 @@ class MatchResult:
 
     def _loci_level_match(self, resolution):
         """
-        TODO: base on clinician feedback
+        TODO: refine resolution categories based on domain-expert input
         """
         match_level_1, match_level_2 = self.allele_match_levels
 
@@ -145,7 +144,7 @@ class MatchResult:
             self, match_level_1, match_level_2
     ):
         """
-        TODO: base on clinician feedback
+        TODO: base on domain expert
         Determines the basic resolution match status based on the allele match
         levels.
 
@@ -196,7 +195,7 @@ class MatchResult:
             self, match_level_1, match_level_2
     ):
         """
-        TODO: base on clinician feedback
+        TODO: base on domain expert
         Determines the high resolution match status with detailed mismatch
         types.
 
@@ -288,7 +287,10 @@ class MatchResult:
             timeout: int = 10
     ) -> Optional[DPB1TCEStatus]:
         """
-        Calculate DPB1 permissive/non-permissive via EBI API.
+        Calculate DPB1 permissive/non-permissive classification via EBI API.
+
+        Intended for research workflows.
+
         WARNING: may slow things down significantly.
 
         Sets self.dpb1_permissive to one of:
@@ -569,7 +571,10 @@ def _get_correct_allele_pairing(
 
 def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
     """
-    Matching of two patient and donor HLA alleles encoding the HLA gene
+    Compute research match/mismatch levels for two HLA allele pairs, one in
+    the 'patient' role and one in the 'donor' role.
+
+    Intended for research workflows.
 
     Args:
         patient (Patient): Patient object containing two HLA alleles
@@ -607,7 +612,10 @@ def multi_locus_match(
         donor: Individual
 ) -> List[MatchResult]:
     """
-    Calculate compatibility of patient and donor for all recorded patient loci
+    Compute HLA match/mismatch categories between two Individuals for all loci
+    that are typed in the first Individual.
+
+    Intended for research workflows.
 
     Args:
         patient (Individual): Patient object

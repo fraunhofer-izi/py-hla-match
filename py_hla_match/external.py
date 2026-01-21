@@ -60,6 +60,8 @@ def query_dpb1_tce(
     """
     Query the EBI DPB1 TCE API for T-Cell Epitope matching.
 
+    Intended for research workflows.
+
     Args:
         patient_dpb1: Patient's first DPB1 allele (e.g. "01:01")
         patient_dpb2: Patient's second DPB1 allele

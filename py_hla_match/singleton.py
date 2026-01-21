@@ -37,7 +37,10 @@ def get_ard_instance(imgt_version=None, data_dir=None, **config):
             if imgt_version is None:
                 imgt_version = "Latest"
             _ard_instance = ard.ARD(
-                imgt_version=imgt_version, data_dir=data_dir, load_mac=False, **config
+                imgt_version=imgt_version,
+                data_dir=data_dir,
+                load_mac=False,
+                **config
             )
 
     return _ard_instance

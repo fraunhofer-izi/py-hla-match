@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "py-hla-match"
-version = "1.0.0"
-description = "A Python package for HLA matching"
+version = "0.1.0"
+description = "A research Python package for HLA matching in retrospective and in-silico analyses"
 authors = ["Tim Adams <tim.adams@scai.fraunhofer.de>", "Georg Popp <georg.popp@izi.fraunhofer.de>"]
-license = "MIT"
+license = "Apache-2.0"
 readme = "README.md"
 packages = [{include = "py_hla_match"}]
 

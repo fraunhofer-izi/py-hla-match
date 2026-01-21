@@ -255,7 +255,8 @@ class HLA:
         except Exception as e:
             # catch and re-raise any other (library specific) exceptions
             raise PyardLibraryError(
-                f"Failed during allele reduction for '{self.allele_string}' with redux_type '{redux_type}'.",
+                f"Failed during allele reduction for '{self.allele_string}' "
+                f"with redux_type '{redux_type}'.",
                 details=str(e)
             ) from e
 
