@@ -120,16 +120,11 @@ class Individual:
             "resolution_summary": dict(resolution_counts)
         }
 
-    def get_best_match(self, individuals: List['Individual']) -> 'Donor':
-        """
-        Get the best match from a list of donors.
-        """
-        pass
-
 
 class Patient(Individual):
     """
-    Represents a patient, inheriting from Individual.
+    Represents an individual in the 'patient' role in research datasets.
+    Inherits from Individual.
     """
 
     def __init__(self,  hla_data: list[HLAPair]) -> None:
@@ -138,7 +133,8 @@ class Patient(Individual):
 
 class Donor(Individual):
     """
-    Represents a donor, inheriting from Individual.
+    Represents an individual in the 'donor' role in research datasets.
+    Inherits from Individual.
     """
 
     def __init__(self,  hla_data: list[HLAPair]) -> None:
