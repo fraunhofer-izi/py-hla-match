@@ -77,7 +77,7 @@ class TestExpressionSuffixPolicy(unittest.TestCase):
     def test_policy_defaults(self):
         policy = get_config().expression_suffix_policy
         self.assertEqual(
-            policy.equal_risk, ExpressionSuffixMatchLevel.NOT_APPLICABLE
+            policy.equal_risk, ExpressionSuffixMatchLevel.NOT_ASSESSABLE
         )
         self.assertEqual(
             policy.risk_vs_none, ExpressionSuffixMatchLevel.ALLELE_MISMATCH
@@ -87,15 +87,15 @@ class TestExpressionSuffixPolicy(unittest.TestCase):
             ExpressionSuffixMatchLevel.ALLELE_MISMATCH
         )
         self.assertEqual(
-            policy.q_present, ExpressionSuffixMatchLevel.NOT_APPLICABLE
+            policy.q_present, ExpressionSuffixMatchLevel.NOT_ASSESSABLE
         )
 
     def test_set_explicit_policy(self):
         policy = ExpressionSuffixPolicy(
-            equal_risk=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            equal_risk=ExpressionSuffixMatchLevel.NOT_ASSESSABLE,
             risk_vs_none=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
             risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
-            q_present=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            q_present=ExpressionSuffixMatchLevel.NOT_ASSESSABLE,
         )
         config = HLAMatchConfig(expression_suffix_policy=policy)
         set_config(config)
