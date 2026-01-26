@@ -3,14 +3,21 @@ from py_hla_match.models import HLAPair, Individual
 from py_hla_match.hla import HLA
 from typing import List, Tuple, Optional
 
-from py_hla_match.policy import AlleleMatchLevel, ExpressionSuffixMatchLevel
+from py_hla_match.policy import (
+    AlleleMatchLevel,
+    ExpressionSuffixMatchLevel,
+    ARDMatchLevel,
+    ARDMatchLevelCertainty,
+    MolecularMatchLevel,
+    MolecularMatchLevelCertainty
+)
 from py_hla_match.config import (
     get_config,
     HLAMatchConfig,
 )
 from py_hla_match.exceptions import (
     InvalidLocusComparisonError,
-    PyardLibraryError
+    ARDMatchRefinementError
 )
 from py_hla_match.external import DPB1TCEStatus, query_dpb1_tce
 
@@ -29,25 +36,79 @@ class MatchResult:
         donor (HLAPair): HLA allele pair in the 'donor' role
         pairing_score (int): internal, ordinal score summarising the two
             AlleleMatchLevel values.
+        allele_match_levels (Tuple[AlleleMatchLevel, AlleleMatchLevel]):
+            Result of HLA allele matching for a locus (ARD-based)
+        ard_match_levels (Tuple[ARDMatchLevel, ARDMatchLevel]):
+            Result of ARD matching in ARD matched HLA alleles
+        ard_match_certainty (
+            Tuple[ARDMatchLevelCertainty, ARDMatchLevelCertainty]
+        ):
+            Certainty flags of ARD matching in ARD matched HLA alleles
+            given HLA typing resolution
     """
-
     def __init__(
             self,
             patient: HLAPair,
             donor: HLAPair,
             pairing_score: int,
             allele_match_levels: Tuple[AlleleMatchLevel, AlleleMatchLevel],
+            ard_match_levels: Optional[
+                Tuple[ARDMatchLevel, ARDMatchLevel]
+            ] = None,
+            ard_match_level_certainty: Optional[
+                Tuple[ARDMatchLevelCertainty, ARDMatchLevelCertainty]
+            ] = None,
+            molecular_match_levels: Optional[
+                Tuple[MolecularMatchLevel, MolecularMatchLevel]
+            ] = None,
+            molecular_match_level_certainty: Optional[
+                Tuple[
+                    MolecularMatchLevelCertainty,
+                    MolecularMatchLevelCertainty
+                ]
+            ] = None,
     ) -> None:
 
         self.patient = patient
         self.donor = donor
         self.pairing_score = pairing_score
         self.allele_match_levels = allele_match_levels
+        if ard_match_levels is None:
+            self.ard_match_levels = (
+                ARDMatchLevel.NOT_APPLICABLE,
+                ARDMatchLevel.NOT_APPLICABLE,
+            )
+        else:
+            self.ard_match_levels = ard_match_levels
+
+        if ard_match_level_certainty is None:
+            self.ard_match_certainties = (
+                ARDMatchLevelCertainty.NOT_APPLICABLE,
+                ARDMatchLevelCertainty.NOT_APPLICABLE,
+            )
+        else:
+            self.ard_match_certainties = ard_match_level_certainty
+        if molecular_match_levels is None:
+            self.molecular_match_levels = (
+                MolecularMatchLevel.NOT_APPLICABLE,
+                MolecularMatchLevel.NOT_APPLICABLE,
+            )
+        else:
+            self.molecular_match_levels = molecular_match_levels
+        if molecular_match_level_certainty is None:
+            self.molecular_match_certainties = (
+                MolecularMatchLevelCertainty.NOT_APPLICABLE,
+                MolecularMatchLevelCertainty.NOT_APPLICABLE,
+            )
+        else:
+            self.molecular_match_certainties = molecular_match_level_certainty
 
         # optional external matching information
         self.dpb1_tce_status: Optional[DPB1TCEStatus] = None
 
         # check homozygous patient
+        # TODO: homozygosity check currently is capped at ARD which may not
+        # be considered *true*
         self.is_homozygous_patient = (
             # get boolean if patient alleles are equal
             (
@@ -75,8 +136,6 @@ class MatchResult:
             return self.loci_match_basic_resolution
         elif resolution == "high":
             return self.loci_match_high_resolution
-        elif resolution == "full":
-            return self.loci_match_full_resolution
         else:
             raise ValueError(
                 f"Unknown resolution level: {resolution}\n"
@@ -112,7 +171,7 @@ class MatchResult:
 
     def _loci_level_match(self, resolution):
         """
-        TODO: refine resolution categories based on domain-expert input
+        Locus-level match category based on AlleleMatchLevels.
         """
         match_level_1, match_level_2 = self.allele_match_levels
 
@@ -129,12 +188,6 @@ class MatchResult:
         elif resolution == 'high_resolution':
             return self._calculate_loci_match_high_resolution(
                 match_level_1, match_level_2
-            )
-        elif resolution == 'full_resolution':
-            raise NotImplementedError(
-                "\'full_resolution\' not implemented yet.\n"
-                "Please use either \'basic_resolution\' or "
-                "\'high_resolution\'."
             )
         else:
             raise ValueError(
@@ -446,14 +499,6 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
             f"'{hla2.allele_string}'. Please report this issue."
         )
 
-    if hla1.ard_redux_allele_group != hla2.ard_redux_allele_group:
-        # NOTE: this should never happen (!) since we check allele_group above
-        # but it's a potential py-ard dependency issue
-        raise PyardLibraryError(
-            f"py-ard returned inconsistent allele group codes for "
-            f"'{hla1.allele_string}' and '{hla2.allele_string}'"
-        )
-
     if hla1.ard_redux_allele != hla2.ard_redux_allele:
         return AlleleMatchLevel.ALLELE_MISMATCH
 
@@ -478,6 +523,326 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     # (3) ARD MATCH
     # TODO: refine ARD match levels separately using ARDMatchLevel
     return AlleleMatchLevel.ARD_MATCH
+
+
+def _refine_ard_match_level_by_group_association(
+    hla1: HLA,
+    hla2: HLA,
+    allele_match_level: AlleleMatchLevel
+) -> tuple[ARDMatchLevel, ARDMatchLevelCertainty]:
+    """
+    Compares two ARD-matched HLA alleles and returns an ARDMatchLevel
+
+    Args:
+        hla1: First HLA allele object
+        hla2: Second HLA allele object
+        allele_match_level: AlleleMatchLevel of hla1 and hla2
+
+    Returns:
+        Tuple[ARDMatchLevel, ARDMatchLevelCertainty]
+            ARDMatchLevel IntEnum value indicating level of ARD matching
+            ARDMatchLevelCertainty Enum indicating certainty of ARD match level
+    Raises:
+        TypeError: If hla1 or hla2 is not an instance of HLA
+        InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci
+
+    Only applicable to AlleleMatchLevel == ARD_MATCH
+    Otherwise, returns NOT_APPLICABLE for both level and certainty
+    """
+    # sanity checks
+    if not isinstance(hla1, HLA):
+        raise TypeError(
+            f"hla1 must be an instance of HLA, not {type(hla1).__name__}."
+        )
+    if not isinstance(hla2, HLA):
+        raise TypeError(
+            f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
+        )
+    if hla1.locus != hla2.locus:
+        raise InvalidLocusComparisonError(hla1.locus, hla2.locus)
+
+    # additional safeguards against misuse
+    is_claimed_ard_match = (allele_match_level is AlleleMatchLevel.ARD_MATCH)
+    # HLA class guarantees valid hla two-field allele if redux worked
+    has_ard_data = (
+        hla1.ard_redux_allele_string is not None and
+        hla2.ard_redux_allele_string is not None
+    )
+    # still redux string must be equal to confirm ARD_MATCH
+    is_actual_ard_match = (
+        has_ard_data and
+        hla1.ard_redux_allele_string == hla2.ard_redux_allele_string
+    )
+
+    if is_claimed_ard_match and not has_ard_data:
+        raise ARDMatchRefinementError(
+            f"ARD_MATCH but ARD reduction data missing. "
+            f"hla1.ard_redux_allele_string={hla1.ard_redux_allele_string}, "
+            f"hla2.ard_redux_allele_string={hla2.ard_redux_allele_string}"
+        )
+    if is_claimed_ard_match and not is_actual_ard_match:
+        raise ARDMatchRefinementError(
+            f"ARD_MATCH but alleles differ at ARD level. "
+            f"hla1.ard_redux_allele_string={hla1.ard_redux_allele_string}, "
+            f"hla2.ard_redux_allele_string={hla2.ard_redux_allele_string}"
+        )
+    if not is_claimed_ard_match and is_actual_ard_match:
+        raise ARDMatchRefinementError(
+            f"{allele_match_level.name} but alleles ARE "
+            f"ARD-equivalent. This indicates a bug in the caller. "
+            f"hla1.ard_redux_allele_string={hla1.ard_redux_allele_string}, "
+            f"hla2.ard_redux_allele_string={hla2.ard_redux_allele_string}"
+        )
+
+    # (1) Valid non-ARD_MATCH: return NOT_APPLICABLE
+    if allele_match_level is not AlleleMatchLevel.ARD_MATCH:
+        return (
+            ARDMatchLevel.NOT_APPLICABLE,
+            ARDMatchLevelCertainty.NOT_APPLICABLE
+        )
+
+    # NOTE: specific group_code ('01P', instead of 'P') encoded in allele field
+    # of HLA object (or synonymous_variant field for 'G' group)
+    # TODO: imo this needs and update in the HLA parsing logic
+    # not a bug per se, just counterintuitive and welcomes errors
+
+    # (2) P-group is first exit if we lack information
+    # NOTE: HLA parsing **guarantees** that a given "P" is highest resolution
+    if hla1.group_code == "P" or hla2.group_code == "P":
+        return (
+            ARDMatchLevel.P_GROUP_MATCH,
+            # could still be G-group match
+            ARDMatchLevelCertainty.UNCERTAIN
+        )
+
+    # (3) G-group next
+    min_resolution = min(
+        hla1.has_resolution_level(), hla2.has_resolution_level()
+    )
+    # G group is more complex, we have G-group match if:
+    # a) hla1.synonymous_variant == hla2.synonymous_variant without G-group
+    if (
+        min_resolution >= 3
+        and hla1.group_code != "G"
+        and hla2.group_code != "G"
+        and hla1.synonymous_variant == hla2.synonymous_variant
+    ):
+        return (
+            ARDMatchLevel.G_GROUP_MATCH,
+            ARDMatchLevelCertainty.CERTAIN
+        )
+    # b) hla1.group_code == "G" and hla2.group_code == "G"
+    if (
+        hla1.group_code == "G"
+        and hla2.group_code == "G"
+        and hla1.synonymous_variant == hla2.synonymous_variant
+    ):
+        return (
+            ARDMatchLevel.G_GROUP_MATCH,
+            ARDMatchLevelCertainty.CERTAIN
+        )
+    # (4) quo vadis?
+    # due to overlap of P- and G-groups we could actually get more info
+    # e.g. A*01:468 and ​A*01:471 are part of A*01:01P and A*01:01:01G
+    # however, py-ard's 'G' reduction is currently not robust
+    # e.g., print(pyard.redux("A*01:01", 'G')) returns 'A*01:01:01G',
+    # but A*01:01:162 (valid allele) is not part of A*01:01:01G
+
+    # NOTE: so until this is resolved for now
+    return (
+        ARDMatchLevel.P_GROUP_MATCH,
+        # could still be G-group match
+        ARDMatchLevelCertainty.UNCERTAIN
+    )
+
+
+def _refine_ard_match_level_at_molecular_level(
+    hla1: HLA,
+    hla2: HLA,
+    allele_match_level: AlleleMatchLevel
+) -> tuple[MolecularMatchLevel, MolecularMatchLevelCertainty]:
+    """
+    Compares two ARD-matched HLA alleles and returns a MolecularMatchLevel
+
+    Args:
+        hla1: First HLA allele object
+        hla2: Second HLA allele object
+        allele_match_level: AlleleMatchLevel of hla1 and hla2
+
+    Returns:
+        Tuple[MolecularMatchLevel, MolecularMatchLevelCertainty]
+            MolecularMatchLevel IntEnum value indicating degree of 1–4 field
+            identity
+            MolecularMatchLevelCertainty Enum indicating whether a higher level
+            is still possible given typing resolution
+    Raises:
+        TypeError: If hla1 or hla2 is not an instance of HLA
+        InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci
+
+    Only applicable to AlleleMatchLevel == ARD_MATCH
+    Otherwise, returns NOT_APPLICABLE for both level and certainty
+    """
+    # sanity checks
+    if not isinstance(hla1, HLA):
+        raise TypeError(
+            f"hla1 must be an instance of HLA, not {type(hla1).__name__}."
+        )
+    if not isinstance(hla2, HLA):
+        raise TypeError(
+            f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
+        )
+    if hla1.locus != hla2.locus:
+        raise InvalidLocusComparisonError(hla1.locus, hla2.locus)
+
+    # additional safeguards against misuse
+    is_claimed_ard_match = (allele_match_level is AlleleMatchLevel.ARD_MATCH)
+    # HLA class guarantees valid hla two-field allele if redux worked
+    has_ard_data = (
+        hla1.ard_redux_allele_string is not None and
+        hla2.ard_redux_allele_string is not None
+    )
+    # still redux string must be equal to confirm ARD_MATCH
+    is_actual_ard_match = (
+        has_ard_data and
+        hla1.ard_redux_allele_string == hla2.ard_redux_allele_string
+    )
+
+    if is_claimed_ard_match and not has_ard_data:
+        raise ARDMatchRefinementError(
+            f"ARD_MATCH but ARD reduction data missing. "
+            f"hla1.ard_redux_allele_string={hla1.ard_redux_allele_string}, "
+            f"hla2.ard_redux_allele_string={hla2.ard_redux_allele_string}"
+        )
+    if is_claimed_ard_match and not is_actual_ard_match:
+        raise ARDMatchRefinementError(
+            f"ARD_MATCH but alleles differ at ARD level. "
+            f"hla1.ard_redux_allele_string={hla1.ard_redux_allele_string}, "
+            f"hla2.ard_redux_allele_string={hla2.ard_redux_allele_string}"
+        )
+    if not is_claimed_ard_match and is_actual_ard_match:
+        raise ARDMatchRefinementError(
+            f"{allele_match_level.name} but alleles ARE "
+            f"ARD-equivalent. This indicates a bug in the caller. "
+            f"hla1.ard_redux_allele_string={hla1.ard_redux_allele_string}, "
+            f"hla2.ard_redux_allele_string={hla2.ard_redux_allele_string}"
+        )
+
+    # (1) Valid non-ARD_MATCH: return NOT_APPLICABLE
+    # e.g. A*01:01 vs A*02:01
+    if allele_match_level is not AlleleMatchLevel.ARD_MATCH:
+        return (
+            MolecularMatchLevel.NOT_APPLICABLE,
+            MolecularMatchLevelCertainty.NOT_APPLICABLE
+        )
+
+    # (2) P-group code: molecular not applicable
+    # e.g. A*01:01P vs A*01:01:01:01
+    if hla1.group_code == "P" or hla2.group_code == "P":
+        return (
+            MolecularMatchLevel.NOT_ASSESSABLE,
+            # Could be protein/coding/exact
+            MolecularMatchLevelCertainty.UNCERTAIN
+        )
+
+    # From here: ARD_MATCH, no P-group - let's try to refine ARD_MATCH
+    # we need the resolution multiple times
+    min_resolution = min(
+        hla1.has_resolution_level(), hla2.has_resolution_level()
+    )
+
+    # (3) cases with res == 2
+    # TODO: double check if G group interferes with protein
+    # we either have full protein match:
+    # e.g. A*01:01 vs A*01:01
+    if (min_resolution == 2) and (hla1.allele == hla2.allele):
+        return (
+            MolecularMatchLevel.FULL_PROTEIN_MATCH,
+            # Could be coding/exact
+            MolecularMatchLevelCertainty.UNCERTAIN
+        )
+    # or a mismatch:
+    # e.g. A*01:01 vs A*01:15 (same P-group)
+    elif (min_resolution == 2) and (hla1.allele != hla2.allele):
+        return (
+            MolecularMatchLevel.ARD_MATCH_ONLY,
+            MolecularMatchLevelCertainty.CERTAIN
+        )
+
+    # (4) cases with res >= 3
+    # NOTE: we will look for a more elegant way to structure this logic
+    if min_resolution >= 3:
+        # If second fields differ, we can only say ARD_MATCH_ONLY:
+        # they are ARD-equivalent but not protein/coding/exact identical
+        # e.g. A*01:01:01 vs A*01:02:01
+        if hla1.allele != hla2.allele:
+            return (
+                MolecularMatchLevel.ARD_MATCH_ONLY,
+                MolecularMatchLevelCertainty.CERTAIN
+            )
+        # NOTE: this should also handle all G-groups
+
+        # From here: first two fields identical -> at least FULL_PROTEIN_MATCH
+
+        # (4a) min_resolution == 3: we know the 3rd field (synonymous variant)
+        if min_resolution == 3:
+            if (
+                hla1.synonymous_variant == hla2.synonymous_variant
+                and hla1.group_code != "G"
+                and hla2.group_code != "G"
+            ):
+                # 1–3 fields identical and 4th is unknown or untyped
+                return (
+                    MolecularMatchLevel.CODING_SEQUENCE_MATCH,
+                    # Could still be EXACT_ALLELE_MATCH if 4th field also equal
+                    MolecularMatchLevelCertainty.UNCERTAIN
+                )
+            elif (
+                hla1.synonymous_variant == hla2.synonymous_variant
+                # if we have a single 'G' group, we cannot be sure about coding
+                and (hla1.group_code == "G" or hla2.group_code == "G")
+            ):
+                # Same protein but different coding sequence
+                return (
+                    MolecularMatchLevel.FULL_PROTEIN_MATCH,
+                    # Cannot be CODING_SEQUENCE_MATCH or EXACT_ALLELE_MATCH
+                    MolecularMatchLevelCertainty.UNCERTAIN
+                )
+            else:
+                # 1–2 fields identical, 3rd differs
+                return (
+                    MolecularMatchLevel.FULL_PROTEIN_MATCH,
+                    MolecularMatchLevelCertainty.CERTAIN
+                )
+
+        # (4b) min_resolution == 4: both alleles have 4-field resolution
+        # First two fields already identical -> inspect 3rd and 4th:
+
+        if hla1.synonymous_variant != hla2.synonymous_variant:
+            # Different third field -> different coding sequence
+            return (
+                MolecularMatchLevel.FULL_PROTEIN_MATCH,
+                MolecularMatchLevelCertainty.CERTAIN
+            )
+
+        # Third field identical -> check non-coding (4th) field
+        if hla1.non_coding_variant == hla2.non_coding_variant:
+            # All 1–4 fields identical
+            return (
+                MolecularMatchLevel.EXACT_ALLELE_MATCH,
+                MolecularMatchLevelCertainty.CERTAIN
+            )
+        else:
+            # 1–3 fields identical, 4th differs
+            return (
+                MolecularMatchLevel.CODING_SEQUENCE_MATCH,
+                MolecularMatchLevelCertainty.CERTAIN
+            )
+
+    # if we are here, imho something is odd
+    raise ARDMatchRefinementError(
+        "_refine_ard_match_level_at_molecular_level was unable to process "
+        f"hla1='{hla1.allele_string}', hla2='{hla2.allele_string}'."
+    )
 
 
 def _get_correct_allele_pairing(
