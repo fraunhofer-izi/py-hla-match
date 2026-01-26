@@ -62,17 +62,15 @@ def query_dpb1_tce(
 
     Intended for research workflows.
 
-    Args:
-        patient_dpb1: Patient's first DPB1 allele (e.g. "01:01")
-        patient_dpb2: Patient's second DPB1 allele
-        donor_dpb1: Donor's first DPB1 allele
-        donor_dpb2: Donor's second DPB1 allele
-        version: API version - "2.0", "2.1", or "3.0"
-        timeout: API request timeout in seconds
-        config: Configuration object (default if None)
+    :param patient_dpb1: Patient's first DPB1 allele (e.g. "01:01")
+    :param patient_dpb2: Patient's second DPB1 allele
+    :param donor_dpb1: Donor's first DPB1 allele
+    :param donor_dpb2: Donor's second DPB1 allele
+    :param version: API version - "2.0", "2.1", or "3.0"
+    :param timeout: API request timeout in seconds
+    :param config: Configuration object (default if None)
 
-    Returns:
-        DPB1TCEStatus enum
+    :return: DPB1TCEStatus enum
     """
     if config is None:
         config = DPB1TCEConfig()
