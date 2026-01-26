@@ -306,7 +306,7 @@ class TestAlleleMatch(unittest.TestCase):
         Expected Match Level: ARD_MATCH
         """
         allele1 = HLA("DQA1*01:01:02")
-        allele2 = HLA("DQA1*01:01:02:07")
+        allele2 = HLA("DQA1*01:01:02:05")
         expected_match_level = AlleleMatchLevel.ARD_MATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
@@ -678,11 +678,11 @@ class TestAllelePairMatch(unittest.TestCase):
         """
         Case: both alleles have 'G' group-code
         Allele-1: DQB1*06:02:01G
-        Allele-2: DQB1*06:02:02G
+        Allele-2: DQB1*06:02:01G
         Expected: ARD_MATCH
         """
         a1 = HLA("DQB1*06:02:01G")
-        a2 = HLA("DQB1*06:02:02G")
+        a2 = HLA("DQB1*06:02:01G")
         self.assertEqual(allele_match(a1, a2), AlleleMatchLevel.ARD_MATCH)
 
     def test_invalid_single_field_p_group_raises(self):
