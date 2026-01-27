@@ -388,15 +388,14 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
         patient = HLAPair(p1, p2)
         donor = HLAPair(d1, d2)
 
-        best_score, chosen_pairing = \
-            _get_correct_allele_pairing(patient, donor)
+        result = _get_correct_allele_pairing(patient, donor)
 
         expected_pairing = (
             allele_match(p1, d1),
             allele_match(p2, d2),
         )
-        self.assertEqual(chosen_pairing, expected_pairing)
-        self.assertEqual(best_score, sum(expected_pairing))
+        self.assertEqual(result.allele_match_levels, expected_pairing)
+        self.assertEqual(result.score, sum(expected_pairing))
 
     def test_all_not_applicable_pairing_score(self):
         """
@@ -412,11 +411,11 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
         patient = HLAPair(p1, p2)
         donor = HLAPair(d1, d2)
 
-        best_score, levels = _get_correct_allele_pairing(patient, donor)
+        result = _get_correct_allele_pairing(patient, donor)
 
-        self.assertEqual(best_score, AlleleMatchLevel.NOT_ASSESSABLE * 2)
+        self.assertEqual(result.score, AlleleMatchLevel.NOT_ASSESSABLE * 2)
         self.assertEqual(
-            levels,
+            result.allele_match_levels,
             (AlleleMatchLevel.NOT_ASSESSABLE, AlleleMatchLevel.NOT_ASSESSABLE),
         )
 
@@ -427,10 +426,10 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
         p = HLAPair(HLA("B*07"),     HLA("B*07:02"))
         d = HLAPair(HLA("B*07:02"),  HLA("B*07"))
 
-        best_score, levels = _get_correct_allele_pairing(p, d)
-        self.assertEqual(best_score, 1)
+        result = _get_correct_allele_pairing(p, d)
+        self.assertEqual(result.score, 1)
         self.assertEqual(
-            levels,
+            result.allele_match_levels,
             (AlleleMatchLevel.NOT_ASSESSABLE, AlleleMatchLevel.ARD_MATCH)
         )
 
@@ -441,10 +440,11 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
         p = HLAPair(HLA("B*07"),     HLA("B*01"))
         d = HLAPair(HLA("B*07"),  HLA("B*01"))
 
-        best_score, levels = _get_correct_allele_pairing(p, d)
-        self.assertEqual(best_score, 0)
+        result = _get_correct_allele_pairing(p, d)
+
+        self.assertEqual(result.score, 0)
         self.assertEqual(
-            levels,
+            result.allele_match_levels,
             (AlleleMatchLevel.NOT_ASSESSABLE, AlleleMatchLevel.NOT_ASSESSABLE)
         )
 

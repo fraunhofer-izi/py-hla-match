@@ -2,6 +2,7 @@ import logging
 from py_hla_match.models import HLAPair, Individual
 from py_hla_match.hla import HLA
 from typing import List, Tuple, Optional
+from dataclasses import dataclass
 
 from py_hla_match.policy import (
     AlleleMatchLevel,
@@ -44,6 +45,15 @@ class MatchResult:
             Tuple[ARDMatchLevelCertainty, ARDMatchLevelCertainty]
         ):
             Certainty flags of ARD matching in ARD matched HLA alleles
+            given HLA typing resolution
+        molecular_match_levels (
+            Tuple[MolecularMatchLevel, MolecularMatchLevel]
+        ):
+            Result of molecular matching in ARD matched HLA alleles
+        molecular_match_certainty (
+            Tuple[MolecularMatchLevelCertainty, MolecularMatchLevelCertainty]
+        ):
+            Certainty flags of molecular matching in ARD matched HLA alleles
             given HLA typing resolution
     """
     def __init__(
@@ -382,6 +392,52 @@ class MatchResult:
         # update match result and return DPB1TCEStatus
         self.dpb1_tce_status = dpb1_tce_status
         return self.dpb1_tce_status
+
+
+@dataclass(frozen=True)
+class _PairingResult:
+    """
+    Internal result from allele pairing evaluation.
+
+    Intended for research workflows.
+
+    This dataclass stores match levels and certainties of allele pairings.
+    Used internally by `_get_correct_allele_pairing`.
+
+    Attributes:
+        score (int): Sum of AlleleMatchLevel values for both allele pairs.
+            Used as primary criterion for selecting optimal pairing.
+        allele_match_levels (Tuple[AlleleMatchLevel, AlleleMatchLevel]):
+            ARD-based match level for each paired allele comparison.
+        ard_match_levels (Tuple[ARDMatchLevel, ARDMatchLevel]):
+            G-group vs P-group refinement for ARD-matched alleles.
+            NOT_APPLICABLE if AlleleMatchLevel != ARD_MATCH.
+        ard_match_certainties (
+            Tuple[ARDMatchLevelCertainty, ARDMatchLevelCertainty]
+        ):
+            Certainty of ARD match level given typing resolution.
+            UNCERTAIN indicates a higher ARDMatchLevel may be possible.
+        molecular_match_levels (
+            Tuple[MolecularMatchLevel, MolecularMatchLevel]
+        ):
+            Field-by-field identity refinement for ARD-matched alleles.
+            NOT_APPLICABLE if AlleleMatchLevel != ARD_MATCH.
+        molecular_match_certainties (
+            Tuple[MolecularMatchLevelCertainty, MolecularMatchLevelCertainty]
+        ):
+            Certainty of molecular match level given typing resolution.
+            UNCERTAIN indicates a higher MolecularMatchLevel may be possible.
+    """
+    score: int
+    allele_match_levels: Tuple[AlleleMatchLevel, AlleleMatchLevel]
+    ard_match_levels: Tuple[ARDMatchLevel, ARDMatchLevel]
+    ard_match_certainties: Tuple[
+        ARDMatchLevelCertainty, ARDMatchLevelCertainty
+    ]
+    molecular_match_levels: Tuple[MolecularMatchLevel, MolecularMatchLevel]
+    molecular_match_certainties: Tuple[
+        MolecularMatchLevelCertainty, MolecularMatchLevelCertainty
+    ]
 
 
 def _map_expression_decision(
@@ -847,29 +903,29 @@ def _refine_ard_match_level_at_molecular_level(
 
 def _get_correct_allele_pairing(
         patient_alleles: HLAPair, donor_alleles: HLAPair
-) -> Tuple[int, Tuple[AlleleMatchLevel, AlleleMatchLevel]]:
+) -> _PairingResult:
     """
-    Determines the correct pairing of patient and donor HLA allele by
-    evaluating all possible combinations
+    Determines the correct pairing of patient and donor HLA alleles by
+    evaluating all possible combinations.
 
     Args:
-        patient_alleles: Tuple[HLA, HLA]: Tuple of two patient HLA alleles
-        donor_alleles: Tuple[HLA, HLA]: Tuple of two donor HLA alleles
+        patient_alleles: HLAPair containing two patient HLA alleles
+        donor_alleles: HLAPair containing two donor HLA alleles
 
     Returns:
-        Tuple[int, Tuple[AlleleMatchLevel, AlleleMatchLevel]]:
-            - best_score (int): Best pairing score of correct allele pairing
-            - correct_pairing (Tuple[AlleleMatchLevel, AlleleMatchLevel]):
-            Tuple containing match levels of correct allele pairing
+        _PairingResult containing all match levels and certainties
+        for the optimal pairing.
 
     Notes:
-        - The function assumes that both `patient_alleles` and `donor_alleles`
-        contain exactly two alleles each
         - Considers two possible pairings:
             1. (patient_hla1, donor_hla1) and (patient_hla2, donor_hla2)
             2. (patient_hla1, donor_hla2) and (patient_hla2, donor_hla1)
-        - Best score-pairing is returned
-        - If pairings return equal score, the first pairing is returned
+        - Selection uses three-level lexicographic scoring:
+            1. Primary: AlleleMatchLevel sum (match vs mismatch)
+            2. Secondary: MolecularMatchLevel sum (field identity)
+            3. Tertiary: ARDMatchLevel sum (G-group vs P-group in ARD)
+        - If all scores are equal, the first pairing is returned
+
     """
     pairings = [
         (
@@ -882,25 +938,74 @@ def _get_correct_allele_pairing(
         ),
     ]
 
-    best_score = float('-inf')  # lowest possible score, cf. AlleleMatchLevel
-    correct_pairing = None
+    # Lexicographic comparison: (allele, molecular, ard)
+    best_score: Tuple[float, float, float] = (
+        float('-inf'), float('-inf'), float('-inf')
+    )
+    best_result: Optional[_PairingResult] = None
 
     for pairing in pairings:
         patient_hla1, donor_hla1, patient_hla2, donor_hla2 = pairing
 
-        # Compute match levels
+        # (1) Primary: AlleleMatchLevel
         allele_match1 = allele_match(patient_hla1, donor_hla1)
         allele_match2 = allele_match(patient_hla2, donor_hla2)
+        allele_score = int(allele_match1) + int(allele_match2)
 
-        # Calculate pairing score
-        pairing_score = allele_match1 + allele_match2
+        # (2) Refinements if ARD_MATCH
+        if allele_match1 is AlleleMatchLevel.ARD_MATCH:
+            ard_match1, ard_certainty1 = \
+                _refine_ard_match_level_by_group_association(
+                    patient_hla1, donor_hla1, allele_match1
+                )
+            molecular_match1, molecular_certainty1 = \
+                _refine_ard_match_level_at_molecular_level(
+                    patient_hla1, donor_hla1, allele_match1
+                )
+        else:
+            ard_match1 = ARDMatchLevel.NOT_APPLICABLE
+            ard_certainty1 = ARDMatchLevelCertainty.NOT_APPLICABLE
+            molecular_match1 = MolecularMatchLevel.NOT_APPLICABLE
+            molecular_certainty1 = MolecularMatchLevelCertainty.NOT_APPLICABLE
 
-        # Update best score and (if better) pairing
-        if pairing_score > best_score:
-            best_score = pairing_score
-            correct_pairing = (allele_match1, allele_match2)
+        # Same allele_match2
+        if allele_match2 is AlleleMatchLevel.ARD_MATCH:
+            ard_match2, ard_certainty2 = \
+                _refine_ard_match_level_by_group_association(
+                    patient_hla2, donor_hla2, allele_match2
+                )
+            molecular_match2, molecular_certainty2 = \
+                _refine_ard_match_level_at_molecular_level(
+                    patient_hla2, donor_hla2, allele_match2
+                )
+        else:
+            ard_match2 = ARDMatchLevel.NOT_APPLICABLE
+            ard_certainty2 = ARDMatchLevelCertainty.NOT_APPLICABLE
+            molecular_match2 = MolecularMatchLevel.NOT_APPLICABLE
+            molecular_certainty2 = MolecularMatchLevelCertainty.NOT_APPLICABLE
 
-    return best_score, correct_pairing
+        # (3) Tie-breaker scores
+        molecular_score = int(molecular_match1) + int(molecular_match2)
+        ard_score = int(ard_match1) + int(ard_match2)
+
+        # (4) Lexicographic comparison: (allele, molecular, ard)
+        current_score = (allele_score, molecular_score, ard_score)
+
+        if current_score > best_score:
+            best_score = current_score
+            best_result = _PairingResult(
+                score=allele_score,
+                allele_match_levels=(allele_match1, allele_match2),
+                ard_match_levels=(ard_match1, ard_match2),
+                ard_match_certainties=(ard_certainty1, ard_certainty2),
+                molecular_match_levels=(molecular_match1, molecular_match2),
+                molecular_match_certainties=(
+                    molecular_certainty1, molecular_certainty2
+                ),
+            )
+
+    # Cannot be None: we always have exactly 2 pairings
+    return best_result  # type: ignore[return-value]
 
 
 def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
@@ -911,34 +1016,32 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
     Intended for research workflows.
 
     Args:
-        patient (Patient): Patient object containing two HLA alleles
-        donor (Donor): Donor object containing two HLA alleles
+        patient (HLAPair): Patient HLA pair containing two HLA alleles
+        donor (HLAPair): Donor HLA pair containing two HLA alleles
 
     Returns:
-        MatchResult: Class storing matching results
+        MatchResult: Class storing matching results including all refinements
 
     Notes:
-        - The function assumes that both, patient and donor, have exactly two
-        HLA alleles
-        - Uses `_get_correct_allele_pairing` function to evaluate all possible
-        allele pairings and selects the one with the highest score (i.e.
-        correct pairing)
-    """
-    # Get correct allele pairing and its score
-    pairing_score, correct_pairing = _get_correct_allele_pairing(
-        patient, donor
-    )
+        - The function assumes that both patient and donor have exactly two
 
-    # Create MatchResult object
-    match_result = MatchResult(
+          HLA alleles
+        - Uses `_get_correct_allele_pairing` to evaluate all possible
+
+          allele pairings and selects the one with the highest score
+    """
+    result = _get_correct_allele_pairing(patient, donor)
+
+    return MatchResult(
         patient=patient,
         donor=donor,
-        pairing_score=pairing_score,
-        allele_match_levels=correct_pairing
+        pairing_score=result.score,
+        allele_match_levels=result.allele_match_levels,
+        ard_match_levels=result.ard_match_levels,
+        ard_match_level_certainty=result.ard_match_certainties,
+        molecular_match_levels=result.molecular_match_levels,
+        molecular_match_level_certainty=result.molecular_match_certainties,
     )
-
-    # Return match result
-    return match_result
 
 
 def multi_locus_match(
