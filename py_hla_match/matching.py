@@ -1,9 +1,9 @@
 import logging
-from py_hla_match.models import HLAPair, Individual
-from py_hla_match.hla import HLA
 from typing import List, Tuple, Optional
 from dataclasses import dataclass
 
+from py_hla_match.models import HLAPair, Individual
+from py_hla_match.hla import HLA
 from py_hla_match.policy import (
     AlleleMatchLevel,
     ExpressionSuffixMatchLevel,
@@ -21,6 +21,8 @@ from py_hla_match.exceptions import (
     ARDMatchRefinementError
 )
 from py_hla_match.external import DPB1TCEStatus, query_dpb1_tce
+from py_hla_match.singleton import get_ard_instance
+
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +139,7 @@ class MatchResult:
         Get match level for a given resolution
 
         Args:
-            resolution (str): Resolution level (basic, high, full)
+            resolution (str): Resolution level (basic, high)
 
         Returns:
             str: Match level for the given resolution
@@ -149,7 +151,7 @@ class MatchResult:
         else:
             raise ValueError(
                 f"Unknown resolution level: {resolution}\n"
-                f"Expected 'basic', 'high', or 'full'."
+                f"Expected 'basic', 'high'."
             )
 
     @property
@@ -165,19 +167,6 @@ class MatchResult:
             self._locus_match_high_resolution = \
                 self._loci_level_match('high_resolution')
         return self._locus_match_high_resolution
-
-    @property
-    def loci_match_full_resolution(self):
-        if not hasattr(self, '_locus_match_full_resolution'):
-            self._locus_match_full_resolution = \
-                self._loci_level_match('full_resolution')
-        return self._locus_match_full_resolution
-
-    def _get_details(self) -> str:
-        """
-        TODO: not implemented yet
-        """
-        raise NotImplementedError("Not implemented yet.")
 
     def _loci_level_match(self, resolution):
         """
@@ -202,8 +191,7 @@ class MatchResult:
         else:
             raise ValueError(
                 f"Unknown resolution level: {resolution}\n"
-                f"Expected 'basic_resolution', 'high_resolution', or "
-                f"'full_resolution'."
+                f"Expected 'basic_resolution', 'high_resolution'."
             )
 
     def _calculate_loci_match_basic_resolution(
@@ -233,7 +221,7 @@ class MatchResult:
             AlleleMatchLevel.ARD_MATCH
         }
         mismatch_levels = {
-            AlleleMatchLevel.LOCUS_MISMATCH,
+            AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH,
             AlleleMatchLevel.ANTIGEN_MISMATCH,
             AlleleMatchLevel.ALLELE_MISMATCH,
         }
@@ -284,7 +272,7 @@ class MatchResult:
             AlleleMatchLevel.ARD_MATCH
         }
         mismatch_levels = {
-            AlleleMatchLevel.LOCUS_MISMATCH,
+            AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH,
             AlleleMatchLevel.ANTIGEN_MISMATCH,
             AlleleMatchLevel.ALLELE_MISMATCH,
         }
@@ -397,7 +385,7 @@ class MatchResult:
 @dataclass(frozen=True)
 class _PairingResult:
     """
-    Internal result from allele pairing evaluation.
+    Internal result from allele pairing.
 
     Intended for research workflows.
 
@@ -520,7 +508,7 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
     # for locus DRB345, we still stored the original DRB3/4/5 sub-locus
     if hla1.locus == 'DRB345' and hla1.drb_sub_locus != hla2.drb_sub_locus:
-        return AlleleMatchLevel.LOCUS_MISMATCH
+        return AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
 
     if min(
         hla1.has_resolution_level(), hla2.has_resolution_level()
@@ -577,7 +565,6 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     # expression differences (suffixes)
 
     # (3) ARD MATCH
-    # TODO: refine ARD match levels separately using ARDMatchLevel
     return AlleleMatchLevel.ARD_MATCH
 
 
@@ -677,26 +664,55 @@ def _refine_ard_match_level_by_group_association(
     )
     # G group is more complex, we have G-group match if:
     # a) hla1.synonymous_variant == hla2.synonymous_variant without G-group
-    if (
-        min_resolution >= 3
-        and hla1.group_code != "G"
-        and hla2.group_code != "G"
-        and hla1.synonymous_variant == hla2.synonymous_variant
-    ):
-        return (
-            ARDMatchLevel.G_GROUP_MATCH,
-            ARDMatchLevelCertainty.CERTAIN
-        )
-    # b) hla1.group_code == "G" and hla2.group_code == "G"
-    if (
-        hla1.group_code == "G"
-        and hla2.group_code == "G"
-        and hla1.synonymous_variant == hla2.synonymous_variant
-    ):
-        return (
-            ARDMatchLevel.G_GROUP_MATCH,
-            ARDMatchLevelCertainty.CERTAIN
-        )
+    if min_resolution >= 3:
+        if (
+            hla1.group_code != "G"
+            and hla2.group_code != "G"
+            and hla1.synonymous_variant == hla2.synonymous_variant
+        ):
+            return (
+                ARDMatchLevel.G_GROUP_MATCH,
+                ARDMatchLevelCertainty.CERTAIN
+            )
+        # b) hla1.group_code == "G" and hla2.group_code == "G"
+        if (
+            hla1.group_code == "G"
+            and hla2.group_code == "G"
+            and hla1.synonymous_variant == hla2.synonymous_variant
+        ):
+            return (
+                ARDMatchLevel.G_GROUP_MATCH,
+                ARDMatchLevelCertainty.CERTAIN
+            )
+        # c) one allele has G-group, the other not, but both are in the same
+        # G-group
+        if hla1.group_code == "G" or hla2.group_code == "G":
+            pyard = get_ard_instance()
+            pyard_g1_string = pyard.redux(hla1.allele_string, 'G')
+            pyard_g2_string = pyard.redux(hla2.allele_string, 'G')
+            if (
+                pyard_g1_string == pyard_g2_string
+                and pyard_g1_string.endswith('G')
+                and pyard_g2_string.endswith('G')
+            ):
+                return (
+                    ARDMatchLevel.G_GROUP_MATCH,
+                    ARDMatchLevelCertainty.CERTAIN
+                )
+        # d) if both are not G-group coded:
+        if hla1.group_code != "G" and hla2.group_code != "G":
+            pyard = get_ard_instance()
+            pyard_g1_string = pyard.redux(hla1.allele_string, 'G')
+            pyard_g2_string = pyard.redux(hla2.allele_string, 'G')
+            if (
+                pyard_g1_string == pyard_g2_string
+                and pyard_g1_string.endswith('G')
+                and pyard_g2_string.endswith('G')
+            ):
+                return (
+                    ARDMatchLevel.G_GROUP_MATCH,
+                    ARDMatchLevelCertainty.CERTAIN
+                )
     # (4) quo vadis?
     # due to overlap of P- and G-groups we could actually get more info
     # e.g. A*01:468 and ​A*01:471 are part of A*01:01P and A*01:01:01G
@@ -829,7 +845,7 @@ def _refine_ard_match_level_at_molecular_level(
     if min_resolution >= 3:
         # If second fields differ, we can only say ARD_MATCH_ONLY:
         # they are ARD-equivalent but not protein/coding/exact identical
-        # e.g. A*01:01:01 vs A*01:02:01
+        # e.g. A*02:01:01 vs A*02:09:01 (both A*02:01P)
         if hla1.allele != hla2.allele:
             return (
                 MolecularMatchLevel.ARD_MATCH_ONLY,
@@ -850,6 +866,17 @@ def _refine_ard_match_level_at_molecular_level(
                 return (
                     MolecularMatchLevel.CODING_SEQUENCE_MATCH,
                     # Could still be EXACT_ALLELE_MATCH if 4th field also equal
+                    MolecularMatchLevelCertainty.UNCERTAIN
+                )
+            if (
+                hla1.synonymous_variant == hla2.synonymous_variant
+                and hla1.group_code == "G"
+                and hla2.group_code == "G"
+            ):
+                # 1–3 fields identical but only G-group known
+                return (
+                    MolecularMatchLevel.FULL_PROTEIN_MATCH,
+                    # Could still be coding/exact if 3rd-4th field also equal
                     MolecularMatchLevelCertainty.UNCERTAIN
                 )
             elif (
