@@ -12,8 +12,10 @@ class AlleleMatchLevel(IntEnum):
 
     NOT_ASSESSABLE (0):
         Typing resolution insufficient
-    LOCUS_MISMATCH (-3):
-        Mismatch at HLA locus DRB3/-4/-5
+    DRB345_SUBLOCUS_MISMATCH (-3):
+        DRB3/4/5 region mismatch:
+        - locus normalized to DRB345
+        - but underlying sub-loci differ (e.g. DRB3 vs DRB4/5 or DRBX)
     ANTIGEN_MISMATCH (-2):
         Mismatch at the group code encoding antigen
     ALLELE_MISMATCH (-1):
@@ -25,7 +27,7 @@ class AlleleMatchLevel(IntEnum):
     """
     NOT_ASSESSABLE = 0
     # Mismatch levels
-    LOCUS_MISMATCH = -3
+    DRB345_SUBLOCUS_MISMATCH = -3
     ANTIGEN_MISMATCH = -2
     ALLELE_MISMATCH = -1
     # Separating mismatches from matches based on ARD
