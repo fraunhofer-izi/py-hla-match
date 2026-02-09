@@ -2,7 +2,7 @@
 # Visit https://bit.ly/cffinit to generate yours today!
 
 cff-version: 1.2.0
-title: py-hla-match
+title: Py-HLA-Match
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
@@ -24,12 +24,25 @@ authors:
     orcid: 'https://orcid.org/0000-0002-2823-0102'
 repository-code: 'https://github.com/fraunhofer-izi/py-hla-match'
 abstract: >-
-  Py-HLA-Match is a python library for retrospective
-  analyses of Humane Leukozyten-​Antigene (HLA) features. 
+  Py-HLA-Match is research software for HLA matching intended for 
+  research use, such as retrospective analyses, method development, 
+  benchmarking, and in‑silico studies in immunogenetics and related 
+  fields.
 keywords:
-  - hla
+  - HLA
   - human leukocyte antigen
-  - hla typing
-  - allele matching
+  - HLA research
+  - HLA typing
+  - HLA matching
+  - transplant immunology
   - immunogenetics
+  - ARD
+  - antigen recognition domain
+  - IPD-IMGT/HLA
+  - T-cell epitope (TCE)
+  - Python library
+  - retrospective studies
+version: 0.1.0
+date-released: 2026-02-09
+url: https://github.com/fraunhofer-izi/py-hla-match
 license: Apache-2.0
