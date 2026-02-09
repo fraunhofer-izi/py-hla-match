@@ -21,11 +21,10 @@ class MatchResult:
     This class is designed for research use to describe HLA match or
     mismatch categories between two individuals.
 
-    Attributes:
-        patient (HLAPair): HLA allele pair in the 'patient' role
-        donor (HLAPair): HLA allele pair in the 'donor' role
-        pairing_score (int): internal, ordinal score summarising the two
-            AlleleMatchLevel values.
+    :ivar patient: HLA allele pair in the 'patient' role
+    :ivar donor: HLA allele pair in the 'donor' role
+    :ivar pairing_score: internal, ordinal score summarising the two
+        AlleleMatchLevel values.
     """
 
     def __init__(
@@ -62,11 +61,8 @@ class MatchResult:
         """
         Get match level for a given resolution
 
-        Args:
-            resolution (str): Resolution level (basic, high, full)
-
-        Returns:
-            str: Match level for the given resolution
+        :param resolution: Resolution level (basic, high, full)
+        :return: Match level for the given resolution
         """
         if resolution == "basic":
             return self.loci_match_basic_resolution
@@ -148,8 +144,7 @@ class MatchResult:
         Determines the basic resolution match status based on the allele match
         levels.
 
-        Returns:
-            str: "ARD_MATCH", "PARTIAL_ARD_MISMATCH", or "ARD_MISMATCH"
+        :return: "ARD_MATCH", "PARTIAL_ARD_MISMATCH", or "ARD_MISMATCH"
         """
         # type check
         if not all(
@@ -199,8 +194,7 @@ class MatchResult:
         Determines the high resolution match status with detailed mismatch
         types.
 
-        Returns:
-            str: A string indicating the match status with high resolution
+        :return: A string indicating the match status with high resolution
             mismatches.
         """
         # type check
@@ -383,16 +377,13 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     """
     Compares two HLA alleles and returns a MatchLevel
 
-    Args:
-        hla1: First HLA allele object
-        hla2: Second HLA allele object
+    :param hla1: First HLA allele object
+    :param hla2: Second HLA allele object
 
-    Returns:
-        MatchLevel enum value indicating position of matches and mismatch
+    :return: MatchLevel enum value indicating position of matches and mismatch
         (cf. HLA nomenclature)
-    Raises:
-        TypeError: If hla1 or hla2 is not an instance of HLA
-        InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci
+    :raises TypeError: If hla1 or hla2 is not an instance of HLA
+    :raises InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci
     """
 
     if not isinstance(hla1, HLA):
@@ -518,15 +509,13 @@ def _get_correct_allele_pairing(
     Determines the correct pairing of patient and donor HLA allele by
     evaluating all possible combinations
 
-    Args:
-        patient_alleles: Tuple[HLA, HLA]: Tuple of two patient HLA alleles
-        donor_alleles: Tuple[HLA, HLA]: Tuple of two donor HLA alleles
+    :param patient_alleles: Tuple[HLA, HLA]: Tuple of two patient HLA alleles
+    :param donor_alleles: Tuple[HLA, HLA]: Tuple of two donor HLA alleles
 
-    Returns:
-        Tuple[int, Tuple[AlleleMatchLevel, AlleleMatchLevel]]:
-            - best_score (int): Best pairing score of correct allele pairing
-            - correct_pairing (Tuple[AlleleMatchLevel, AlleleMatchLevel]):
-            Tuple containing match levels of correct allele pairing
+    :return: Tuple[int, Tuple[AlleleMatchLevel, AlleleMatchLevel]]:
+        - best_score (int): Best pairing score of correct allele pairing
+        - correct_pairing (Tuple[AlleleMatchLevel, AlleleMatchLevel]):
+        Tuple containing match levels of correct allele pairing
 
     Notes:
         - The function assumes that both `patient_alleles` and `donor_alleles`
@@ -576,12 +565,10 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
 
     Intended for research workflows.
 
-    Args:
-        patient (Patient): Patient object containing two HLA alleles
-        donor (Donor): Donor object containing two HLA alleles
+    :param patient: Patient object containing two HLA alleles
+    :param donor: Donor object containing two HLA alleles
 
-    Returns:
-        MatchResult: Class storing matching results
+    :return: Class storing matching results
 
     Notes:
         - The function assumes that both, patient and donor, have exactly two
@@ -617,12 +604,10 @@ def multi_locus_match(
 
     Intended for research workflows.
 
-    Args:
-        patient (Individual): Patient object
-        donor (Individual): Donor object
+    :param patient: Patient object
+    :param donor: Donor object
 
-    Returns:
-        List[MatchResult]: List of MatchResult objects for each locus
+    :return: List of MatchResult objects for each locus
     """
     results: List[MatchResult] = []
 
