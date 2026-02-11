@@ -9,25 +9,70 @@ from typing import FrozenSet
 class AlleleMatchLevel(IntEnum):
     """
     Following hla nomenclature:
-    LOCUS_MISMATCH: Mismatch at a particular HLA locus
-    ALLELE_GROUP_MISMATCH: Mismatch at the group code
-    ALLELE_MISMATCH: Mismatch at the allele level
-    ARD_MATCH: ARD level match
-    SYNONYMOUS_VARIANT_MATCH: Synonymous variant match
-    NON_CODING_VARIANT_MATCH: Non-coding variant match
+
+    NOT_ASSESSABLE (0):
+        Typing resolution insufficient
+    LOCUS_MISMATCH (-3):
+        Mismatch at HLA locus DRB3/-4/-5
+    ANTIGEN_MISMATCH (-2):
+        Mismatch at the group code encoding antigen
+    ALLELE_MISMATCH (-1):
+        Mismatch at the allele level encoding a specific allele
+    ARD_MATCH (1):
+        ARD level match
+
     cf.https://hla.alleles.org/nomenclature/naming.html
     """
-    # NOTE: no clean seperation for now between match codes and not applicable
+    NOT_ASSESSABLE = 0
+    # Mismatch levels
+    LOCUS_MISMATCH = -3
+    ANTIGEN_MISMATCH = -2
+    ALLELE_MISMATCH = -1
+    # Separating mismatches from matches based on ARD
+    ARD_MATCH = 1
+
+
+class ARDMatchLevel(IntEnum):
+    """
+    Refine cases iff AlleleMatchLevel == ARD_MATCH.
+
+    EXACT_ALLELE_MATCH (5):
+        1-4 fields identical
+    CODING_SEQUENCE_MATCH (4):
+        1-3 fields identical, different or untyped 4th field
+    FULL_PROTEIN_MATCH (3):
+        1-2 fields identical, different or untyped 3rd field
+    G_GROUP_MATCH (2):
+        ARD exons identical at nucleotide level G group, different 2nd field
+    P_GROUP_MATCH (1):
+        ARD exons identical at amino-acid level P group, different 2nd field
+    NOT_APPLICABLE:
+        AlleleMatchLevel != ARD_MATCH
+    """
+    EXACT_ALLELE_MATCH = 5
+    CODING_SEQUENCE_MATCH = 4
+    FULL_PROTEIN_MATCH = 3
+    G_GROUP_MATCH = 2
+    P_GROUP_MATCH = 1
     NOT_APPLICABLE = 0
 
-    # clean AlleleMatchLevel
-    LOCUS_MISMATCH = -3
-    ALLELE_GROUP_MISMATCH = -2
-    ALLELE_MISMATCH = -1
-    # NOTE: seperating mismatches from matches based on ARD
-    ARD_MATCH = 1
-    SYNONYMOUS_VARIANT_MATCH = 2
-    NON_CODING_VARIANT_MATCH = 3
+
+class ARDMatchLevelCertainty(Enum):
+    """
+    Certainty of ARD-match level.
+
+    NOT_APPLICABLE:
+        AlleleMatchLevel != ARD_MATCH
+    UNCERTAIN:
+        insufficient typing resolution to be sure about ARDMatchLevel
+        i.e., a *higher* ARDMatchLevel **is possible**
+    CERTAIN:
+        sufficient typing resolution to be sure about ARDMatchLevel
+        i.e., a *higher* ARDMatchLevel **is not possible**
+    """
+    NOT_APPLICABLE = "not applicable for AlleleMatchLevel != ARD_MATCH"
+    UNCERTAIN = "uncertain about ARDMatchLevel due to insufficient resolution"
+    CERTAIN = "certain about ARDMatchLevel due to sufficient resolution"
 
 
 class ExpressionSuffixMatchLevel(Enum):
@@ -35,9 +80,9 @@ class ExpressionSuffixMatchLevel(Enum):
     Policy decisions about how to treat expression suffixes in matching.
     Similar to cf AlleleMatchLevel in hla.py, but for expression suffixes.
     """
-    NOT_APPLICABLE = "not_applicable"
+    NOT_ASSESSABLE = "not_assessable"
     ALLELE_MISMATCH = "allele_mismatch"
-    ALLELE_GROUP_MISMATCH = "allele_group_mismatch"
+    ANTIGEN_MISMATCH = "antigen_mismatch"
     ARD_MATCH = "ard_match"
     IGNORE = "ignore"
 
@@ -50,10 +95,10 @@ class ExpressionSuffixPolicy:
 
     # Defaults
     equal_risk: ExpressionSuffixMatchLevel = \
-        ExpressionSuffixMatchLevel.NOT_APPLICABLE
+        ExpressionSuffixMatchLevel.NOT_ASSESSABLE
     risk_vs_none: ExpressionSuffixMatchLevel = \
         ExpressionSuffixMatchLevel.ALLELE_MISMATCH
     risk_vs_different_risk: ExpressionSuffixMatchLevel = \
         ExpressionSuffixMatchLevel.ALLELE_MISMATCH
     q_present: ExpressionSuffixMatchLevel = \
-        ExpressionSuffixMatchLevel.NOT_APPLICABLE
+        ExpressionSuffixMatchLevel.NOT_ASSESSABLE

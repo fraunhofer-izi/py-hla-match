@@ -8,7 +8,10 @@ from py_hla_match.config import (
     get_config,
     HLAMatchConfig,
 )
-from py_hla_match.exceptions import InvalidLocusComparisonError
+from py_hla_match.exceptions import (
+    InvalidLocusComparisonError,
+    PyardLibraryError
+)
 from py_hla_match.external import DPB1TCEStatus, query_dpb1_tce
 
 logger = logging.getLogger(__name__)
@@ -110,10 +113,10 @@ class MatchResult:
         match_level_1, match_level_2 = self.allele_match_levels
 
         if (
-            match_level_1 is AlleleMatchLevel.NOT_APPLICABLE
-            or match_level_2 is AlleleMatchLevel.NOT_APPLICABLE
+            match_level_1 is AlleleMatchLevel.NOT_ASSESSABLE
+            or match_level_2 is AlleleMatchLevel.NOT_ASSESSABLE
         ):
-            return AlleleMatchLevel.NOT_APPLICABLE.name
+            return AlleleMatchLevel.NOT_ASSESSABLE.name
 
         if resolution == 'basic_resolution':
             return self._calculate_loci_match_basic_resolution(
@@ -159,13 +162,11 @@ class MatchResult:
         # Group AlleleMatchLevels into basic resolution match and mismatch
         # levels
         match_levels = {
-            AlleleMatchLevel.ARD_MATCH,
-            AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-            AlleleMatchLevel.NON_CODING_VARIANT_MATCH,
+            AlleleMatchLevel.ARD_MATCH
         }
         mismatch_levels = {
             AlleleMatchLevel.LOCUS_MISMATCH,
-            AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
+            AlleleMatchLevel.ANTIGEN_MISMATCH,
             AlleleMatchLevel.ALLELE_MISMATCH,
         }
 
@@ -211,13 +212,11 @@ class MatchResult:
         # Group AlleleMatchLevels into high resolution match and mismatch
         # levels
         match_levels = {
-            AlleleMatchLevel.ARD_MATCH,
-            AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-            AlleleMatchLevel.NON_CODING_VARIANT_MATCH,
+            AlleleMatchLevel.ARD_MATCH
         }
         mismatch_levels = {
             AlleleMatchLevel.LOCUS_MISMATCH,
-            AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
+            AlleleMatchLevel.ANTIGEN_MISMATCH,
             AlleleMatchLevel.ALLELE_MISMATCH,
         }
 
@@ -332,12 +331,12 @@ def _map_expression_decision(
     if decision is ExpressionSuffixMatchLevel.IGNORE:
         return None
     mapping = {
-        ExpressionSuffixMatchLevel.NOT_APPLICABLE:
-            AlleleMatchLevel.NOT_APPLICABLE,
+        ExpressionSuffixMatchLevel.NOT_ASSESSABLE:
+            AlleleMatchLevel.NOT_ASSESSABLE,
         ExpressionSuffixMatchLevel.ALLELE_MISMATCH:
             AlleleMatchLevel.ALLELE_MISMATCH,
-        ExpressionSuffixMatchLevel.ALLELE_GROUP_MISMATCH:
-            AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
+        ExpressionSuffixMatchLevel.ANTIGEN_MISMATCH:
+            AlleleMatchLevel.ANTIGEN_MISMATCH,
         ExpressionSuffixMatchLevel.ARD_MATCH:
             AlleleMatchLevel.ARD_MATCH,
     }
@@ -354,7 +353,7 @@ def _apply_expression_suffix_policy(
     if suffix1 is None and suffix2 is None:
         return None
     rules = cfg.expression_suffix_policy
-    # Any 'Q' present (defaults to NOT_APPLICABLE)
+    # Any 'Q' present (defaults to NOT_ASSESSABLE)
     if (
             (suffix1 in rules.ambiguous_suffixes) or
             (suffix2 in rules.ambiguous_suffixes)
@@ -395,7 +394,7 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
             f"hla2 must be an instance of HLA, not {type(hla2).__name__}."
         )
 
-    # (1) ARD COMPARISON
+    # (1) LOCUS and LOW-RES comparison
 
     # first check if loci match (NOTE: DRB3/4/5 hard coded to locus DRB345)
     if hla1.locus != hla2.locus:
@@ -409,19 +408,25 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
         hla1.has_resolution_level(), hla2.has_resolution_level()
     ) < 1:
         # no allele fields
-        return AlleleMatchLevel.NOT_APPLICABLE
+        return AlleleMatchLevel.NOT_ASSESSABLE
 
     if min(
         hla1.has_resolution_level(), hla2.has_resolution_level()
     ) < 2:
         # check if allele groups differ
         if hla1.allele_group != hla2.allele_group:
-            return AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+            return AlleleMatchLevel.ANTIGEN_MISMATCH
         # else we cannot determine a match level (missing data)
         else:
-            return AlleleMatchLevel.NOT_APPLICABLE
+            return AlleleMatchLevel.NOT_ASSESSABLE
 
     # --- from here on we have at least two-field resolution ---
+    # (2) TWO-FIELD COMPARISON
+
+    # check for allele group mismatch
+    if hla1.allele_group != hla2.allele_group:
+        return AlleleMatchLevel.ANTIGEN_MISMATCH
+
     if (
         hla1.ard_redux_allele_string is None
         or hla2.ard_redux_allele_string is None
@@ -434,12 +439,18 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
 
     if hla1.ard_redux_allele_group != hla2.ard_redux_allele_group:
         # NOTE: this should never happen (!) since we check allele_group above
-        return AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        # but it's a potential py-ard dependency issue
+        raise PyardLibraryError(
+            f"py-ard returned inconsistent allele group codes for "
+            f"'{hla1.allele_string}' and '{hla2.allele_string}'"
+        )
 
     if hla1.ard_redux_allele != hla2.ard_redux_allele:
         return AlleleMatchLevel.ALLELE_MISMATCH
 
-    # (2) EXPRESSION COMPARISON (suffixes)
+    # (3) EXPRESSION COMPARISON (suffixes)
+    # NOTE: we may need to move expression comparison to be evaluated
+    # directly after locus comparison
 
     # Check for suffix
     if (
@@ -455,51 +466,9 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     # from here on we have at least an ARD level match that is NOT effected by
     # expression differences (suffixes)
 
-    # (3) FULL ALLELE COMPARISON
-
-    # Check for group code
-    if (
-            hla1.group_code is not None
-            or hla2.group_code is not None
-    ):
-        # If P group_code is provided, we will not exceed ARD level match
-        return AlleleMatchLevel.ARD_MATCH
-        # If G group_code is provided, we could exceed ARD level match
-        # TODO: continue
-
-    # Compare specific allele (we check this again to continue with
-    # synonymous variant+ only if non-redux allele strings are equal)
-    if hla1.allele != hla2.allele:
-        return AlleleMatchLevel.ARD_MATCH  # ARD level match remains
-
-    # To save some time continue with synonymous variant+ only if available
-    if (
-            hla1.synonymous_variant is not None
-            and
-            hla2.synonymous_variant is not None
-    ):
-        if hla1.synonymous_variant == hla2.synonymous_variant:
-            # continue with non coding variant
-            if (
-                    hla1.non_coding_variant is not None
-                    and
-                    hla2.non_coding_variant is not None
-            ):
-                if hla1.non_coding_variant == hla2.non_coding_variant:
-                    # highest resulution match
-                    return AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-                else:
-                    # synonymous variant match remains
-                    return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-            else:
-                # synonymous variant match remains
-                return AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        else:
-            # ARD level match remains, if synonymous variant(s) are not equal
-            return AlleleMatchLevel.ARD_MATCH
-    else:
-        # If no information on synonymous variant, ARD level match remains
-        return AlleleMatchLevel.ARD_MATCH
+    # (3) ARD MATCH
+    # TODO: refine ARD match levels separately using ARDMatchLevel
+    return AlleleMatchLevel.ARD_MATCH
 
 
 def _get_correct_allele_pairing(
@@ -622,18 +591,18 @@ def multi_locus_match(
         else:
             logger.warning(
                 f"Locus {locus} not found in donor data – "
-                "matching will be reported as NOT_APPLICABLE."
+                "matching will be reported as NOT_ASSESSABLE."
             )
             if locus == "DRB345":
                 donor_pair = HLAPair(HLA("DRBX*NA"), HLA("DRBX*NA"))
             else:
                 donor_pair = HLAPair(HLA(f"{locus}*NA"), HLA(f"{locus}*NA"))
 
-        # compute match (missing donor pair will propagate NOT_APPLICABLE)
+        # compute match (missing donor pair will propagate NOT_ASSESSABLE)
         match_result = allele_pair_match(patient_pair, donor_pair)
 
         # additional diagnostics
-        if all(level == AlleleMatchLevel.NOT_APPLICABLE
+        if all(level == AlleleMatchLevel.NOT_ASSESSABLE
                for level in match_result.allele_match_levels):
             logger.warning(
                 f"Typing resolution insufficient for locus {locus} "
