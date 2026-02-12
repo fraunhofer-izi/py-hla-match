@@ -199,8 +199,7 @@ class MatchResult:
         Determines the basic resolution match status based on the allele match
         levels.
 
-        Returns:
-            str: "ARD_MATCH", "PARTIAL_ARD_MISMATCH", or "ARD_MISMATCH"
+        :return: "ARD_MATCH", "PARTIAL_ARD_MISMATCH", or "ARD_MISMATCH"
         """
         # type check
         if not all(
@@ -248,8 +247,7 @@ class MatchResult:
         Determines the high resolution match status with detailed mismatch
         types.
 
-        Returns:
-            str: A string indicating the match status with high resolution
+        :return: A string indicating the match status with high resolution
             mismatches.
         """
         # type check
@@ -476,16 +474,13 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     """
     Compares two HLA alleles and returns a MatchLevel
 
-    Args:
-        hla1: First HLA allele object
-        hla2: Second HLA allele object
+    :param hla1: First HLA allele object
+    :param hla2: Second HLA allele object
 
-    Returns:
-        MatchLevel enum value indicating position of matches and mismatch
+    :return: MatchLevel enum value indicating position of matches and mismatch
         (cf. HLA nomenclature)
-    Raises:
-        TypeError: If hla1 or hla2 is not an instance of HLA
-        InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci
+    :raises TypeError: If hla1 or hla2 is not an instance of HLA
+    :raises InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci
     """
 
     if not isinstance(hla1, HLA):
@@ -1076,12 +1071,10 @@ def multi_locus_match(
 
     Intended for research workflows.
 
-    Args:
-        patient (Individual): Patient object
-        donor (Individual): Donor object
+    :param patient: Patient object
+    :param donor: Donor object
 
-    Returns:
-        List[MatchResult]: List of MatchResult objects for each locus
+    :return: List of MatchResult objects for each locus
     """
     results: List[MatchResult] = []
 
