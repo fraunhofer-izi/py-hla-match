@@ -259,6 +259,23 @@ class HLA:
                 f"with redux_type '{redux_type}'.",
                 details=str(e)
             ) from e
+        # Problem with pyard seems to be inconsistent behavior of
+        # InvalidAlleleError per redux type, for now imo we need to double
+        # check with 'P'
+        try:
+            ard.redux(self.allele_string, 'P').strip()
+        except InvalidAlleleError as e:
+            # propagate allele specific exception
+            raise e
+        except Exception as e:
+            # catch and re-raise any other (library specific) exceptions
+            raise PyardLibraryError(
+                f"Failed during allele reduction for '{self.allele_string}' "
+                f"with redux_type '{redux_type}'.",
+                details=str(e)
+            ) from e
+        # still we proceed with the 'lgx' redox string because that's the one
+        # most robust on the standard two-field ARD reduction
 
         # Parse the result
         match = REDUX_PATTERN.match(redux_string)

@@ -12,8 +12,10 @@ class AlleleMatchLevel(IntEnum):
 
     NOT_ASSESSABLE (0):
         Typing resolution insufficient
-    LOCUS_MISMATCH (-3):
-        Mismatch at HLA locus DRB3/-4/-5
+    DRB345_SUBLOCUS_MISMATCH (-3):
+        DRB3/4/5 region mismatch:
+        - locus normalized to DRB345
+        - but underlying sub-loci differ (e.g. DRB3 vs DRB4/5 or DRBX)
     ANTIGEN_MISMATCH (-2):
         Mismatch at the group code encoding antigen
     ALLELE_MISMATCH (-1):
@@ -25,7 +27,7 @@ class AlleleMatchLevel(IntEnum):
     """
     NOT_ASSESSABLE = 0
     # Mismatch levels
-    LOCUS_MISMATCH = -3
+    DRB345_SUBLOCUS_MISMATCH = -3
     ANTIGEN_MISMATCH = -2
     ALLELE_MISMATCH = -1
     # Separating mismatches from matches based on ARD
@@ -34,24 +36,15 @@ class AlleleMatchLevel(IntEnum):
 
 class ARDMatchLevel(IntEnum):
     """
-    Refine cases iff AlleleMatchLevel == ARD_MATCH.
+    ARD refinement iff AlleleMatchLevel == ARD_MATCH.
 
-    EXACT_ALLELE_MATCH (5):
-        1-4 fields identical
-    CODING_SEQUENCE_MATCH (4):
-        1-3 fields identical, different or untyped 4th field
-    FULL_PROTEIN_MATCH (3):
-        1-2 fields identical, different or untyped 3rd field
     G_GROUP_MATCH (2):
-        ARD exons identical at nucleotide level G group, different 2nd field
+        ARD exons identical at nucleotide level (G group)
     P_GROUP_MATCH (1):
-        ARD exons identical at amino-acid level P group, different 2nd field
+        ARD exons identical at amino-acid level (P group)
     NOT_APPLICABLE:
         AlleleMatchLevel != ARD_MATCH
     """
-    EXACT_ALLELE_MATCH = 5
-    CODING_SEQUENCE_MATCH = 4
-    FULL_PROTEIN_MATCH = 3
     G_GROUP_MATCH = 2
     P_GROUP_MATCH = 1
     NOT_APPLICABLE = 0
@@ -73,6 +66,50 @@ class ARDMatchLevelCertainty(Enum):
     NOT_APPLICABLE = "not applicable for AlleleMatchLevel != ARD_MATCH"
     UNCERTAIN = "uncertain about ARDMatchLevel due to insufficient resolution"
     CERTAIN = "certain about ARDMatchLevel due to sufficient resolution"
+
+
+class MolecularMatchLevel(IntEnum):
+    """
+    Molecular (sequence-level) refinement iff AlleleMatchLevel == ARD_MATCH.
+
+    EXACT_ALLELE_MATCH (5):
+        1-4 fields identical
+    CODING_SEQUENCE_MATCH (4):
+        1-3 fields identical, different or untyped 4th field
+    FULL_PROTEIN_MATCH (3):
+        1-2 fields identical, different or untyped 3rd field
+    ARD_MATCH_ONLY (2):
+        2-field difference but ARD equivalent
+    NOT_ASSESSABLE (1):
+        Typing resolution insufficient to assess molecular match level
+    NOT_APPLICABLE (0):
+        AlleleMatchLevel != ARD_MATCH
+    """
+    EXACT_ALLELE_MATCH = 5
+    CODING_SEQUENCE_MATCH = 4
+    FULL_PROTEIN_MATCH = 3
+    ARD_MATCH_ONLY = 2
+    NOT_ASSESSABLE = 1
+    NOT_APPLICABLE = 0
+
+
+class MolecularMatchLevelCertainty(Enum):
+    """
+    Certainty of molecular level.
+
+    NOT_APPLICABLE:
+        AlleleMatchLevel != ARD_MATCH
+    UNCERTAIN:
+        insufficient typing resolution to be sure about MolecularMatchLevel
+        i.e., a *higher* MolecularMatchLevel **is possible**
+    CERTAIN:
+        sufficient typing resolution to be sure about MolecularMatchLevel
+        i.e., a *higher* MolecularMatchLevel **is not possible**
+    """
+    NOT_APPLICABLE = "not applicable for AlleleMatchLevel != ARD_MATCH"
+    UNCERTAIN = "uncertain about MolecularMatchLevel due to insufficient " \
+        "resolution"
+    CERTAIN = "certain about MolecularMatchLevel due to sufficient resolution"
 
 
 class ExpressionSuffixMatchLevel(Enum):
