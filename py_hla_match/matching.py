@@ -34,29 +34,28 @@ class MatchResult:
     This class is designed for research use to describe HLA match or
     mismatch categories between two individuals.
 
-    Attributes:
-        patient (HLAPair): HLA allele pair in the 'patient' role
-        donor (HLAPair): HLA allele pair in the 'donor' role
-        pairing_score (int): internal, ordinal score summarising the two
-            AlleleMatchLevel values.
-        allele_match_levels (Tuple[AlleleMatchLevel, AlleleMatchLevel]):
-            Result of HLA allele matching for a locus (ARD-based)
-        ard_match_levels (Tuple[ARDMatchLevel, ARDMatchLevel]):
-            Result of ARD matching in ARD matched HLA alleles
-        ard_match_certainty (
-            Tuple[ARDMatchLevelCertainty, ARDMatchLevelCertainty]
-        ):
-            Certainty flags of ARD matching in ARD matched HLA alleles
-            given HLA typing resolution
-        molecular_match_levels (
-            Tuple[MolecularMatchLevel, MolecularMatchLevel]
-        ):
-            Result of molecular matching in ARD matched HLA alleles
-        molecular_match_certainty (
-            Tuple[MolecularMatchLevelCertainty, MolecularMatchLevelCertainty]
-        ):
-            Certainty flags of molecular matching in ARD matched HLA alleles
-            given HLA typing resolution
+    :ivar patient: HLA allele pair in the 'patient' role.
+    :ivar donor: HLA allele pair in the 'donor' role.
+    :ivar pairing_score: Internal ordinal score summarising the two
+        ``AlleleMatchLevel`` values.
+    :ivar allele_match_levels: Tuple of ``AlleleMatchLevel`` values for the
+        two allele-level comparisons (patient allele 1 vs donor allele X,
+        patient allele 2 vs donor allele Y).
+    :ivar ard_match_levels: Tuple of ``ARDMatchLevel`` values refining
+        ARD-equivalent allele pairs (``NOT_APPLICABLE`` if not ARD-matched).
+    :ivar ard_match_certainties: Tuple of ``ARDMatchLevelCertainty`` values
+        indicating how certain the ARD refinement is given typing resolution.
+    :ivar molecular_match_levels: Tuple of ``MolecularMatchLevel`` values
+        refining ARD-equivalent allele pairs at 1–4-field level
+        (``NOT_APPLICABLE`` if not ARD-matched).
+    :ivar molecular_match_certainties: Tuple of
+        ``MolecularMatchLevelCertainty`` values indicating how certain the
+        molecular refinement is given typing resolution.
+    :ivar dpb1_tce_status: Optional DPB1 permissive/non-permissive
+        classification from the EBI TCE API (only populated for DPB1 loci).
+    :ivar is_homozygous_patient: ``True`` if the patient is homozygous at
+        this locus at ARD-reduced level, ``False`` if heterozygous, or
+        ``None`` if ARD-reduced alleles are not available.
     """
     def __init__(
             self,
@@ -136,13 +135,11 @@ class MatchResult:
 
     def get_match_level_for_resolution(self, resolution: str) -> str:
         """
-        Get match level for a given resolution
+        Get locus-level match category for a given resolution.
 
-        Args:
-            resolution (str): Resolution level (basic, high)
-
-        Returns:
-            str: Match level for the given resolution
+        :param resolution: Resolution level (``"basic"`` or ``"high"``).
+        :return: Match level for the given resolution as a string.
+        :raises ValueError: If an unknown resolution level is requested.
         """
         if resolution == "basic":
             return self.loci_match_basic_resolution
@@ -935,13 +932,13 @@ def _get_correct_allele_pairing(
     Determines the correct pairing of patient and donor HLA alleles by
     evaluating all possible combinations.
 
-    Args:
-        patient_alleles: HLAPair containing two patient HLA alleles
-        donor_alleles: HLAPair containing two donor HLA alleles
+    Intended for research workflows.
 
-    Returns:
-        _PairingResult containing all match levels and certainties
-        for the optimal pairing.
+    :param patient_alleles: ``HLAPair`` containing two patient HLA alleles.
+    :param donor_alleles: ``HLAPair`` containing two donor HLA alleles.
+    :return: A ``_PairingResult`` instance containing allele-, ARD- and
+        molecular-level match classifications and certainties for the
+        optimal pairing.
 
     Notes:
         - Considers two possible pairings:
@@ -1042,12 +1039,10 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
 
     Intended for research workflows.
 
-    Args:
-        patient (HLAPair): Patient HLA pair containing two HLA alleles
-        donor (HLAPair): Donor HLA pair containing two HLA alleles
-
-    Returns:
-        MatchResult: Class storing matching results including all refinements
+    :param patient: Patient ``HLAPair`` containing two HLA alleles.
+    :param donor: Donor ``HLAPair`` containing two HLA alleles.
+    :return: ``MatchResult`` object storing allele-level match categories
+        and all ARD and molecular refinements for the optimal pairing.
 
     Notes:
         - The function assumes that both patient and donor have exactly two
