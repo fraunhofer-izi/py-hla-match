@@ -206,49 +206,9 @@ class HLADataSource:
         # slice the dataframe if start and end indices were given
         if self.col_idx_start is not None and self.col_idx_stop is not None:
             df = df.iloc[:, self.col_idx_start:self.col_idx_stop + 1]
+
         for idx, row in df.iterrows():
-            hla_pairs: list[HLAPair] = []
-            # Map of locus to HLA objects
-            locus_map = defaultdict(list)
-            individual_hla_objects: list[HLA] = []
-            # first: parse all available HLA strings in the row into HLA
-            # objects
-            for hla_string in row:
-                try:
-                    hla = HLA(hla_string)
-                    individual_hla_objects.append(hla)
-                    locus_map[hla.locus].append(hla)
-                except MalformedHLAStringError as e:  # NOQA
-                    logger.error(
-                        f'Encountered malformed HLA String {hla_string} in row'
-                        f' {idx}. Skipping Allele.'
-                    )
-                    continue
-                except InvalidAlleleError:
-                    logger.error(
-                        f'Encountered invalid HLA Allele {hla_string} in '
-                        f'row {idx}. Skipping Allele.'
-                    )
-                    continue
-            # now: Match HLA pairs based on locus
-            for locus, alleles in locus_map.items():
-                # edge case: more than two alleles found for a locus
-                if len(alleles) > 2:
-                    raise MalformedHLADataSourceError(
-                        f"Encountered third allele for locus {locus} in row"
-                        f"{idx}."
-                    )
-                # only create a pair if exactly two alleles exist
-                if len(alleles) == 2:
-                    hla_pairs.append(HLAPair(hla1=alleles[0], hla2=alleles[1]))
-                else:
-                    logger.warning(
-                        f"Unpaired allele {alleles[0].allele_string} in row"
-                        f" {idx}."
-                    )
-            individuals.append(Individual(hla_data=hla_pairs))
-            logger.debug(
-                f"Successfully parsed row {idx}. Added {len(hla_pairs)} HLA"
-                f" pairs to individual."
-            )
+            # delegate to _parse_row
+            individuals.append(self._parse_row(row, idx))
+
         return individuals
