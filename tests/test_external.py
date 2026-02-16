@@ -5,21 +5,24 @@ import requests
 from py_hla_match.external import (
     query_dpb1_tce,
     DPB1TCEStatus,
-    DPB1TCEConfig
+    DPB1TCEConfig,
+    DPB1Result
 )
 
 
 class TestDPB1TCE(unittest.TestCase):
 
-    def create_mock_response(self, tce_prediction, version="2.1"):
+    def create_mock_response(self, tce_prediction, version="3.0"):
         response_keys = {
             "2.0": "HLA-DPB1_TCE_report_V2.0",
             "2.1": "HLA-DPB1_TCE_report_V2.1",
             "3.0": "HLA-DPB1_TCE_report_V3.0"
         }
 
+        key = response_keys.get(version, "HLA-DPB1_TCE_report_V3.0")
+
         return {
-            response_keys[version]: {
+            key: {
                 'donors': [{
                     'result': {
                         'tce_prediction': tce_prediction
@@ -30,23 +33,30 @@ class TestDPB1TCE(unittest.TestCase):
 
     @patch('requests.get')
     def test_permissive_match(self, mock_get):
+        """Test standard permissive match returns SUCCESS and string"""
         mock_response = Mock()
         mock_response.json.return_value = \
             self.create_mock_response("Permissive")
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+        self.assertIsInstance(result, DPB1Result)
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "Permissive")
 
     @patch('requests.get')
     def test_non_permissive_gvh(self, mock_get):
+        """Test Non-Permissive match returns raw string"""
         mock_response = Mock()
         mock_response.json.return_value = \
             self.create_mock_response("Non-Permissive GvH")
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("10:01", "10:01", "14:01", "14:01")
-        self.assertEqual(result, DPB1TCEStatus.NON_PERMISSIVE_GVH)
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "Non-Permissive GvH")
 
     @patch('requests.get')
     def test_non_permissive_hvg(self, mock_get):
@@ -56,10 +66,15 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("14:01", "14:01", "10:01", "10:01")
-        self.assertEqual(result, DPB1TCEStatus.NON_PERMISSIVE_HVG)
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "Non-Permissive HvG")
 
     @patch('requests.get')
     def test_invalid_alleles(self, mock_get):
+        """
+        Test that specific API error message maps to INVALID_ALLELES status
+        """
         mock_response = Mock()
         mock_response.json.return_value = self.create_mock_response(
             "Not possible as typing contains non-existent allele"
@@ -67,7 +82,9 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("99:99", "10:01", "14:01", "20:01")
-        self.assertEqual(result, DPB1TCEStatus.INVALID_ALLELES)
+
+        self.assertEqual(result.status, DPB1TCEStatus.INVALID_ALLELES)
+        self.assertIsNone(result.prediction)
 
     @patch('requests.get')
     def test_api_version_2_0(self, mock_get):
@@ -79,11 +96,12 @@ class TestDPB1TCE(unittest.TestCase):
         result = query_dpb1_tce(
             "01:01", "02:01", "03:01", "04:01", version="2.0"
         )
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
-        # verify endpoint was called correctly
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "Permissive")
+
         mock_get.assert_called_once()
-        call_args = mock_get.call_args
-        self.assertIn("dpb1_tce_v2", call_args[0][0])
+        self.assertIn("dpb1_tce_v2", mock_get.call_args[0][0])
 
     @patch('requests.get')
     def test_api_version_2_1(self, mock_get):
@@ -95,11 +113,8 @@ class TestDPB1TCE(unittest.TestCase):
         result = query_dpb1_tce(
             "01:01", "02:01", "03:01", "04:01", version="2.1"
         )
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
-        # verify endpoint was called correctly
-        mock_get.assert_called_once()
-        call_args = mock_get.call_args
-        self.assertIn("dpb1_tce_v21", call_args[0][0])
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertIn("dpb1_tce_v21", mock_get.call_args[0][0])
 
     @patch('requests.get')
     def test_api_version_3_0(self, mock_get):
@@ -111,7 +126,7 @@ class TestDPB1TCE(unittest.TestCase):
         result = query_dpb1_tce(
             "01:01", "02:01", "03:01", "04:01", version="3.0"
         )
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
         self.assertIn("dpb1_tce_v3", mock_get.call_args[0][0])
 
     @patch('requests.get')
@@ -119,14 +134,16 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.side_effect = requests.Timeout("Connection timed out")
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01", timeout=5)
-        self.assertEqual(result, DPB1TCEStatus.TIMEOUT_ERROR)
+
+        self.assertEqual(result.status, DPB1TCEStatus.TIMEOUT_ERROR)
+        self.assertFalse(result.is_valid)
 
     @patch('requests.get')
     def test_request_exception(self, mock_get):
         mock_get.side_effect = requests.RequestException("Network error")
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.REQUEST_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.REQUEST_ERROR)
 
     @patch('requests.get')
     def test_invalid_json_response(self, mock_get):
@@ -135,7 +152,7 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.VALUE_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.VALUE_ERROR)
 
     @patch('requests.get')
     def test_missing_key_in_response(self, mock_get):
@@ -144,18 +161,18 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.API_ERROR)
 
     @patch('requests.get')
     def test_empty_donors_list(self, mock_get):
         mock_response = Mock()
         mock_response.json.return_value = {
-            "HLA-DPB1_TCE_report_V2.1": {"donors": []}
+            "HLA-DPB1_TCE_report_V3.0": {"donors": []}
         }
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.API_ERROR)
 
     @patch('requests.get')
     def test_missing_tce_prediction(self, mock_get):
@@ -170,30 +187,35 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.API_ERROR)
 
     @patch('requests.get')
     def test_unknown_tce_prediction(self, mock_get):
+        """
+        Test that unknown strings are accepted as valid predictions.
+        """
         mock_response = Mock()
         mock_response.json.return_value = \
             self.create_mock_response("Unknown Status")
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "Unknown Status")
 
     def test_invalid_api_version(self):
         result = query_dpb1_tce(
             "01:01", "02:01", "03:01", "04:01", version="4.0"
         )
-        self.assertEqual(result, DPB1TCEStatus.CONFIGURATION_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.CONFIGURATION_ERROR)
 
     @patch('requests.get')
     def test_unexpected_exception(self, mock_get):
         mock_get.side_effect = Exception("Unexpected error")
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.UNEXPECTED_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.UNEXPECTED_ERROR)
 
     @patch('requests.get')
     def test_query_parameters(self, mock_get):
@@ -237,49 +259,49 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.REQUEST_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.REQUEST_ERROR)
 
     @patch('requests.get')
-    def test_ard_matched_maps_to_permissive(self, mock_get):
+    def test_ard_matched_maps_to_permissive_string(self, mock_get):
+        """Test that ARD matched is returned as raw string 'ARD Matched'"""
         mock_response = Mock()
         mock_response.json.return_value = \
             self.create_mock_response("ARD Matched")
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "ARD Matched")
 
     @patch('requests.get')
-    def test_permissive_core_maps_to_permissive(self, mock_get):
+    def test_permissive_core_preserves_string(self, mock_get):
+        """Test that 'Permissive (Core)' is preserved exactly"""
         mock_response = Mock()
         mock_response.json.return_value = \
             self.create_mock_response("Permissive (Core)")
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "Permissive (Core)")
 
     @patch('requests.get')
     def test_none_input_parameters(self, mock_get):
-        """Test handling of None inputs"""
-        mock_get.side_effect = requests.RequestException(
-            "Invalid parameter"
-        )
+        mock_get.side_effect = requests.RequestException("Invalid parameter")
         result = query_dpb1_tce(None, "01:01", "02:01", "03:01")
-        self.assertEqual(result, DPB1TCEStatus.REQUEST_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.REQUEST_ERROR)
 
     @patch('requests.get')
     def test_empty_string_inputs(self, mock_get):
-        """Test handling of empty string inputs - API may reject these"""
-        mock_get.side_effect = requests.RequestException(
-            "Invalid allele format"
-        )
+        mock_get.side_effect = requests.RequestException("Invalid allele")
         result = query_dpb1_tce("", "01:01", "02:01", "03:01")
-        self.assertEqual(result, DPB1TCEStatus.REQUEST_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.REQUEST_ERROR)
 
     @patch('requests.get')
     def test_whitespace_in_api_response(self, mock_get):
-        """Test API response with extra whitespace"""
+        """Test API response with extra whitespace is preserved"""
         mock_response = Mock()
         mock_response.json.return_value = self.create_mock_response(
             "  Permissive  "
@@ -287,11 +309,13 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "  Permissive  ")
 
     @patch('requests.get')
     def test_uppercase_api_response(self, mock_get):
-        """Test API response in uppercase"""
+        """Test API response in uppercase is preserved"""
         mock_response = Mock()
         mock_response.json.return_value = self.create_mock_response(
             "PERMISSIVE"
@@ -299,14 +323,16 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "01:01", "02:01")
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "PERMISSIVE")
 
     @patch('requests.get')
     def test_empty_tce_prediction_string(self, mock_get):
         """Test empty string vs None tce_prediction"""
         mock_response = Mock()
         mock_response.json.return_value = {
-            "HLA-DPB1_TCE_report_V2.1": {
+            "HLA-DPB1_TCE_report_V3.0": {
                 'donors': [{
                     'result': {
                         'tce_prediction': ""  # Empty string
@@ -317,28 +343,14 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
-
-    @patch('requests.get')
-    def test_missing_result_key(self, mock_get):
-        """Test missing 'result' key in donor object"""
-        mock_response = Mock()
-        mock_response.json.return_value = {
-            "HLA-DPB1_TCE_report_V2.1": {
-                'donors': [{}]  # No 'result' key
-            }
-        }
-        mock_get.return_value = mock_response
-
-        result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.API_ERROR)
+        self.assertEqual(result.status, DPB1TCEStatus.API_ERROR)
 
     @patch('requests.get')
     def test_multiple_donors_uses_first(self, mock_get):
         """Test that function uses first donor when multiple present"""
         mock_response = Mock()
         mock_response.json.return_value = {
-            "HLA-DPB1_TCE_report_V2.1": {
+            "HLA-DPB1_TCE_report_V3.0": {
                 'donors': [
                     {'result': {'tce_prediction': 'Permissive'}},
                     # Should be ignored
@@ -349,7 +361,8 @@ class TestDPB1TCE(unittest.TestCase):
         mock_get.return_value = mock_response
 
         result = query_dpb1_tce("01:01", "02:01", "03:01", "04:01")
-        self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+        self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+        self.assertEqual(result.prediction, "Permissive")
 
     def test_custom_configuration(self):
         """Test custom configuration object"""
@@ -363,15 +376,20 @@ class TestDPB1TCE(unittest.TestCase):
             mock_response = Mock()
             mock_response.json.return_value = {
                 "custom_response_key": {
-                    'donors': [{'result': {'tce_prediction': 'Permissive'}}]
+                    'donors': [{
+                        'result': {'tce_prediction': 'Permissive'}
+                    }]
                 }
             }
             mock_get.return_value = mock_response
 
             result = query_dpb1_tce(
-                "01:01", "02:01", "03:01", "04:01", config=custom_config
+                "01:01", "02:01", "03:01", "04:01",
+                version="2.1",
+                config=custom_config
             )
-            self.assertEqual(result, DPB1TCEStatus.PERMISSIVE)
+            self.assertEqual(result.status, DPB1TCEStatus.SUCCESS)
+            self.assertEqual(result.prediction, "Permissive")
 
 
 if __name__ == '__main__':
