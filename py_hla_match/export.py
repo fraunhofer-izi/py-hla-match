@@ -141,9 +141,10 @@ class PairwiseMatch:
 
         # define loci upfront
         if loci:
+            # respect user order exactly
             self.loci = list(loci)
         else:
-            self.loci = list(get_config().effective_valid_loci)
+            self.loci = sorted(list(get_config().effective_valid_loci))
 
         self.include_ard = include_ard_details
         self.include_mol = include_molecular_details
