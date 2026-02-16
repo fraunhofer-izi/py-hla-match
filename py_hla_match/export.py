@@ -90,8 +90,14 @@ def _flatten_match_results(
                     res.is_homozygous_patient
 
         # DPB1 TCE (Only for DPB1)
-        if include_dpb1_tce and locus == "DPB1" and res.dpb1_tce_status:
-            row["DPB1_tce_status"] = res.dpb1_tce_status.name
+        if include_dpb1_tce and locus == "DPB1" and res.dpb1_tce_result:
+            result = res.dpb1_tce_result
+            if result.is_valid:
+                # Success: Export the raw prediction string (e.g. "Permissive")
+                row["DPB1_tce_status"] = result.prediction
+            else:
+                # Error: Export the status Enum name (e.g. "TIMEOUT_ERROR")
+                row["DPB1_tce_status"] = result.status.name
 
     return row
 
