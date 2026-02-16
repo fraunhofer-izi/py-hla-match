@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from typing import Iterable, Union
 from openpyxl import load_workbook
+from contextlib import closing
 
 from py_hla_match.exceptions import (
     MalformedHLAStringError,
@@ -82,8 +83,8 @@ class HLADataSource:
         """
         Stream HLA data from an Excel file in chunks using openpyxl.
         """
-        wb = load_workbook(self.source_path, read_only=True)
-        try:
+        # use closing to ensure wb.close() is called on generator exit
+        with closing(load_workbook(self.source_path, read_only=True)) as wb:
             ws = wb.active
             # idx starting at 1
             rows = ws.iter_rows(
@@ -91,6 +92,7 @@ class HLADataSource:
             )
             buffer = []
             row_counter = 0  # Actual row count for tracking
+
             for row in rows:
                 # Check for completely empty row
                 if all(cell is None for cell in row):
@@ -100,17 +102,18 @@ class HLADataSource:
                     self.col_idx_stop is not None
                 ):
                     row = row[self.col_idx_start:self.col_idx_stop + 1]
+
                 buffer.append((row_counter, row))
                 row_counter += 1
+
                 if len(buffer) >= chunk_size:
                     for row_idx, row_data in buffer:
                         yield self._parse_row(row_data, row_idx)
                     buffer.clear()
+
             # Yield remaining
             for row_idx, row_data in buffer:
                 yield self._parse_row(row_data, row_idx)
-        finally:
-            wb.close()
 
     def _parse_csv(
             self, stream: bool, chunk_size: int
