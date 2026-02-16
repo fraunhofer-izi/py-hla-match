@@ -75,8 +75,8 @@ Desktop.ini
 py_hla_match/main.py
 
 # data files
-tests/resources/real_data
 py_hla_match/demo
+demo
 
 # output files
 output
