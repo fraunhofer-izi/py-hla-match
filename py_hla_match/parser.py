@@ -70,7 +70,12 @@ class HLADataSource:
         if stream:
             return self._stream_excel(chunk_size=chunk_size)
         else:
-            df = pd.read_excel(self.source_path)
+            # respect row_idx_start by skipping preceding rows
+            df = pd.read_excel(
+                self.source_path,
+                header=None,
+                skiprows=self.row_idx_start
+            )
             return self._parse_dataframe(df)
 
     def _stream_excel(self, chunk_size: int) -> Iterable[Individual]:
@@ -116,14 +121,26 @@ class HLADataSource:
         if stream:
             return self._stream_csv(chunk_size=chunk_size)
         else:
-            df = pd.read_csv(self.source_path)
+            # respect row_idx_start by skipping preceding rows
+            df = pd.read_csv(
+                self.source_path,
+                header=None,
+                skiprows=self.row_idx_start
+            )
             return self._parse_dataframe(df)
 
     def _stream_csv(self, chunk_size: int) -> Iterable[Individual]:
         """
         Stream HLA data from a CSV file in chunks.
         """
-        for chunk in pd.read_csv(self.source_path, chunksize=chunk_size):
+        # respect row_idx_start in streaming mode
+        reader = pd.read_csv(
+            self.source_path,
+            chunksize=chunk_size,
+            header=None,
+            skiprows=self.row_idx_start
+        )
+        for chunk in reader:
             if (
                 self.col_idx_start is not None and
                 self.col_idx_stop is not None
