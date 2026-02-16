@@ -167,8 +167,19 @@ class HLADataSource:
         locus_map = defaultdict(list)
 
         for hla_string in row:
+            # skip nans (pandas), Nones (openpyxl), or empty strings
+            if pd.isna(hla_string) or hla_string is None:
+                continue
+
+            # convert to string and strip whitespace
+            # handles cases where data might be read as int/float or w padding
+            cleaned_string = str(hla_string).strip()
+
+            if cleaned_string == "":
+                continue
+
             try:
-                hla = HLA(hla_string)
+                hla = HLA(cleaned_string)
                 locus_map[hla.locus].append(hla)
             except MalformedHLAStringError:
                 logger.error(
