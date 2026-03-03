@@ -480,7 +480,8 @@ def allele_match(hla1: HLA, hla2: HLA) -> AlleleMatchLevel:
     :return: MatchLevel enum value indicating position of matches and mismatch
         (cf. HLA nomenclature)
     :raises TypeError: If hla1 or hla2 is not an instance of HLA
-    :raises InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci
+    :raises InvalidLocusComparisonError: If hla1 and hla2 have incompatible
+        loci
     """
 
     if not isinstance(hla1, HLA):
@@ -799,9 +800,16 @@ def _refine_ard_match_level_at_molecular_level(
             MolecularMatchLevelCertainty.NOT_APPLICABLE
         )
 
-    # (2) P-group code: molecular not applicable
+    # (2) Group code: molecular not applicable
     # e.g. A*01:01P vs A*01:01:01:01
     if hla1.group_code == "P" or hla2.group_code == "P":
+        return (
+            MolecularMatchLevel.NOT_ASSESSABLE,
+            # Could be protein/coding/exact
+            MolecularMatchLevelCertainty.UNCERTAIN
+        )
+
+    if hla1.group_code == "G" or hla2.group_code == "G":
         return (
             MolecularMatchLevel.NOT_ASSESSABLE,
             # Could be protein/coding/exact
@@ -815,109 +823,86 @@ def _refine_ard_match_level_at_molecular_level(
     )
 
     # (3) cases with res == 2
-    # TODO: double check if G group interferes with protein
-    # we either have full protein match:
     # e.g. A*01:01 vs A*01:01
-    if (min_resolution == 2) and (hla1.allele == hla2.allele):
-        return (
-            MolecularMatchLevel.FULL_PROTEIN_MATCH,
-            # Could be coding/exact
-            MolecularMatchLevelCertainty.UNCERTAIN
-        )
-    # or a mismatch:
-    # e.g. A*01:01 vs A*01:15 (same P-group)
-    elif (min_resolution == 2) and (hla1.allele != hla2.allele):
-        return (
-            MolecularMatchLevel.ARD_MATCH_ONLY,
-            MolecularMatchLevelCertainty.CERTAIN
-        )
-
-    # (4) cases with res >= 3
-    # NOTE: we will look for a more elegant way to structure this logic
-    if min_resolution >= 3:
-        # If second fields differ, we can only say ARD_MATCH_ONLY:
-        # they are ARD-equivalent but not protein/coding/exact identical
-        # e.g. A*02:01:01 vs A*02:09:01 (both A*02:01P)
-        if hla1.allele != hla2.allele:
+    if min_resolution == 2:
+        # we either have full protein match:
+        if (
+            hla1.allele == hla2.allele
+        ):
+            return (
+                MolecularMatchLevel.FULL_PROTEIN_MATCH,
+                # Could be coding/exact
+                MolecularMatchLevelCertainty.UNCERTAIN
+            )
+        # or a mismatch:
+        # e.g. A*01:01 vs A*01:15 (same P-group)
+        else:
             return (
                 MolecularMatchLevel.ARD_MATCH_ONLY,
                 MolecularMatchLevelCertainty.CERTAIN
             )
-        # NOTE: this should also handle all G-groups
 
-        # From here: first two fields identical -> at least FULL_PROTEIN_MATCH
+    # (4) min_resolution == 3: we know the 3rd field (synonymous variant)
+    if min_resolution == 3:
+        if (
+            hla1.allele != hla2.allele
+        ):
+            # 2nd fields differ
+            return (
+                MolecularMatchLevel.ARD_MATCH_ONLY,
+                # Could still be EXACT_ALLELE_MATCH if 4th field also equal
+                MolecularMatchLevelCertainty.CERTAIN
+            )
+        elif (
+            # hla1.allele == hla2.allele
+            hla1.synonymous_variant != hla2.synonymous_variant
+        ):
+            # 3rd fields differ
+            return (
+                MolecularMatchLevel.FULL_PROTEIN_MATCH,
+                # Could still be coding/exact if 3rd-4th field also equal
+                MolecularMatchLevelCertainty.CERTAIN
+            )
+        else:
+            # 1–3 fields identical, unknown 4th field
+            return (
+                MolecularMatchLevel.CODING_SEQUENCE_MATCH,
+                MolecularMatchLevelCertainty.UNCERTAIN
+            )
 
-        # (4a) min_resolution == 3: we know the 3rd field (synonymous variant)
-        if min_resolution == 3:
-            if (
-                hla1.synonymous_variant == hla2.synonymous_variant
-                and hla1.group_code != "G"
-                and hla2.group_code != "G"
-            ):
-                # 1–3 fields identical and 4th is unknown or untyped
-                return (
-                    MolecularMatchLevel.CODING_SEQUENCE_MATCH,
-                    # Could still be EXACT_ALLELE_MATCH if 4th field also equal
-                    MolecularMatchLevelCertainty.UNCERTAIN
-                )
-            if (
-                hla1.synonymous_variant == hla2.synonymous_variant
-                and hla1.group_code == "G"
-                and hla2.group_code == "G"
-            ):
-                # 1–3 fields identical but only G-group known
-                return (
-                    MolecularMatchLevel.FULL_PROTEIN_MATCH,
-                    # Could still be coding/exact if 3rd-4th field also equal
-                    MolecularMatchLevelCertainty.UNCERTAIN
-                )
-            elif (
-                hla1.synonymous_variant == hla2.synonymous_variant
-                # if we have a single 'G' group, we cannot be sure about coding
-                and (hla1.group_code == "G" or hla2.group_code == "G")
-            ):
-                # Same protein but different coding sequence
-                return (
-                    MolecularMatchLevel.FULL_PROTEIN_MATCH,
-                    # Cannot be CODING_SEQUENCE_MATCH or EXACT_ALLELE_MATCH
-                    MolecularMatchLevelCertainty.UNCERTAIN
-                )
-            else:
-                # 1–2 fields identical, 3rd differs
-                return (
-                    MolecularMatchLevel.FULL_PROTEIN_MATCH,
-                    MolecularMatchLevelCertainty.CERTAIN
-                )
-
-        # (4b) min_resolution == 4: both alleles have 4-field resolution
-        # First two fields already identical -> inspect 3rd and 4th:
-
-        if hla1.synonymous_variant != hla2.synonymous_variant:
-            # Different third field -> different coding sequence
+    # (5) min_resolution == 4: both alleles have 4-field resolution
+    if min_resolution == 4:
+        if (
+            hla1.allele != hla2.allele
+        ):
+            # second fields differ
+            return (
+                MolecularMatchLevel.ARD_MATCH_ONLY,
+                MolecularMatchLevelCertainty.CERTAIN
+            )
+        elif (
+            hla1.synonymous_variant != hla2.synonymous_variant
+        ):
+            # third firlds differ
             return (
                 MolecularMatchLevel.FULL_PROTEIN_MATCH,
                 MolecularMatchLevelCertainty.CERTAIN
             )
-
         # Third field identical -> check non-coding (4th) field
-        if hla1.non_coding_variant == hla2.non_coding_variant:
-            # All 1–4 fields identical
-            return (
-                MolecularMatchLevel.EXACT_ALLELE_MATCH,
-                MolecularMatchLevelCertainty.CERTAIN
-            )
-        else:
+        elif (
+            hla1.non_coding_variant != hla2.non_coding_variant
+        ):
             # 1–3 fields identical, 4th differs
             return (
                 MolecularMatchLevel.CODING_SEQUENCE_MATCH,
                 MolecularMatchLevelCertainty.CERTAIN
             )
-
-    # if we are here, imho something is odd
-    raise ARDMatchRefinementError(
-        "_refine_ard_match_level_at_molecular_level was unable to process "
-        f"hla1='{hla1.allele_string}', hla2='{hla2.allele_string}'."
-    )
+        else:
+            # All 1–4 fields identical
+            return (
+                MolecularMatchLevel.EXACT_ALLELE_MATCH,
+                MolecularMatchLevelCertainty.CERTAIN
+            )
 
 
 def _get_correct_allele_pairing(
