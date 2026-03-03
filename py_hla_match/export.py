@@ -3,14 +3,97 @@ import os
 from itertools import zip_longest
 
 import pandas as pd
+import csv
 
-from typing import List
-from pandas import DataFrame
+from typing import List, Dict, Any, Optional, Iterable
 
+from py_hla_match.config import get_config, LOCUS_ALIAS_MAP
 from py_hla_match.matching import MatchResult, multi_locus_match
 from py_hla_match.parser import HLADataSource
 
 logger = logging.getLogger(__name__)
+
+
+def scan_loci(source: HLADataSource, chunk_size: int = 10000) -> List[str]:
+    """
+    Utility function to scan hla data source and identify all loci present.
+
+    :param source: HLADataSource to scan
+    :param chunk_size: Size of the chunks to read from the file
+    :return: Sorted list of unique loci detected in the data source
+    """
+    detected = set()
+    # we stream through the file to avoid memory overhead during scan
+    for ind in source.parse(stream=True, chunk_size=chunk_size):
+        for pair in ind.hla_data:
+            detected.add(pair.locus)
+    return sorted(list(detected))
+
+
+def _flatten_match_results(
+    results: List[MatchResult],
+    include_ard: bool = False,
+    include_molecular: bool = False,
+    include_homozygosity: bool = False,
+    include_dpb1_tce: bool = False,
+) -> Dict[str, Any]:
+    """
+    Transforms a list of MatchResult objects into a flat dictionary.
+
+    Output keys use raw Enum names (e.g., 'A_1': 'ARD_MATCH').
+
+    :param results: List of MatchResult objects for one pair
+    :param include_ard: If True, adds ARD match levels and certainties^
+    :param include_molecular: If True, adds molecular levels and certainties
+    :param include_homozygosity: If True, adds patient homozygosity status
+    :param include_dpb1_tce: If True, adds DPB1 TCE status (if computed)
+    :return: Dictionary representing a single flattened row
+    """
+    row = {}
+    for res in results:
+        locus = res.patient.locus
+
+        # identify target keys (loci)
+        target_loci = [locus]
+        if locus in LOCUS_ALIAS_MAP:
+            target_loci.extend(LOCUS_ALIAS_MAP[locus])
+
+        # populate dictionary for all targets
+        for target_locus in target_loci:
+            # base Levels
+            row[f"{target_locus}_1"] = res.allele_match_levels[0].name
+            row[f"{target_locus}_2"] = res.allele_match_levels[1].name
+
+            # pptional details
+            if include_ard:
+                row[f"{target_locus}_ard_1"] = \
+                    res.ard_match_levels[0].name
+                row[f"{target_locus}_ard_cert_1"] = \
+                    res.ard_match_certainties[0].name
+                row[f"{target_locus}_ard_2"] = \
+                    res.ard_match_levels[1].name
+                row[f"{target_locus}_ard_cert_2"] = \
+                    res.ard_match_certainties[1].name
+
+            if include_molecular:
+                row[f"{target_locus}_mol_1"] = \
+                    res.molecular_match_levels[0].name
+                row[f"{target_locus}_mol_cert_1"] = \
+                    res.molecular_match_certainties[0].name
+                row[f"{target_locus}_mol_2"] = \
+                    res.molecular_match_levels[1].name
+                row[f"{target_locus}_mol_cert_2"] = \
+                    res.molecular_match_certainties[1].name
+
+            if include_homozygosity and res.is_homozygous_patient is not None:
+                row[f"{target_locus}_homozygous_patient"] = \
+                    res.is_homozygous_patient
+
+        # DPB1 TCE (Only for DPB1)
+        if include_dpb1_tce and locus == "DPB1" and res.dpb1_tce_status:
+            row["DPB1_tce_status"] = res.dpb1_tce_status.name
+
+    return row
 
 
 class PairwiseMatch:
@@ -21,214 +104,168 @@ class PairwiseMatch:
     :param source: HLADataSource for the source dataset
     :param target: HLADataSource for the target dataset
     :param storage_filename: Name of the file to store the results
-    :param resolution: Resolution of the match results, can be 'basic', 'high',
-        or 'full'
-    :param stream: If True, results will be streamed and not stored in memory
-    :param chunk_size: Size of the chunks to read from the file (if streaming)
+    :param loci: Optional iterable of specific loci to export. If None,
+        defaults to all supported loci
+    :param include_ard_details: If True, include ARD refinement columns
+    :param include_molecular_details: If True, include molecular refinement
+        columns
+    :param include_homozygosity: If True, include homozygosity boolean
+    :param include_dpb1_tce: If True, include DPB1 TCE status column
+    :param stream: If True, results will be streamed and not stored in
+        memory
+    :param chunk_size: Size of the chunks to read from the file
+    :param overwrite: If True, allow overwriting existing output files
 
     :raises ValueError: If resolution is not one of 'basic', 'high', or 'full'
     """
-
-    def __init__(self,
-                 source: HLADataSource,
-                 target: HLADataSource,
-                 storage_filename: str = "match_results.csv",
-                 resolution: str = "basic",
-                 stream: bool = False,
-                 chunk_size: int = 10000):
-
-        if resolution not in {"basic", "high", "full"}:
-            raise ValueError(
-                "Resolution must be one of: 'basic', 'high', 'full'"
-            )
-
+    def __init__(
+        self,
+        source: HLADataSource,
+        target: HLADataSource,
+        storage_filename: str = "match_results.csv",
+        # Config
+        loci: Optional[Iterable[str]] = None,
+        # Feature Flags
+        include_ard_details: bool = False,
+        include_molecular_details: bool = False,
+        include_homozygosity: bool = False,
+        include_dpb1_tce: bool = False,
+        # Controls
+        stream: bool = False,
+        chunk_size: int = 10000,
+        overwrite: bool = False
+    ):
         self.source = source
         self.target = target
-        self.resolution = resolution
+        self.storage_filename = storage_filename
+
+        # define loci upfront
+        if loci:
+            # respect user order exactly
+            self.loci = list(loci)
+        else:
+            self.loci = sorted(list(get_config().effective_valid_loci))
+
+        self.include_ard = include_ard_details
+        self.include_mol = include_molecular_details
+        self.include_hom = include_homozygosity
+        self.include_tce = include_dpb1_tce
+
         self.stream = stream
         self.chunk_size = chunk_size
-        self.result_file = storage_filename
-        self.raw_results = []  # Placeholder for raw results
-        self.result = None  # Placeholder for the result DataFrame
-        self._result_buffer = []
+        self.overwrite = overwrite
+
+        # State (Only used if stream=False)
+        self.raw_results: List[List[MatchResult]] = []
+        self._df_buffer: List[dict] = []
+
+        self._headers = self._build_headers()
+
+    def _build_headers(self) -> List[str]:
+        """
+        Builds the CSV header row based on configured loci and flags.
+
+        :return: List of column names
+        """
+        headers = ['pair_index']
+        for locus in self.loci:
+            headers.extend([f"{locus}_1", f"{locus}_2"])
+            if self.include_ard:
+                headers.extend([f"{locus}_ard_1", f"{locus}_ard_cert_1",
+                                f"{locus}_ard_2", f"{locus}_ard_cert_2"])
+            if self.include_mol:
+                headers.extend([f"{locus}_mol_1", f"{locus}_mol_cert_1",
+                                f"{locus}_mol_2", f"{locus}_mol_cert_2"])
+            if self.include_hom:
+                headers.append(f"{locus}_homozygous_patient")
+
+        if self.include_tce and "DPB1" in self.loci:
+            headers.append("DPB1_tce_status")
+        return headers
 
     def run(self) -> None:
         """
-        Starts the pairwise match calculation.
-        """
-        self.calculate_result()
+        Executes matching pipeline.
 
-    def to_df(self) -> DataFrame:
-        """
-        Converts the match results to a pandas DataFrame.
-
-        :return: DataFrame containing the match results
-        """
-        if self.stream:
-            raise ValueError(
-                "Cannot convert to DataFrame when streaming is enabled."
-            )
-        return self.result
-
-    def raw_to_df(self) -> pd.DataFrame:
-        """
-        Converts the raw allele match results to a pandas DataFrame.
-
-        Columns are named <locus>_1 and <locus>_2.
-        """
-        rows = []
-        all_cols = set()
-
-        for pair_idx, match_list in enumerate(self.raw_results):
-            row = {"pair": pair_idx}
-            for res in match_list:
-                locus = res.patient.locus
-                allele_lvl_1, allele_lvl_2 = res.allele_match_levels
-                col_1 = f"{locus}_1"
-                col_2 = f"{locus}_2"
-                row[col_1] = allele_lvl_1.name
-                row[col_2] = allele_lvl_2.name
-                all_cols.update([col_1, col_2])
-            rows.append(row)
-
-        df = pd.DataFrame(rows)
-        ordered_cols = sorted(all_cols)
-        return df.reindex(columns=ordered_cols)
-
-    def calculate_result(self) -> None:
-        """
         Matches individuals from source and target datasets row-wise.
-        Assumes that both datasets are aligned by index.
-        Processes data in chunks and periodically flushes results to the
-            output file.
-        """
-        logger.info("Starting pairwise match result calculation...")
+        Processes data in chunks (if streamed) or in memory.
 
-        # check if the specified dir for results file exists (if non-default),
-        # raise error if it does not
-        result_dir = os.path.dirname(self.result_file)
+        :raises FileExistsError: If output file exists and overwrite is False
+        :raises ValueError: If input datasets have mismatched lengths
+        """
+        logger.info("Starting match calculation...")
+
+        # check directory and file existence
+        result_dir = os.path.dirname(self.storage_filename)
         if result_dir and not os.path.exists(result_dir):
             raise FileNotFoundError(
-                f"Specified result directory '{result_dir}' does not exist. "
-                f"Please create it before running the matcher.")
-
-        # Parse source and target data
-        source_data = self.source.parse(
-            stream=self.stream, chunk_size=self.chunk_size
-        )
-        target_data = self.target.parse(
-            stream=self.stream, chunk_size=self.chunk_size
-        )
-
-        # Handle non-streaming case by converting lists to single-chunk
-        # iterators
-        if not self.stream:
-            # Flatten the lists into iterables of Individual objects
-            source_data = iter(source_data)
-            target_data = iter(target_data)
-
-        all_loci = set()
-        current_headers = None
-        is_first_chunk = True
-
-        buffer = []
-
-        for idx, (source_ind, target_ind) in enumerate(zip_longest(
-            source_data, target_data, fillvalue=None)
-        ):
-
-            if source_ind is None:
-                raise ValueError(
-                    f"source_data exhausted before target_data at index {idx}"
-                )
-            elif target_ind is None:
-                raise ValueError(
-                    f"target_data exhausted before source_data at index {idx}"
-                )
-
-            # Process individual objects directly
-            match_results: List[MatchResult] = multi_locus_match(
-                source_ind, target_ind
+                f"Directory '{result_dir}' does not exist."
             )
-            self.raw_results.append(match_results)
-            row = {}
-            for result in match_results:
-                locus = result.patient.locus
-                row[locus] = result.get_match_level_for_resolution(
-                    self.resolution
-                )
-                all_loci.add(locus)
-            buffer.append(row)
 
-            # If buffer is full, flush to file
-            if self.stream and len(buffer) >= self.chunk_size:
-                chunk_df = pd.DataFrame(buffer)
-                # Ensure all loci are included
-                chunk_df = chunk_df.reindex(columns=sorted(all_loci))
-                new_headers = sorted(all_loci)
-                if is_first_chunk:
-                    chunk_df.to_csv(self.result_file, index=False, mode='w')
-                    current_headers = new_headers
-                    is_first_chunk = False
-                else:
-                    if current_headers != new_headers:
-                        existing_data = pd.read_csv(self.result_file)
-                        existing_data = existing_data.reindex(
-                            columns=new_headers, fill_value=None
-                        )
-                        existing_data.to_csv(
-                            self.result_file, index=False, mode='w'
-                        )
-                        chunk_df.to_csv(
-                            self.result_file,
-                            index=False,
-                            mode='a',
-                            header=False
-                        )
-                        current_headers = new_headers
-                    else:
-                        chunk_df.to_csv(
-                            self.result_file,
-                            index=False,
-                            mode='a',
-                            header=False
-                        )
-                buffer = []
+        if not self.overwrite and os.path.exists(self.storage_filename):
+            raise FileExistsError(f"File '{self.storage_filename}' exists.")
 
-            elif not self.stream:
-                # If streaming is disabled, accumulate results in memory
-                self._result_buffer.append(row)
-
-        # Flush any remaining buffer to file
-        if self.stream and buffer:
-            chunk_df = pd.DataFrame(buffer)
-            chunk_df = chunk_df.reindex(columns=sorted(all_loci))
-            new_headers = sorted(all_loci)
-            if is_first_chunk:
-                chunk_df.to_csv(self.result_file, index=False, mode='w')
-            else:
-                if current_headers != new_headers:
-                    existing_data = pd.read_csv(self.result_file)
-                    existing_data = existing_data.reindex(
-                        columns=new_headers, fill_value=None
-                    )
-                    existing_data.to_csv(
-                        self.result_file, index=False, mode='w'
-                    )
-                    chunk_df.to_csv(
-                        self.result_file, index=False, mode='a', header=False
-                    )
-                else:
-                    chunk_df.to_csv(
-                        self.result_file, index=False, mode='a', header=False
-                    )
-
-        # Write the accumulated results to the file in non-streaming mode
-        if not self.stream and self._result_buffer:
-            self.result = pd.DataFrame(self._result_buffer)
-            self.result = self.result.reindex(
-                columns=sorted(all_loci), fill_value=None
+        # open file
+        with open(self.storage_filename, 'w', newline='') as f:
+            # extrasaction='ignore' drops loci not in self.loci
+            writer = csv.DictWriter(
+                f, fieldnames=self._headers, extrasaction='ignore'
             )
-            self.result.to_csv(self.result_file, index=False)
+            writer.writeheader()
 
-        logger.info("Pairwise match result calculation completed.")
+            # seset iterators
+            src_iter = self.source.parse(
+                stream=self.stream, chunk_size=self.chunk_size
+            )
+            tgt_iter = self.target.parse(
+                stream=self.stream, chunk_size=self.chunk_size
+            )
+
+            if not self.stream:
+                src_iter, tgt_iter = iter(src_iter), iter(tgt_iter)
+
+            # process
+            for idx, (src, tgt) in enumerate(zip_longest(src_iter, tgt_iter)):
+                if src is None or tgt is None:
+                    raise ValueError(f"Length mismatch at index {idx}")
+
+                results = multi_locus_match(src, tgt)
+
+                # dpb1 tce if requested
+                if self.include_tce:
+                    for res in results:
+                        if res.patient.locus == "DPB1":
+                            res.get_dpb1_tce_status()
+
+                # flatten
+                row = _flatten_match_results(
+                    results,
+                    self.include_ard, self.include_mol,
+                    self.include_hom, self.include_tce
+                )
+                row['pair_index'] = idx
+
+                # write
+                writer.writerow(row)
+
+                # memory storage
+                if not self.stream:
+                    self.raw_results.append(results)
+                    self._df_buffer.append(row)
+
+        logger.info("Matching completed.")
+
+    def to_df(self) -> pd.DataFrame:
+        """
+        Returns a DataFrame of the results.
+
+        Only available if stream=False.
+
+        :return: pandas DataFrame containing the match results
+        :raises RuntimeError: If streaming is enabled
+        """
+        if self.stream:
+            raise RuntimeError("to_df() not available in streaming mode.")
+        if not self._df_buffer:
+            return pd.DataFrame(columns=self._headers)
+        return pd.DataFrame(self._df_buffer).reindex(columns=self._headers)
