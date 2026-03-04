@@ -18,12 +18,12 @@ class DPB1TCEConfig:
     def __post_init__(self):
         if self.endpoints is None:
             self.endpoints = {
-                "2.0": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/"
-                "dpb1_tce_v2",
-                "2.1": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/"
-                "dpb1_tce_v21",
-                "3.0": "https://www.ebi.ac.uk/cgi-bin/ipd/matching/"
-                "dpb1_tce_v3"
+                "2.0":
+                    "https://www.ebi.ac.uk/cgi-bin/ipd/matching/dpb1_tce_v2",
+                "2.1":
+                    "https://www.ebi.ac.uk/cgi-bin/ipd/matching/dpb1_tce_v21",
+                "3.0":
+                    "https://www.ebi.ac.uk/cgi-bin/ipd/matching/dpb1_tce_v3"
             }
 
         if self.response_keys is None:
@@ -35,12 +35,12 @@ class DPB1TCEConfig:
 
 
 class DPB1TCEStatus(Enum):
-    """TCE prediction results from the DPB1 TCE API"""
+    """
+    Status codes for the DPB1 TCE API interactions.
+    """
+    SUCCESS = "Success"
     API_ERROR = "Unknown API Error"
     INVALID_ALLELES = "API Invalid Alleles"
-    PERMISSIVE = "Permissive"
-    NON_PERMISSIVE_GVH = "Non-Permissive GvH"
-    NON_PERMISSIVE_HVG = "Non-Permissive HvG"
     TIMEOUT_ERROR = "Timeout Error"
     REQUEST_ERROR = "Request Error"
     VALUE_ERROR = "Value Error"
@@ -48,15 +48,36 @@ class DPB1TCEStatus(Enum):
     UNEXPECTED_ERROR = "Unexpected Error"
 
 
+@dataclass
+class DPB1Result:
+    """
+    Result object for a DPB1 TCE API query.
+
+    :ivar status: The status of the API request (Success or Error code).
+    :ivar prediction: The raw prediction string from the API (e.g.,
+        'Permissive', 'Non-Permissive GvH') if successful, else None.
+    """
+    status: DPB1TCEStatus
+    prediction: Optional[str] = None
+
+    @property
+    def is_valid(self) -> bool:
+        """Returns True if the request was successful and has a prediction."""
+        return (
+            self.status == DPB1TCEStatus.SUCCESS
+            and self.prediction is not None
+        )
+
+
 def query_dpb1_tce(
         patient_dpb1: str,
         patient_dpb2: str,
         donor_dpb1: str,
         donor_dpb2: str,
-        version: str = "2.1",
+        version: str = "3.0",
         timeout: int = 10,
         config: Optional[DPB1TCEConfig] = None
-) -> DPB1TCEStatus:
+) -> DPB1Result:
     """
     Query the EBI DPB1 TCE API for T-Cell Epitope matching.
 
@@ -69,8 +90,7 @@ def query_dpb1_tce(
     :param version: API version - "2.0", "2.1", or "3.0"
     :param timeout: API request timeout in seconds
     :param config: Configuration object (default if None)
-
-    :return: DPB1TCEStatus enum
+    :return: DPB1Result object containing status and raw prediction string
     """
     if config is None:
         config = DPB1TCEConfig()
@@ -82,11 +102,11 @@ def query_dpb1_tce(
     # Validate API version
     if version not in config.endpoints or version not in config.response_keys:
         logger.error(
-            f"Unsupported or misconfigured API version: {version}"
-            f" must be endpoints key: {list(config.endpoints.keys())}"
-            f" and response key: {list(config.response_keys.keys())}"
+            f"Unsupported or misconfigured API version: {version}. "
+            f"Must be endpoints key: {list(config.endpoints.keys())} "
+            f"and response key: {list(config.response_keys.keys())}"
         )
-        return DPB1TCEStatus.CONFIGURATION_ERROR
+        return DPB1Result(status=DPB1TCEStatus.CONFIGURATION_ERROR)
 
     # Prepare request
     url = config.endpoints[version]
@@ -119,7 +139,7 @@ def query_dpb1_tce(
                 f"Key '{config.response_keys[version]}' not found in API "
                 "response_json."
             )
-            return DPB1TCEStatus.API_ERROR
+            return DPB1Result(status=DPB1TCEStatus.API_ERROR)
 
         donors_list = report.get(DONORS_KEY, [])
 
@@ -127,72 +147,36 @@ def query_dpb1_tce(
             logger.warning(
                 f"No '{DONORS_KEY}' data (list) in EBI API response report."
             )
-            return DPB1TCEStatus.API_ERROR
+            return DPB1Result(status=DPB1TCEStatus.API_ERROR)
 
         first_donor_object = donors_list[0]
-
         result_details = first_donor_object.get(RESULT_KEY, {})
         tce_prediction = result_details.get('tce_prediction')
 
-        # Check for invalid alleles
-        if tce_prediction \
-                and "Not possible as typing contains non-existent allele" \
-                    in tce_prediction:
-            logger.warning(f"EBI API reports invalid allele: {tce_prediction}")
-            return DPB1TCEStatus.INVALID_ALLELES
-
         if not tce_prediction:
             logger.warning("No TCE prediction in EBI API response")
-            return DPB1TCEStatus.API_ERROR
+            return DPB1Result(status=DPB1TCEStatus.API_ERROR)
 
-        # normalize
-        normalized_prediction = tce_prediction.strip().lower()
-
-        EXACT_TCE_MAPPINGS = {
-            "permissive": DPB1TCEStatus.PERMISSIVE,
-            "permissive (core)": DPB1TCEStatus.PERMISSIVE,
-            "ard matched": DPB1TCEStatus.PERMISSIVE,
-
-            "non-permissive gvh": DPB1TCEStatus.NON_PERMISSIVE_GVH,
-            "non permissive gvh": DPB1TCEStatus.NON_PERMISSIVE_GVH,
-
-            "non-permissive hvg": DPB1TCEStatus.NON_PERMISSIVE_HVG,
-            "non permissive hvg": DPB1TCEStatus.NON_PERMISSIVE_HVG,
-        }
-
-        if "not possible as typing contains non-existent allele"\
-                in normalized_prediction:
+        # Check for invalid alleles in the response string
+        if "non-existent allele" in tce_prediction.lower():
             logger.warning(f"EBI API reports invalid allele: {tce_prediction}")
-            return DPB1TCEStatus.INVALID_ALLELES
+            return DPB1Result(status=DPB1TCEStatus.INVALID_ALLELES)
 
-        # exact matching for safety
-        if normalized_prediction in EXACT_TCE_MAPPINGS:
-            status = EXACT_TCE_MAPPINGS[normalized_prediction]
-            logger.info(
-                f"Mapping '{tce_prediction}' (normalized: "
-                f"'{normalized_prediction}') "
-                f"to {status.name}"
-            )
-            return status
-        else:
-            # unknown response
-            logger.error(
-                "CRITICAL: Unknown TCE prediction from EBI API: "
-                f"'{tce_prediction}' (normalized: '{normalized_prediction}'). "
-                "API may changed. Known values: "
-                f"{list(EXACT_TCE_MAPPINGS.keys())}"
-            )
-            return DPB1TCEStatus.API_ERROR
+        # SUCCESS: Return raw string wrapped in object
+        return DPB1Result(
+            status=DPB1TCEStatus.SUCCESS,
+            prediction=tce_prediction
+        )
 
     except requests.Timeout:
         logger.error(f"Timeout connecting to EBI DPB1 TCE API (>{timeout}s)")
-        return DPB1TCEStatus.TIMEOUT_ERROR
+        return DPB1Result(status=DPB1TCEStatus.TIMEOUT_ERROR)
     except requests.RequestException as e:
         logger.error(f"Error connecting to EBI DPB1 TCE API: {str(e)}")
-        return DPB1TCEStatus.REQUEST_ERROR
+        return DPB1Result(status=DPB1TCEStatus.REQUEST_ERROR)
     except ValueError as e:
         logger.error(f"Value error in EBI DPB1 TCE API response: {str(e)}")
-        return DPB1TCEStatus.VALUE_ERROR
+        return DPB1Result(status=DPB1TCEStatus.VALUE_ERROR)
     except Exception as e:
         logger.error(f"Unexpected error in DPB1 TCE prediction: {str(e)}")
-        return DPB1TCEStatus.UNEXPECTED_ERROR
+        return DPB1Result(status=DPB1TCEStatus.UNEXPECTED_ERROR)

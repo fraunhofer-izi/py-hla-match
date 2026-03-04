@@ -2,6 +2,7 @@ import logging  # NOQA
 import unittest
 import os
 import tempfile
+import csv
 import pandas as pd
 from py_hla_match.models import Individual
 from py_hla_match.parser import HLADataSource
@@ -155,6 +156,96 @@ class TestParser(unittest.TestCase):
             len(stream_individuals[0].hla_data),
             "Non-streaming and streaming result has different number of pairs."
         )
+
+    def test_row_idx_start_respected_csv(self):
+        """
+        Test that row_idx_start is respected in CSV parsing (stream and
+        non-stream).
+        """
+        # create a CSV with 2 header/garbage rows
+        # row 0: metadata
+        # row 1: columns
+        # row 2: actual data
+        data = [
+            ["MetaData", "Version 1.0"],
+            ["A_1", "A_2"],
+            ["A*01:01", "A*02:01"]
+        ]
+
+        # write raw CSV
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=".csv", mode='w', newline=''
+        ) as f:
+            writer = csv.writer(f)
+            writer.writerows(data)
+            tmp_path = f.name
+
+        try:
+            # configure parser to start at row 2 (skipping 0 and 1)
+            parser = HLADataSource(tmp_path, row_idx_start=2)
+
+            # 1. test non-streaming
+            individuals = parser.parse(stream=False)
+            self.assertEqual(
+                len(individuals), 1, "Non-stream failed to skip rows"
+            )
+            self.assertEqual(
+                individuals[0].hla_data[0].hla1.allele_string, "A*01:01"
+            )
+
+            # 2. test streaming
+            individuals_stream = list(parser.parse(stream=True))
+            self.assertEqual(
+                len(individuals_stream), 1, "Stream failed to skip rows"
+            )
+            self.assertEqual(
+                individuals_stream[0].hla_data[0].hla1.allele_string, "A*01:01"
+            )
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+    def test_row_idx_start_respected_excel(self):
+        """
+        Test that row_idx_start is respected in Excel parsing (stream and
+        non-stream).
+        """
+        # create df representing the sheet
+        df = pd.DataFrame([
+            ["MetaData", "Ignore"],
+            ["A_1", "A_2"],
+            ["A*01:01", "A*02:01"]
+        ])
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as f:
+            # write without header/index to rely strictly on row positions
+            df.to_excel(f.name, index=False, header=False)
+            tmp_path = f.name
+
+        try:
+            # configure parser to start at Row 2
+            parser = HLADataSource(tmp_path, row_idx_start=2)
+
+            # 1. test non-streaming (was failing previously)
+            individuals = parser.parse(stream=False)
+            self.assertEqual(
+                len(individuals), 1, "Non-stream Excel failed to skip rows"
+            )
+            self.assertEqual(
+                individuals[0].hla_data[0].hla1.allele_string, "A*01:01"
+            )
+
+            # 2. test streaming
+            individuals_stream = list(parser.parse(stream=True))
+            self.assertEqual(
+                len(individuals_stream), 1, "Stream Excel failed to skip rows"
+            )
+            self.assertEqual(
+                individuals_stream[0].hla_data[0].hla1.allele_string, "A*01:01"
+            )
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
 
 
 if __name__ == "__main__":
