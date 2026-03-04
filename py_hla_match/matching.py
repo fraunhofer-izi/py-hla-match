@@ -20,7 +20,7 @@ from py_hla_match.exceptions import (
     InvalidLocusComparisonError,
     ARDMatchRefinementError
 )
-from py_hla_match.external import DPB1TCEStatus, query_dpb1_tce
+from py_hla_match.external import DPB1Result, query_dpb1_tce
 from py_hla_match.singleton import get_ard_instance
 
 
@@ -115,7 +115,7 @@ class MatchResult:
             self.molecular_match_certainties = molecular_match_level_certainty
 
         # optional external matching information
-        self.dpb1_tce_status: Optional[DPB1TCEStatus] = None
+        self.dpb1_tce_result: Optional[DPB1Result] = None
 
         # check homozygous patient
         # TODO: homozygosity check currently is capped at ARD which may not
@@ -330,7 +330,7 @@ class MatchResult:
             self,
             api_version: str = "3.0",
             timeout: int = 10
-    ) -> Optional[DPB1TCEStatus]:
+    ) -> Optional[DPB1Result]:
         """
         Calculate DPB1 permissive/non-permissive classification via EBI API.
 
@@ -338,8 +338,12 @@ class MatchResult:
 
         WARNING: may slow things down significantly.
 
-        Sets self.dpb1_permissive to one of:
-        - DPB1TCEStatus
+        Sets self.dpb1_tce_result to one of:
+        - DPB1Result
+
+        :param api_version: The version of the EBI API to query (default "3.0")
+        :param timeout: Time in seconds to wait for the API response
+        :return: The DPB1Result object, or None if the locus is not DPB1
         """
         if self.patient.locus != "DPB1":
             logger.debug(
@@ -358,13 +362,13 @@ class MatchResult:
             logger.warning(
                 f"One or more required alleles are missing for DPB1 to call "
                 f"EBI API, got P1:'{patient_dpb1}', P2:'{patient_dpb2}', "
-                f"D1:'{donor_dpb1}', D2:'{donor_dpb2}'. dpb1_tce_status "
-                f"remains unchanged ({self.dpb1_tce_status})"
+                f"D1:'{donor_dpb1}', D2:'{donor_dpb2}'. dpb1_tce_result "
+                f"remains unchanged ({self.dpb1_tce_result})"
             )
             return None
 
         # if we are here, the query should be valid
-        dpb1_tce_status = query_dpb1_tce(
+        dpb1_tce_result = query_dpb1_tce(
             patient_dpb1=patient_dpb1,
             patient_dpb2=patient_dpb2,
             donor_dpb1=donor_dpb1,
@@ -372,9 +376,9 @@ class MatchResult:
             version=api_version,
             timeout=timeout
         )
-        # update match result and return DPB1TCEStatus
-        self.dpb1_tce_status = dpb1_tce_status
-        return self.dpb1_tce_status
+        # update match result and return DPB1Result
+        self.dpb1_tce_result = dpb1_tce_result
+        return self.dpb1_tce_result
 
 
 @dataclass(frozen=True)
