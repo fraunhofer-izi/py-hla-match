@@ -1,0 +1,48 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Py-HLA-Match
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Georg
+    family-names: Popp
+    email: georg.popp@izi.fraunhofer.de
+    affiliation: >-
+      Fraunhofer Institute for Cell Therapy and Immunology
+      IZI
+    orcid: 'https://orcid.org/0009-0003-4251-4093'
+  - given-names: Tim
+    family-names: Adams
+    email: tim.adams@scai.fraunhofer.de
+    affiliation: >-
+      Fraunhofer Institute for Algorithms and Scientific
+      Computing SCAI
+    orcid: 'https://orcid.org/0000-0002-2823-0102'
+repository-code: 'https://github.com/fraunhofer-izi/py-hla-match'
+abstract: >-
+  Py-HLA-Match is research software for HLA matching intended for 
+  research use, such as retrospective analyses, method development, 
+  benchmarking, and in‑silico studies in immunogenetics and related 
+  fields.
+keywords:
+  - HLA
+  - human leukocyte antigen
+  - HLA research
+  - HLA typing
+  - HLA matching
+  - transplant immunology
+  - immunogenetics
+  - ARD
+  - antigen recognition domain
+  - IPD-IMGT/HLA
+  - T-cell epitope (TCE)
+  - Python library
+  - retrospective studies
+version: 0.1.0
+date-released: 2026-02-09
+url: https://github.com/fraunhofer-izi/py-hla-match
+license: Apache-2.0
