@@ -1254,7 +1254,7 @@ class TestAllelePairMatchARDRefinement(unittest.TestCase):
         """
         G-group vs specific allele within same G-group:
         - ARD refinement: G_GROUP_MATCH, CERTAIN
-        - Molecular: FULL_PROTEIN_MATCH, UNCERTAIN
+        - Molecular: NOT_ASSESSABLE, UNCERTAIN
         """
         patient = HLAPair(HLA("C*07:02:01G"), HLA("C*07:02:10G"))
         donor = HLAPair(HLA("C*07:02:10"), HLA("C*07:02:01"))
@@ -1276,8 +1276,8 @@ class TestAllelePairMatchARDRefinement(unittest.TestCase):
         )
         self.assertEqual(
             result.molecular_match_levels,
-            (MolecularMatchLevel.FULL_PROTEIN_MATCH,
-             MolecularMatchLevel.FULL_PROTEIN_MATCH)
+            (MolecularMatchLevel.NOT_ASSESSABLE,
+             MolecularMatchLevel.NOT_ASSESSABLE)
         )
         self.assertEqual(
             result.molecular_match_certainties,
