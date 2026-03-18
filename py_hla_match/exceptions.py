@@ -71,6 +71,21 @@ class MalformedHLADataSourceError(Exception):
         return base_message
 
 
+class ARDMatchRefinementError(Exception):
+    """
+    Error raised during refinement of ARD matched HLA alleles.
+    """
+    def __init__(self, message, details=None):
+        super().__init__(message)
+        self.details = details
+
+    def __str__(self):
+        base_message = super().__str__()
+        if self.details:
+            return f"{base_message} (Details: {self.details})"
+        return base_message
+
+
 class PyardLibraryError(Exception):
     """
     Error raised when the external 'pyard' library fails unexpectedly.

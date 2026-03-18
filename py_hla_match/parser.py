@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from typing import Iterable, Union
 from openpyxl import load_workbook
+from contextlib import closing
 
 from py_hla_match.exceptions import (
     MalformedHLAStringError,
@@ -70,15 +71,20 @@ class HLADataSource:
         if stream:
             return self._stream_excel(chunk_size=chunk_size)
         else:
-            df = pd.read_excel(self.source_path)
+            # respect row_idx_start by skipping preceding rows
+            df = pd.read_excel(
+                self.source_path,
+                header=None,
+                skiprows=self.row_idx_start
+            )
             return self._parse_dataframe(df)
 
     def _stream_excel(self, chunk_size: int) -> Iterable[Individual]:
         """
         Stream HLA data from an Excel file in chunks using openpyxl.
         """
-        wb = load_workbook(self.source_path, read_only=True)
-        try:
+        # use closing to ensure wb.close() is called on generator exit
+        with closing(load_workbook(self.source_path, read_only=True)) as wb:
             ws = wb.active
             # idx starting at 1
             rows = ws.iter_rows(
@@ -86,6 +92,7 @@ class HLADataSource:
             )
             buffer = []
             row_counter = 0  # Actual row count for tracking
+
             for row in rows:
                 # Check for completely empty row
                 if all(cell is None for cell in row):
@@ -95,17 +102,18 @@ class HLADataSource:
                     self.col_idx_stop is not None
                 ):
                     row = row[self.col_idx_start:self.col_idx_stop + 1]
+
                 buffer.append((row_counter, row))
                 row_counter += 1
+
                 if len(buffer) >= chunk_size:
                     for row_idx, row_data in buffer:
                         yield self._parse_row(row_data, row_idx)
                     buffer.clear()
+
             # Yield remaining
             for row_idx, row_data in buffer:
                 yield self._parse_row(row_data, row_idx)
-        finally:
-            wb.close()
 
     def _parse_csv(
             self, stream: bool, chunk_size: int
@@ -116,14 +124,26 @@ class HLADataSource:
         if stream:
             return self._stream_csv(chunk_size=chunk_size)
         else:
-            df = pd.read_csv(self.source_path)
+            # respect row_idx_start by skipping preceding rows
+            df = pd.read_csv(
+                self.source_path,
+                header=None,
+                skiprows=self.row_idx_start
+            )
             return self._parse_dataframe(df)
 
     def _stream_csv(self, chunk_size: int) -> Iterable[Individual]:
         """
         Stream HLA data from a CSV file in chunks.
         """
-        for chunk in pd.read_csv(self.source_path, chunksize=chunk_size):
+        # respect row_idx_start in streaming mode
+        reader = pd.read_csv(
+            self.source_path,
+            chunksize=chunk_size,
+            header=None,
+            skiprows=self.row_idx_start
+        )
+        for chunk in reader:
             if (
                 self.col_idx_start is not None and
                 self.col_idx_stop is not None
@@ -147,8 +167,19 @@ class HLADataSource:
         locus_map = defaultdict(list)
 
         for hla_string in row:
+            # skip nans (pandas), Nones (openpyxl), or empty strings
+            if pd.isna(hla_string) or hla_string is None:
+                continue
+
+            # convert to string and strip whitespace
+            # handles cases where data might be read as int/float or w padding
+            cleaned_string = str(hla_string).strip()
+
+            if cleaned_string == "":
+                continue
+
             try:
-                hla = HLA(hla_string)
+                hla = HLA(cleaned_string)
                 locus_map[hla.locus].append(hla)
             except MalformedHLAStringError:
                 logger.error(
@@ -189,49 +220,9 @@ class HLADataSource:
         # slice the dataframe if start and end indices were given
         if self.col_idx_start is not None and self.col_idx_stop is not None:
             df = df.iloc[:, self.col_idx_start:self.col_idx_stop + 1]
+
         for idx, row in df.iterrows():
-            hla_pairs: list[HLAPair] = []
-            # Map of locus to HLA objects
-            locus_map = defaultdict(list)
-            individual_hla_objects: list[HLA] = []
-            # first: parse all available HLA strings in the row into HLA
-            # objects
-            for hla_string in row:
-                try:
-                    hla = HLA(hla_string)
-                    individual_hla_objects.append(hla)
-                    locus_map[hla.locus].append(hla)
-                except MalformedHLAStringError as e:  # NOQA
-                    logger.error(
-                        f'Encountered malformed HLA String {hla_string} in row'
-                        f' {idx}. Skipping Allele.'
-                    )
-                    continue
-                except InvalidAlleleError:
-                    logger.error(
-                        f'Encountered invalid HLA Allele {hla_string} in '
-                        f'row {idx}. Skipping Allele.'
-                    )
-                    continue
-            # now: Match HLA pairs based on locus
-            for locus, alleles in locus_map.items():
-                # edge case: more than two alleles found for a locus
-                if len(alleles) > 2:
-                    raise MalformedHLADataSourceError(
-                        f"Encountered third allele for locus {locus} in row"
-                        f"{idx}."
-                    )
-                # only create a pair if exactly two alleles exist
-                if len(alleles) == 2:
-                    hla_pairs.append(HLAPair(hla1=alleles[0], hla2=alleles[1]))
-                else:
-                    logger.warning(
-                        f"Unpaired allele {alleles[0].allele_string} in row"
-                        f" {idx}."
-                    )
-            individuals.append(Individual(hla_data=hla_pairs))
-            logger.debug(
-                f"Successfully parsed row {idx}. Added {len(hla_pairs)} HLA"
-                f" pairs to individual."
-            )
+            # delegate to _parse_row
+            individuals.append(self._parse_row(row, idx))
+
         return individuals

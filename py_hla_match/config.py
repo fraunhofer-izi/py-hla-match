@@ -61,6 +61,10 @@ CANONICAL_DRB345_SUB_LOCI = {
     'DRBX'  # generic locus indicating "missing"
 }
 
+LOCUS_ALIAS_MAP = {
+    "DRB345": ["DRBX", "DRB3", "DRB4", "DRB5"]
+}
+
 
 @dataclass(frozen=True)
 class HLAMatchConfig:
