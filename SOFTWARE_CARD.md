@@ -16,15 +16,12 @@ for diagnosis or therapy of patients.
 - **Repository:** https://github.com/fraunhofer-izi/py-hla-match
 - **PyPI package:** https://pypi.org/project/py-hla-match/
 
-### Description
+## Description
 
 The Py-HLA-Match open-source research software is a Python library for standardized, rule-based computation of
-HLA (Human Leukocyte Antigen) match categories. It reads HLA genotype data from
-tabular formats, validates allele strings against HLA nomenclature, and
-classifies pairwise allele comparisons into deterministic match/mismatch
+HLA (Human Leukocyte Antigen) match categories. It reads HLA genotype data from tabular formats, validates allele strings against HLA nomenclature, and classifies pairwise allele comparisons into deterministic match/mismatch
 categories.
 
-No machine learning, statistical models, or trained parameters are used.
 All results follow explicit, deterministic rules.
 
 ## Method Overview
@@ -42,17 +39,17 @@ Match categories depend on the configured IMGT/HLA database version. Users must 
 
 The optional DPB1 lookup depends on an external service (EBI). Availability and behaviour of this service are outside the control of this library
 
-Users are responsible for assessing and validating the suitability of the Py-HLA-Match open-source research software in their specific context.
+Users are responsible for assessing and validating the suitability of the Py-HLA-Match open-source research software in their specific research context.
 
-## Evaluation
-
-Correctness is tested with a deterministic test suite covering:
+The Py-HLA-Match open-source research software is tested with a deterministic test suite covering:
 
 - allele parsing and validation
 - core allele matching logic
 - allele pairing behaviour
 - configuration
 - edge cases
+
+We document known limitations at https://github.com/fraunhofer-izi/py-hla-match/issues.
 
 ## Technical Profile
 

@@ -19,10 +19,7 @@ the Py-HLA-Match open-source research software and are therefore not listed here
 - **License**: LGPL-3.0
 - **URL**: https://github.com/nmdp-bioinformatics/py-ard
 - **Copyright**: Copyright (c) National Marrow Donor Program (NMDP)
-- **Note**: py-ard is used unmodified as a dependency. It is dynamically linked
-
-  (imported at runtime). In accordance with LGPL-3.0, users may replace the
-  py-ard library with a compatible version of their choice.
+- **Note**: py-ard is used unmodified as a dependency. It is dynamically linked (imported at runtime). In accordance with LGPL-3.0, users may replace the py-ard library with a compatible version of their choice.
 
 ### openpyxl
 
