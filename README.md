@@ -40,6 +40,7 @@ metrics derived from HLA nomenclature semantics. They are not validated or
 intended as clinical risk scores or decision criteria.
 
 ![tests](https://github.com/tiadams/py-hla-match/actions/workflows/tests.yaml/badge.svg)
+![docs](https://github.com/tiadams/py-hla-match/actions/workflows/docs.yaml/badge.svg)
 ## Poetry Setup
 
 ```bash

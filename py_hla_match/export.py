@@ -100,7 +100,7 @@ class PairwiseMatch:
         Matches individuals from source and target datasets row-wise.
         Assumes that both datasets are aligned by index.
         Processes data in chunks and periodically flushes results to the
-            output file.
+        output file.
         """
         logger.info("Starting pairwise match result calculation...")
 

@@ -584,11 +584,12 @@ def allele_pair_match(patient: HLAPair, donor: HLAPair) -> MatchResult:
         MatchResult: Class storing matching results
 
     Notes:
-        - The function assumes that both, patient and donor, have exactly two
-        HLA alleles
-        - Uses `_get_correct_allele_pairing` function to evaluate all possible
-        allele pairings and selects the one with the highest score (i.e.
-        correct pairing)
+        
+                - The function assumes that both, patient and donor, have exactly two
+                    HLA alleles
+                - Uses `_get_correct_allele_pairing` function to evaluate all possible
+                    allele pairings and selects the one with the highest score (i.e.
+                    correct pairing)
     """
     # Get correct allele pairing and its score
     pairing_score, correct_pairing = _get_correct_allele_pairing(
