@@ -5,7 +5,6 @@ from py_hla_match.matching import (
     allele_match,
     _get_correct_allele_pairing,
     allele_pair_match,
-    AlleleMatchLevel,
     MatchResult,
     multi_locus_match
 )
@@ -15,6 +14,11 @@ from py_hla_match.exceptions import (
 from pyard.exceptions import InvalidAlleleError
 from py_hla_match.models import HLAPair, Individual
 from py_hla_match.policy import (
+    AlleleMatchLevel,
+    ARDMatchLevel,
+    ARDMatchLevelCertainty,
+    MolecularMatchLevel,
+    MolecularMatchLevelCertainty,
     ExpressionSuffixPolicy,
     ExpressionSuffixMatchLevel
 )
@@ -62,11 +66,11 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: Locus mismatch
         Allele 1: DRB3*02:02:01
         Allele 2: DRB4*01:03:01
-        Expected Match Level: LOCUS_MISMATCH (0)
+        Expected Match Level: DRB345_SUBLOCUS_MISMATCH
         """
         allele1 = HLA("DRB3*02:02:01")
         allele2 = HLA("DRB4*01:03:01")
-        expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
+        expected_match_level = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -75,11 +79,11 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: Locus mismatch
         Allele 1: DRB3*01
         Allele 2: DRB5*01
-        Expected Match Level: LOCUS_MISMATCH (0)
+        Expected Match Level: DRB345_SUBLOCUS_MISMATCH
         """
         allele1 = HLA("DRB3*01")
         allele2 = HLA("DRB5*01")
-        expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
+        expected_match_level = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -88,11 +92,11 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: Locus mismatch
         Allele 1: DRB3*01
         Allele 2: DRBX*NE
-        Expected Match Level: LOCUS_MISMATCH (0)
+        Expected Match Level: DRB345_SUBLOCUS_MISMATCH
         """
         allele1 = HLA("DRB3*01")
         allele2 = HLA("DRBX*NE")
-        expected_match_level = AlleleMatchLevel.LOCUS_MISMATCH
+        expected_match_level = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -119,11 +123,11 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: Allele group mismatch
         Allele 1: DPB1*02:01:02
         Allele 2: DPB1*04:02:01
-        Expected Match Level: ALLELE_GROUP_MISMATCH (1)
+        Expected Match Level: ANTIGEN_MISMATCH
         """
         allele1 = HLA("DPB1*02:01:02")
         allele2 = HLA("DPB1*04:02:01")
-        expected_match_level = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        expected_match_level = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -132,7 +136,7 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: Allele mismatch with 'P' suffix
         Allele 1: DPB1*04:01P
         Allele 2: DPB1*04:02P
-        Expected Match Level: ALLELE_MISMATCH (2)
+        Expected Match Level: ALLELE_MISMATCH
         """
         allele1 = HLA("DPB1*04:01P")
         allele2 = HLA("DPB1*04:02P")
@@ -145,7 +149,7 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: ARD match without group code
         Allele 1: A*02:01
         Allele 2: A*02:1193
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: ARD_MATCH
         """
         allele1 = HLA("A*02:01")
         allele2 = HLA("A*02:1193")
@@ -158,7 +162,7 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: ARD match with G group
         Allele 1: C*07:02:01G
         Allele 2: C*07:1058
-        Expected Match Level: ARD_MATCH (3)
+        Expected Match Level: ARD_MATCH
         """
         allele1 = HLA("C*07:02:01G")
         allele2 = HLA("C*07:1058")
@@ -171,11 +175,11 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: ARD match with Q suffix
         Allele 1: A*01:436Q
         Allele 2: A*01:01:70
-        Expected Match Level: NOT_APPLICABLE
+        Expected Match Level: NOT_ASSESSABLE
         """
         allele1 = HLA("A*01:436Q")
         allele2 = HLA("A*01:01:70")
-        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
+        expected_match_level = AlleleMatchLevel.NOT_ASSESSABLE
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -184,7 +188,7 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: ARD match with L suffix
         Allele 1: B*38:68L
         Allele 2: B*38:01P
-        Expected Match Level: ALLELE_MISMATCH (2)
+        Expected Match Level: ALLELE_MISMATCH
         """
         allele1 = HLA("B*38:68L")
         allele2 = HLA("B*38:01P")
@@ -197,7 +201,7 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: ARD match with N suffix
         Allele 1: C*03:693
         Allele 2: C*03:20N
-        Expected Match Level: ALLELE_MISMATCH (2)
+        Expected Match Level: ALLELE_MISMATCH
         """
         # TODO: external validation of correct logic required
         # currently resolved to ARD_MATCH, solely relying on py-ard
@@ -212,24 +216,24 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: Synonymous variant match with missing 4-field
         Allele 1: DPA1*01:03:01
         Allele 2: DPA1*01:03:01
-        Expected Match Level: SYNONYMOUS_VARIANT_MATCH (4)
+        Expected Match Level: ARD_MATCH
         """
         allele1 = HLA("DPA1*01:03:01")
         allele2 = HLA("DPA1*01:03:01")
-        expected_match_level = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        expected_match_level = AlleleMatchLevel.ARD_MATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_valid_non_encoding_variant_match(self):
+    def test_cap_at_ard_match(self):
         """
         Test Case: Non encoding variant match
         Allele 1: A*01:01:01:46
         Allele 2: A*01:01:01:46
-        Expected Match Level: NON_ENCODING_VARIANT_MATCH (5)
+        Expected Match Level: ARD_MATCH
         """
         allele1 = HLA("A*01:01:01:46")
         allele2 = HLA("A*01:01:01:46")
-        expected_match_level = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+        expected_match_level = AlleleMatchLevel.ARD_MATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -238,11 +242,11 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: missing allele data *NE
         Allele 1: A*NE
         Allele 2: A*01:01
-        Expected Match Level: NOT_APPLICABLE
+        Expected Match Level: NOT_ASSESSABLE
         """
         allele1 = HLA("A*NE")
         allele2 = HLA("A*01:01")
-        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
+        expected_match_level = AlleleMatchLevel.NOT_ASSESSABLE
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -251,11 +255,11 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: 1-field vs 2-field with same group
         Allele 1: B*07
         Allele 2: B*07:05
-        Expected Match Level: NOT_APPLICABLE
+        Expected Match Level: NOT_ASSESSABLE
         """
         allele1 = HLA("B*07")
         allele2 = HLA("B*07:05")
-        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
+        expected_match_level = AlleleMatchLevel.NOT_ASSESSABLE
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -264,24 +268,24 @@ class TestAlleleMatch(unittest.TestCase):
         Test Case: 1-field vs 1-field with different groups
         Allele 1: C*01
         Allele 2: C*02
-        Expected Match Level: ALLELE_GROUP_MISMATCH
+        Expected Match Level: ANTIGEN_MISMATCH
         """
         allele1 = HLA("C*01")
         allele2 = HLA("C*02")
-        expected_match_level = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        expected_match_level = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
     def test_not_applicable_with_suffix_Q(self):
         """
-        Test Case: Suffix does match beyond ARD_MATCH
+        Test Case: Q suffix default is NOT_ASSESSABLE
         Allele 1: A*24:473Q
         Allele 2: A*02:99
-        Expected Match Level: ARD_MATCH
+        Expected Match Level: NOT_ASSESSABLE
         """
         allele1 = HLA("A*24:473Q")
         allele2 = HLA("A*24:02P")
-        expected_match_level = AlleleMatchLevel.NOT_APPLICABLE
+        expected_match_level = AlleleMatchLevel.NOT_ASSESSABLE
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
@@ -298,27 +302,27 @@ class TestAlleleMatch(unittest.TestCase):
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
-    def test_synonymous_vs_full_variant(self):
+    def test_synonymous_vs_full_variant_cap_at_ard(self):
         """
         Test Case: 3-field vs 4-field with equal synonymous variant
         Allele 1: DQA1*01:01:02
         Allele 2: DQA1*01:01:02:07
-        Expected Match Level: SYNONYMOUS_VARIANT_MATCH
+        Expected Match Level: ARD_MATCH
         """
         allele1 = HLA("DQA1*01:01:02")
-        allele2 = HLA("DQA1*01:01:02:07")
-        expected_match_level = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+        allele2 = HLA("DQA1*01:01:02:05")
+        expected_match_level = AlleleMatchLevel.ARD_MATCH
         result = allele_match(allele1, allele2)
         self.assertEqual(result, expected_match_level)
 
     def test_equal_risk_suffix_policy_can_be_set_to_mismatch(self):
         # Configure equal risk (e.g., N vs N) to ALLELE_MISMATCH instead of
-        # default NOT_APPLICABLE
+        # default NOT_ASSESSABLE
         pol = ExpressionSuffixPolicy(
             equal_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
             risk_vs_none=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
             risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
-            q_present=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            q_present=ExpressionSuffixMatchLevel.NOT_ASSESSABLE,
         )
         set_config(HLAMatchConfig(expression_suffix_policy=pol))
         a1 = HLA("A*24:09N")
@@ -329,9 +333,9 @@ class TestAlleleMatch(unittest.TestCase):
 
     def test_q_present_policy_can_be_set_to_mismatch(self):
         # Configure Q present to be treated as mismatch rather than default
-        # NOT_APPLICABLE
+        # NOT_ASSESSABLE
         pol = ExpressionSuffixPolicy(
-            equal_risk=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            equal_risk=ExpressionSuffixMatchLevel.NOT_ASSESSABLE,
             risk_vs_none=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
             risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
             q_present=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
@@ -344,19 +348,19 @@ class TestAlleleMatch(unittest.TestCase):
         )
 
     def test_risk_vs_none_policy_can_be_set_to_not_applicable(self):
-        # Configure risk vs none (e.g., N vs none) to NOT_APPLICABLE after
+        # Configure risk vs none (e.g., N vs none) to NOT_ASSESSABLE after
         # ARD-equivalence
         pol = ExpressionSuffixPolicy(
-            equal_risk=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
-            risk_vs_none=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            equal_risk=ExpressionSuffixMatchLevel.NOT_ASSESSABLE,
+            risk_vs_none=ExpressionSuffixMatchLevel.NOT_ASSESSABLE,
             risk_vs_different_risk=ExpressionSuffixMatchLevel.ALLELE_MISMATCH,
-            q_present=ExpressionSuffixMatchLevel.NOT_APPLICABLE,
+            q_present=ExpressionSuffixMatchLevel.NOT_ASSESSABLE,
         )
         set_config(HLAMatchConfig(expression_suffix_policy=pol))
         # ARD-equivalent: A*24:09N reduces to A*24:02; compared to A*24:02
         a1 = HLA("A*24:09N")
         a2 = HLA("A*24:02")
-        self.assertEqual(allele_match(a1, a2), AlleleMatchLevel.NOT_APPLICABLE)
+        self.assertEqual(allele_match(a1, a2), AlleleMatchLevel.NOT_ASSESSABLE)
 
     def test_suffix_policy_does_not_override_group_mismatch_severity(self):
         # Even with aggressive suffix policy, group mismatch must dominate
@@ -370,7 +374,7 @@ class TestAlleleMatch(unittest.TestCase):
         a1 = HLA("A*23:41")   # group 23
         a2 = HLA("A*24:09N")   # group 24
         self.assertEqual(
-            allele_match(a1, a2), AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+            allele_match(a1, a2), AlleleMatchLevel.ANTIGEN_MISMATCH
         )
 
 
@@ -388,36 +392,35 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
         patient = HLAPair(p1, p2)
         donor = HLAPair(d1, d2)
 
-        best_score, chosen_pairing = \
-            _get_correct_allele_pairing(patient, donor)
+        result = _get_correct_allele_pairing(patient, donor)
 
         expected_pairing = (
             allele_match(p1, d1),
             allele_match(p2, d2),
         )
-        self.assertEqual(chosen_pairing, expected_pairing)
-        self.assertEqual(best_score, sum(expected_pairing))
+        self.assertEqual(result.allele_match_levels, expected_pairing)
+        self.assertEqual(result.score, sum(expected_pairing))
 
     def test_all_not_applicable_pairing_score(self):
         """
-        Test Case: NOT_APPLICABLE twice
+        Test Case: NOT_ASSESSABLE twice
         Patient Alleles: B*NA, B*NA
         Donor Alleles:   B*NA, B*NA
-        Expected Best Score: AlleleMatchLevel.NOT_APPLICABLE * 2
+        Expected Best Score: AlleleMatchLevel.NOT_ASSESSABLE * 2
         Expected Pairing Levels:
-            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE)
+            (AlleleMatchLevel.NOT_ASSESSABLE, AlleleMatchLevel.NOT_ASSESSABLE)
         """
         p1 = p2 = HLA("B*NA")
         d1 = d2 = HLA("B*NA")
         patient = HLAPair(p1, p2)
         donor = HLAPair(d1, d2)
 
-        best_score, levels = _get_correct_allele_pairing(patient, donor)
+        result = _get_correct_allele_pairing(patient, donor)
 
-        self.assertEqual(best_score, AlleleMatchLevel.NOT_APPLICABLE * 2)
+        self.assertEqual(result.score, AlleleMatchLevel.NOT_ASSESSABLE * 2)
         self.assertEqual(
-            levels,
-            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE),
+            result.allele_match_levels,
+            (AlleleMatchLevel.NOT_ASSESSABLE, AlleleMatchLevel.NOT_ASSESSABLE),
         )
 
     def test_pairing_prefers_lower_negative_penalty(self):
@@ -427,36 +430,156 @@ class TestGetCorrectAllelePairing(unittest.TestCase):
         p = HLAPair(HLA("B*07"),     HLA("B*07:02"))
         d = HLAPair(HLA("B*07:02"),  HLA("B*07"))
 
-        best_score, levels = _get_correct_allele_pairing(p, d)
-        self.assertEqual(best_score, 1)
+        result = _get_correct_allele_pairing(p, d)
+        self.assertEqual(result.score, 1)
         self.assertEqual(
-            levels,
-            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.ARD_MATCH)
+            result.allele_match_levels,
+            (AlleleMatchLevel.NOT_ASSESSABLE, AlleleMatchLevel.ARD_MATCH)
         )
 
     def test_correct_pairing_with_ambiguous_alleles(self):
         """
-        Test Case: pairing prefers NOT_APPLICABLE over any mismatch
+        Test Case: pairing prefers NOT_ASSESSABLE over any mismatch
         """
         p = HLAPair(HLA("B*07"),     HLA("B*01"))
         d = HLAPair(HLA("B*07"),  HLA("B*01"))
 
-        best_score, levels = _get_correct_allele_pairing(p, d)
-        self.assertEqual(best_score, 0)
+        result = _get_correct_allele_pairing(p, d)
+
+        self.assertEqual(result.score, 0)
         self.assertEqual(
-            levels,
-            (AlleleMatchLevel.NOT_APPLICABLE, AlleleMatchLevel.NOT_APPLICABLE)
+            result.allele_match_levels,
+            (AlleleMatchLevel.NOT_ASSESSABLE, AlleleMatchLevel.NOT_ASSESSABLE)
+        )
+
+
+class TestMatchResultARDRefinementFieldsDefaults(unittest.TestCase):
+    """Tests for ARD/molecular fields in MatchResult construction."""
+
+    def test_defaults_when_molecular_fields_not_provided(self):
+        """
+        If MatchResult is constructed with only allele_match_levels:
+
+        - ard_match_levels / ard_match_certainties
+        - molecular_match_levels / molecular_match_certainties
+
+        must all default to NOT_APPLICABLE. They are only meaningful when
+        computed via allele_pair_match (i.e. AlleleMatchLevel == ARD_MATCH).
+        """
+        patient = HLAPair(HLA("A*01:01"), HLA("A*01:01"))
+        donor = HLAPair(HLA("A*01:01"), HLA("A*01:01"))
+
+        result = MatchResult(
+            patient=patient,
+            donor=donor,
+            pairing_score=AlleleMatchLevel.ARD_MATCH * 2,
+            allele_match_levels=(
+                AlleleMatchLevel.ARD_MATCH,
+                AlleleMatchLevel.ARD_MATCH,
+            ),
+        )
+
+        self.assertEqual(
+            result.ard_match_levels,
+            (
+                ARDMatchLevel.NOT_APPLICABLE,
+                ARDMatchLevel.NOT_APPLICABLE
+            ),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (
+                ARDMatchLevelCertainty.NOT_APPLICABLE,
+                ARDMatchLevelCertainty.NOT_APPLICABLE
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (
+                MolecularMatchLevel.NOT_APPLICABLE,
+                MolecularMatchLevel.NOT_APPLICABLE
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (
+                MolecularMatchLevelCertainty.NOT_APPLICABLE,
+                MolecularMatchLevelCertainty.NOT_APPLICABLE
+            ),
+        )
+
+    def test_explicit_molecular_fields_are_preserved(self):
+        """
+        If ARD/molecular fields are passed explicitly to MatchResult,
+        they must be stored unchanged and NOT recomputed.
+        """
+        patient = HLAPair(HLA("A*01:01:01:04"), HLA("A*01:01:01:01"))
+        donor = HLAPair(HLA("A*01:01:01:01"), HLA("A*01:01:01:03"))
+
+        result = MatchResult(
+            patient=patient,
+            donor=donor,
+            pairing_score=AlleleMatchLevel.ARD_MATCH * 2,
+            allele_match_levels=(
+                AlleleMatchLevel.ARD_MATCH,
+                AlleleMatchLevel.ARD_MATCH,
+            ),
+            ard_match_levels=(
+                ARDMatchLevel.G_GROUP_MATCH,
+                ARDMatchLevel.G_GROUP_MATCH,
+            ),
+            ard_match_level_certainty=(
+                ARDMatchLevelCertainty.CERTAIN,
+                ARDMatchLevelCertainty.CERTAIN,
+            ),
+            molecular_match_levels=(
+                MolecularMatchLevel.EXACT_ALLELE_MATCH,
+                MolecularMatchLevel.CODING_SEQUENCE_MATCH,
+            ),
+            molecular_match_level_certainty=(
+                MolecularMatchLevelCertainty.CERTAIN,
+                MolecularMatchLevelCertainty.CERTAIN,
+            ),
+        )
+
+        self.assertEqual(
+            result.ard_match_levels,
+            (
+                ARDMatchLevel.G_GROUP_MATCH,
+                ARDMatchLevel.G_GROUP_MATCH
+            ),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (
+                ARDMatchLevelCertainty.CERTAIN,
+                ARDMatchLevelCertainty.CERTAIN
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (
+                MolecularMatchLevel.EXACT_ALLELE_MATCH,
+                MolecularMatchLevel.CODING_SEQUENCE_MATCH
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (
+                MolecularMatchLevelCertainty.CERTAIN,
+                MolecularMatchLevelCertainty.CERTAIN
+            ),
         )
 
 
 class TestAllelePairMatch(unittest.TestCase):
     def test_valid_match_without_swapping(self):
         """
-        Test Case: Double SYNONYMOUS_VARIANT_MATCH (4)
+        Test Case: Double ARD_MATCH (4)
         Patient: DRB1*15:01:01, DRB1*15:01:01
         Donor: DRB1*15:01:01, DRB1*15:01:01
-        Expected Score: 8
-        Expected Allele Match Levels: Double SYNONYMOUS_VARIANT_MATCH (4)
+        Expected Score: ARD_MATCH + ARD_MATCH
+        Expected Allele Match Levels: Double ARD_MATCH
         """
         patient_allele1 = HLA("DRB1*15:01:01")
         patient_allele2 = HLA("DRB1*15:01:01")
@@ -468,10 +591,10 @@ class TestAllelePairMatch(unittest.TestCase):
 
         result = allele_pair_match(patient, donor)
 
-        expected_score = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH * 2
+        expected_score = AlleleMatchLevel.ARD_MATCH * 2
         expected_match_levels = (
-            AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-            AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+            AlleleMatchLevel.ARD_MATCH,
+            AlleleMatchLevel.ARD_MATCH
         )
 
         self.assertEqual(result.pairing_score, expected_score)
@@ -482,8 +605,8 @@ class TestAllelePairMatch(unittest.TestCase):
         Test Case: Match with suffixes 'G' and 'P'
         Patient: DRB1*01:01:01G, DRB1*07:01:01G
         Donor: DRB1*01:01P, DRB1*07:01:01
-        Expected Score: 6
-        Expected Allele Match Levels: Double ARD_MATCH (3)
+        Expected Score: ARD_MATCH + ARD_MATCH
+        Expected Allele Match Levels: Double ARD_MATCH
         """
         patient_allele1 = HLA("DRB1*01:01:01G")
         patient_allele2 = HLA("DRB1*07:01:01G")
@@ -509,9 +632,9 @@ class TestAllelePairMatch(unittest.TestCase):
         Test Case: Match requiring swapping
         Patient: B*35:02:01, B*51:01P
         Donor: B*51:01:01, B*35:02:01
-        Expected Score: 4 + 3
+        Expected Score: ARD_MATCH + ARD_MATCH
         Expected Allele Match Levels:
-            - B*35:02:01 with B*35:02:01: SYNONYMOUS_VARIANT_MATCH
+            - B*35:02:01 with B*35:02:01: ARD_MATCH
             - B*51:01P with B*51:01:01: ARD_MATCH
         """
         patient_allele1 = HLA("B*35:02:01")
@@ -525,7 +648,7 @@ class TestAllelePairMatch(unittest.TestCase):
         result = allele_pair_match(patient, donor)
 
         expected_match_levels = (
-            AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
+            AlleleMatchLevel.ARD_MATCH,
             AlleleMatchLevel.ARD_MATCH
         )
         expected_score = sum(expected_match_levels)
@@ -538,11 +661,11 @@ class TestAllelePairMatch(unittest.TestCase):
 
     def test_valid_double_allele_mismatch(self):
         """
-        Test Case: Double ALLELE_MISMATCH (2)
+        Test Case: Double ALLELE_MISMATCH
         Patient Alleles: DPB1*04:01:01, DPB1*04:01:01
         Donor Alleles: DPB1*04:02:01, DPB1*04:02:01
-        Expected Score: 4
-        Expected Allele Match Levels: Double ALLELE_MISMATCH (2)
+        Expected Score: ALLELE_MISMATCH * 2
+        Expected Allele Match Levels: Double ALLELE_MISMATCH
         """
         patient_allele1 = HLA("DPB1*04:01:01")
         patient_allele2 = HLA("DPB1*04:01:01")
@@ -565,11 +688,11 @@ class TestAllelePairMatch(unittest.TestCase):
 
     def test_valid_allele_group_mismatch_and_allele_mismatch_swapping(self):
         """
-        Test Case: Swapping ALLELE_GROUP_MISMATCH, ALLELE_MISMATCH
+        Test Case: Swapping ANTIGEN_MISMATCH, ALLELE_MISMATCH
         Patient Alleles: DPB1*01:01:01, DPB1*04:02:01
         Donor Alleles: DPB1*04:01:01, DPB1*02:01:02
-        Expected Score: 3
-        Expected Allele Match Levels: [ALLELE_MISMATCH, ALLELE_GROUP_MISMATCH]
+        Expected Score: ALLELE_MISMATCH + ANTIGEN_MISMATCH
+        Expected Allele Match Levels: [ALLELE_MISMATCH, ANTIGEN_MISMATCH]
         """
         patient_allele1 = HLA("DPB1*01:01:01")
         patient_allele2 = HLA("DPB1*04:02:01")
@@ -582,7 +705,7 @@ class TestAllelePairMatch(unittest.TestCase):
         result = allele_pair_match(patient, donor)
 
         expected_match_levels = (
-            AlleleMatchLevel.ALLELE_GROUP_MISMATCH,
+            AlleleMatchLevel.ANTIGEN_MISMATCH,
             AlleleMatchLevel.ALLELE_MISMATCH
         )
         expected_score = sum(expected_match_levels)
@@ -594,7 +717,8 @@ class TestAllelePairMatch(unittest.TestCase):
         """
         Test Case: ARD_MATCH and ALLELE_MISMATCH with swapping
         Patient Alleles: DPB1*03:01P, DPB1*04:01P
-        Donor Alleles: 5
+        Donor Alleles: 5 DPB1*04:02P, DPB1*03:01P
+        Expected Score: ARD_MATCH + ALLELE_MISMATCH
         Expected Allele Match Levels: [ARD_MATCH, ALLELE_MISMATCH]
         """
         patient_allele1 = HLA("DPB1*03:01P")
@@ -635,11 +759,11 @@ class TestAllelePairMatch(unittest.TestCase):
 
     def test_negative_score_when_not_applicable(self):
         """
-        Test Case: Both comparisons NOT_APPLICABLE
+        Test Case: Both comparisons NOT_ASSESSABLE
         Patient Alleles: E*NE, E*NE
         Donor Alleles:   E*NE, E*NE
-        Expected Pairing Score: AlleleMatchLevel.NOT_APPLICABLE * 2
-        Expected Match Levels: (NOT_APPLICABLE, NOT_APPLICABLE)
+        Expected Pairing Score: AlleleMatchLevel.NOT_ASSESSABLE * 2
+        Expected Match Levels: (NOT_ASSESSABLE, NOT_ASSESSABLE)
         """
         na1 = HLA("E*NE")
         na2 = HLA("E*NE")
@@ -650,10 +774,10 @@ class TestAllelePairMatch(unittest.TestCase):
 
         result = allele_pair_match(patient, donor)
 
-        expected_score = AlleleMatchLevel.NOT_APPLICABLE * 2
+        expected_score = AlleleMatchLevel.NOT_ASSESSABLE * 2
         expected_levels = (
-            AlleleMatchLevel.NOT_APPLICABLE,
-            AlleleMatchLevel.NOT_APPLICABLE
+            AlleleMatchLevel.NOT_ASSESSABLE,
+            AlleleMatchLevel.NOT_ASSESSABLE
         )
 
         self.assertEqual(result.pairing_score, expected_score)
@@ -664,24 +788,24 @@ class TestAllelePairMatch(unittest.TestCase):
         Case: two alleles, with risk suffix 'N'
         Allele-1: A*24:09N
         Allele-2: A*24:23N
-        Expected: NOT_APPLICABLE
+        Expected: NOT_ASSESSABLE
         """
         allele1 = HLA("A*24:09N")
         allele2 = HLA("A*24:09N")
         self.assertEqual(
             allele_match(allele1, allele2),
-            AlleleMatchLevel.NOT_APPLICABLE
+            AlleleMatchLevel.NOT_ASSESSABLE
         )
 
     def test_identical_g_group_codes_caps_at_ard_match(self):
         """
         Case: both alleles have 'G' group-code
         Allele-1: DQB1*06:02:01G
-        Allele-2: DQB1*06:02:02G
-        Expected: ARD_MATCH (3)
+        Allele-2: DQB1*06:02:01G
+        Expected: ARD_MATCH
         """
         a1 = HLA("DQB1*06:02:01G")
-        a2 = HLA("DQB1*06:02:02G")
+        a2 = HLA("DQB1*06:02:01G")
         self.assertEqual(allele_match(a1, a2), AlleleMatchLevel.ARD_MATCH)
 
     def test_invalid_single_field_p_group_raises(self):
@@ -751,6 +875,500 @@ class TestAllelePairMatch(unittest.TestCase):
             allele_pair_match(patient=patient, donor=donor)
 
 
+class TestAllelePairMatchARDRefinement(unittest.TestCase):
+    """
+    Tests for ARD refinement including both MolecularMatchLevel and
+    ARDMatchLevel computation.
+
+    Tests validate refinement for cases AlleleMatchLevel is ARD_MATCH and
+    ensure that non-ARD_MATCH cases map to NOT_APPLICABLE.
+    """
+
+    def tearDown(self) -> None:
+        set_config(HLAMatchConfig())
+
+    # NOT_APPLICABLE cases (AlleleMatchLevel != ARD_MATCH)
+    def test_antigen_mismatch_molecular_not_applicable(self):
+        """
+        ANTIGEN_MISMATCH:
+        - ARDMatchLevel / ARDMatchLevelCertainty -> NOT_APPLICABLE
+        - MolecularMatchLevel / MolecularMatchLevelCertainty -> NOT_APPLICABLE
+        """
+        patient = HLAPair(HLA("C*01:02"), HLA("C*01:12"))
+        donor = HLAPair(HLA("C*03:02:01"), HLA("C*02:02"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ANTIGEN_MISMATCH,
+             AlleleMatchLevel.ANTIGEN_MISMATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.NOT_APPLICABLE,
+             ARDMatchLevel.NOT_APPLICABLE),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.NOT_APPLICABLE,
+             ARDMatchLevelCertainty.NOT_APPLICABLE),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.NOT_APPLICABLE,
+             MolecularMatchLevel.NOT_APPLICABLE)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.NOT_APPLICABLE,
+             MolecularMatchLevelCertainty.NOT_APPLICABLE)
+        )
+
+    def test_allele_mismatch_molecular_not_applicable(self):
+        """
+        ALLELE_MISMATCH:
+        - ARD refinement is not applied
+        - Molecular refinement is not applied
+        => all ARD/molecular fields NOT_APPLICABLE
+        """
+        patient = HLAPair(HLA("DPB1*04:01:01:01"), HLA("DPB1*02:02:01"))
+        donor = HLAPair(HLA("DPB1*02:01:02:01"), HLA("DPB1*04:02:01"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ALLELE_MISMATCH,
+             AlleleMatchLevel.ALLELE_MISMATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.NOT_APPLICABLE,
+             ARDMatchLevel.NOT_APPLICABLE),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.NOT_APPLICABLE,
+             ARDMatchLevelCertainty.NOT_APPLICABLE),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.NOT_APPLICABLE,
+             MolecularMatchLevel.NOT_APPLICABLE)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.NOT_APPLICABLE,
+             MolecularMatchLevelCertainty.NOT_APPLICABLE)
+        )
+
+    def test_not_assessable_molecular_not_applicable(self):
+        """
+        NOT_ASSESSABLE (insufficient typing resolution):
+        - ARD refinement is not applied
+        - Molecular refinement is not applied
+        => all ARD/molecular fields NOT_APPLICABLE
+        """
+        patient = HLAPair(HLA("B*07"), HLA("B*08"))
+        donor = HLAPair(HLA("B*08:01"), HLA("B*07:02"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.NOT_ASSESSABLE,
+             AlleleMatchLevel.NOT_ASSESSABLE)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.NOT_APPLICABLE,
+             ARDMatchLevel.NOT_APPLICABLE),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.NOT_APPLICABLE,
+             ARDMatchLevelCertainty.NOT_APPLICABLE),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.NOT_APPLICABLE,
+             MolecularMatchLevel.NOT_APPLICABLE)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.NOT_APPLICABLE,
+             MolecularMatchLevelCertainty.NOT_APPLICABLE)
+        )
+
+    # EXACT_ALLELE_MATCH cases
+    def test_exact_allele_match_four_field_identical(self):
+        """
+        Four-field identical alleles (A*01:01:01:01 vs A*01:01:01:01):
+        - ARD refinement: G_GROUP_MATCH, CERTAIN
+        - Molecular: EXACT_ALLELE_MATCH, CERTAIN
+
+        """
+        patient = HLAPair(HLA("A*01:01:01:01"), HLA("A*02:01:01:01"))
+        donor = HLAPair(HLA("A*02:01:01:01"), HLA("A*01:01:01:01"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.G_GROUP_MATCH,
+             ARDMatchLevel.G_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.CERTAIN,
+             ARDMatchLevelCertainty.CERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.EXACT_ALLELE_MATCH,
+             MolecularMatchLevel.EXACT_ALLELE_MATCH)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.CERTAIN,
+             MolecularMatchLevelCertainty.CERTAIN)
+        )
+
+    # CODING_SEQUENCE_MATCH cases
+    def test_coding_sequence_match_fourth_field_differs(self):
+        """
+        Fourth field differs, same 1–3 fields:
+        - ARD refinement: G_GROUP_MATCH, CERTAIN
+        - Molecular: CODING_SEQUENCE_MATCH, CERTAIN
+        """
+        patient = HLAPair(HLA("A*01:01:01:01"), HLA("A*01:01:01:04"))
+        donor = HLAPair(HLA("A*01:01:01:03"), HLA("A*01:01:01:05"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.G_GROUP_MATCH,
+             ARDMatchLevel.G_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.CERTAIN,
+             ARDMatchLevelCertainty.CERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.CODING_SEQUENCE_MATCH,
+             MolecularMatchLevel.CODING_SEQUENCE_MATCH)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.CERTAIN,
+             MolecularMatchLevelCertainty.CERTAIN)
+        )
+
+    def test_coding_sequence_match_three_field_vs_four_field_uncertain(self):
+        """
+        Three-field vs four-field, same 1–3 fields:
+        - ARD refinement: G_GROUP_MATCH, CERTAIN
+        - Molecular: CODING_SEQUENCE_MATCH, UNCERTAIN
+        """
+        patient = HLAPair(HLA("A*01:01:01"), HLA("A*01:02:01"))
+        donor = HLAPair(HLA("A*01:02:01:01"), HLA("A*01:01:01:03"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.G_GROUP_MATCH,
+             ARDMatchLevel.G_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.CERTAIN,
+             ARDMatchLevelCertainty.CERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.CODING_SEQUENCE_MATCH,
+             MolecularMatchLevel.CODING_SEQUENCE_MATCH)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.UNCERTAIN,
+             MolecularMatchLevelCertainty.UNCERTAIN)
+        )
+
+    # FULL_PROTEIN_MATCH cases
+    def test_full_protein_match_third_field_differs(self):
+        """
+        Third field differs, same 1–2 fields:
+        - ARD refinement: P_GROUP_MATCH, UNCERTAIN
+        - Molecular: FULL_PROTEIN_MATCH, CERTAIN
+        """
+        patient = HLAPair(HLA("A*01:01:02"), HLA("A*01:01:01"))
+        donor = HLAPair(HLA("A*01:01:03"), HLA("A*01:01:04"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.P_GROUP_MATCH,
+             ARDMatchLevel.P_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.UNCERTAIN,
+             ARDMatchLevelCertainty.UNCERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.FULL_PROTEIN_MATCH,
+             MolecularMatchLevel.FULL_PROTEIN_MATCH)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.CERTAIN,
+             MolecularMatchLevelCertainty.CERTAIN)
+        )
+
+    def test_full_protein_match_two_field_vs_three_field_uncertain(self):
+        """
+        Two-field vs three-field with identical 1–2 fields:
+        - ARD refinement: P_GROUP_MATCH, UNCERTAIN
+        - Molecular: FULL_PROTEIN_MATCH, UNCERTAIN
+        """
+        patient = HLAPair(HLA("A*01:02"), HLA("A*01:01"))
+        donor = HLAPair(HLA("A*01:01:01"), HLA("A*01:02:01"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.P_GROUP_MATCH,
+             ARDMatchLevel.P_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.UNCERTAIN,
+             ARDMatchLevelCertainty.UNCERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.FULL_PROTEIN_MATCH,
+             MolecularMatchLevel.FULL_PROTEIN_MATCH)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.UNCERTAIN,
+             MolecularMatchLevelCertainty.UNCERTAIN)
+        )
+
+    def test_full_protein_match_two_field_identical_uncertain(self):
+        """
+        Two-field identical alleles:
+        - ARD refinement: P_GROUP_MATCH, UNCERTAIN
+        - Molecular: FULL_PROTEIN_MATCH, UNCERTAIN
+
+        """
+        patient = HLAPair(HLA("A*01:01"), HLA("A*01:02"))
+        donor = HLAPair(HLA("A*01:02"), HLA("A*01:01"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.P_GROUP_MATCH,
+             ARDMatchLevel.P_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.UNCERTAIN,
+             ARDMatchLevelCertainty.UNCERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.FULL_PROTEIN_MATCH,
+             MolecularMatchLevel.FULL_PROTEIN_MATCH)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.UNCERTAIN,
+             MolecularMatchLevelCertainty.UNCERTAIN)
+        )
+
+    # NOT_ASSESSABLE cases (P-group)
+    def test_p_group_molecular_not_assessable(self):
+        """
+        P-group alleles present (A*01:02P, A*01:01P):
+        - ARD refinement: P_GROUP_MATCH, UNCERTAIN
+        - Molecular: NOT_ASSESSABLE, UNCERTAIN
+        """
+        patient = HLAPair(HLA("A*01:02P"), HLA("A*01:01P"))
+        donor = HLAPair(HLA("A*01:01:01"), HLA("A*01:412"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.P_GROUP_MATCH,
+             ARDMatchLevel.P_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.UNCERTAIN,
+             ARDMatchLevelCertainty.UNCERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.NOT_ASSESSABLE,
+             MolecularMatchLevel.NOT_ASSESSABLE)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.UNCERTAIN,
+             MolecularMatchLevelCertainty.UNCERTAIN)
+        )
+
+    # G-group cases
+    def test_g_group_vs_specific_full_protein_match(self):
+        """
+        G-group vs specific allele within same G-group:
+        - ARD refinement: G_GROUP_MATCH, CERTAIN
+        - Molecular: NOT_ASSESSABLE, UNCERTAIN
+        """
+        patient = HLAPair(HLA("C*07:02:01G"), HLA("C*07:02:10G"))
+        donor = HLAPair(HLA("C*07:02:10"), HLA("C*07:02:01"))
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH)
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.G_GROUP_MATCH,
+             ARDMatchLevel.G_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (ARDMatchLevelCertainty.CERTAIN,
+             ARDMatchLevelCertainty.CERTAIN),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (MolecularMatchLevel.NOT_ASSESSABLE,
+             MolecularMatchLevel.NOT_ASSESSABLE)
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (MolecularMatchLevelCertainty.UNCERTAIN,
+             MolecularMatchLevelCertainty.UNCERTAIN)
+        )
+
+    def test_a0201_p_group_two_field_ard_match_only(self):
+        """
+        Two-field alleles A*02:66 and A*02:75 in A*02:01P:
+        - ARD refinement: P_GROUP_MATCH, UNCERTAIN
+        - Molecular: ARD_MATCH_ONLY, CERTAIN
+        """
+        patient = HLAPair(HLA("A*02:66"), HLA("A*02:66"))
+        donor = HLAPair(HLA("A*02:75"), HLA("A*02:75"))
+
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.P_GROUP_MATCH, ARDMatchLevel.P_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (
+                ARDMatchLevelCertainty.UNCERTAIN,
+                ARDMatchLevelCertainty.UNCERTAIN,
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (
+                MolecularMatchLevel.ARD_MATCH_ONLY,
+                MolecularMatchLevel.ARD_MATCH_ONLY,
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (
+                MolecularMatchLevelCertainty.CERTAIN,
+                MolecularMatchLevelCertainty.CERTAIN,
+            ),
+        )
+
+    def test_ard_match_only_second_field_differs_with_three_field(self):
+        """
+        Two 3-field alleles in the same ARD group but with different 2nd field
+        - AlleleMatchLevel: ARD_MATCH
+        - ARD refinement: G_GROUP_MATCH, CERTAIN
+        - Molecular: ARD_MATCH_ONLY, CERTAIN
+        """
+        patient = HLAPair(HLA("A*02:01:01"), HLA("A*02:01:01"))
+        donor = HLAPair(HLA("A*02:09:01"), HLA("A*02:09:01"))
+
+        result = allele_pair_match(patient, donor)
+
+        self.assertEqual(
+            result.allele_match_levels,
+            (AlleleMatchLevel.ARD_MATCH, AlleleMatchLevel.ARD_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_levels,
+            (ARDMatchLevel.G_GROUP_MATCH, ARDMatchLevel.G_GROUP_MATCH),
+        )
+        self.assertEqual(
+            result.ard_match_certainties,
+            (
+                ARDMatchLevelCertainty.CERTAIN,
+                ARDMatchLevelCertainty.CERTAIN,
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_levels,
+            (
+                MolecularMatchLevel.ARD_MATCH_ONLY,
+                MolecularMatchLevel.ARD_MATCH_ONLY,
+            ),
+        )
+        self.assertEqual(
+            result.molecular_match_certainties,
+            (
+                MolecularMatchLevelCertainty.CERTAIN,
+                MolecularMatchLevelCertainty.CERTAIN,
+            ),
+        )
+
+
 # need a correct MatchResult object to test the _loci_level_match
 dummy_MatchResult = MatchResult(
                     patient=HLAPair(hla1=HLA('A*01:01'), hla2=HLA('A*01:01')),
@@ -772,22 +1390,6 @@ class TestLociLevelMatch_basic_resolution(unittest.TestCase):
         )
         self.assertEqual(result, "ARD_MATCH")
 
-    def test_ARD_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_ARD_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
     def test_ARD_MATCH_and_ALLELE_MISMATCH(self):
         level1 = AlleleMatchLevel.ARD_MATCH
         level2 = AlleleMatchLevel.ALLELE_MISMATCH
@@ -798,9 +1400,9 @@ class TestLociLevelMatch_basic_resolution(unittest.TestCase):
             result, "PARTIAL_ARD_MISMATCH"
         )
 
-    def test_ARD_MATCH_and_ALLELE_GROUP_MISMATCH(self):
+    def test_ARD_MATCH_and_ANTIGEN_MISMATCH(self):
         level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
@@ -810,7 +1412,7 @@ class TestLociLevelMatch_basic_resolution(unittest.TestCase):
 
     def test_ARD_MATCH_and_LOCUS_MISMATCH(self):
         level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
@@ -818,121 +1420,9 @@ class TestLociLevelMatch_basic_resolution(unittest.TestCase):
             result, "PARTIAL_ARD_MISMATCH"
         )
 
-    def test_SYNONYMOUS_VARIANT_MATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ARD_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ARD_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
     def test_ALLELE_MISMATCH_and_ARD_MATCH(self):
         level1 = AlleleMatchLevel.ALLELE_MISMATCH
         level2 = AlleleMatchLevel.ARD_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_ALLELE_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_ALLELE_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
@@ -946,9 +1436,9 @@ class TestLociLevelMatch_basic_resolution(unittest.TestCase):
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
-    def test_ALLELE_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
+    def test_ALLELE_MISMATCH_and_ANTIGEN_MISMATCH(self):
         level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
@@ -956,103 +1446,71 @@ class TestLociLevelMatch_basic_resolution(unittest.TestCase):
 
     def test_ALLELE_MISMATCH_and_LOCUS_MISMATCH(self):
         level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
-    def test_ALLELE_GROUP_MISMATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_ANTIGEN_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
         level2 = AlleleMatchLevel.ARD_MATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
 
-    def test_ALLELE_GROUP_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_ALLELE_GROUP_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_ANTIGEN_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
         level2 = AlleleMatchLevel.ALLELE_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
-    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_ANTIGEN_MISMATCH_and_ANTIGEN_MISMATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
+        level2 = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
-    def test_ALLELE_GROUP_MISMATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+    def test_ANTIGEN_MISMATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
     def test_LOCUS_MISMATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         level2 = AlleleMatchLevel.ARD_MATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
 
-    def test_LOCUS_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
-    def test_LOCUS_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_basic_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ARD_MISMATCH")
-
     def test_LOCUS_MISMATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         level2 = AlleleMatchLevel.ALLELE_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
-    def test_LOCUS_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_LOCUS_MISMATCH_and_ANTIGEN_MISMATCH(self):
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
         self.assertEqual(result, "ARD_MISMATCH")
 
     def test_LOCUS_MISMATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_basic_resolution(
             level1, level2
         )
@@ -1085,163 +1543,29 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
 
     def test_ARD_MATCH_and_LOCUS_MISMATCH(self):
         level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
-
-    def test_ARD_MATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
-
-    def test_ARD_MATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.ALLELE_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
-
-    def test_ARD_MATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.ARD_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_ARD_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_ARD_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ARD_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ARD_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_SYNONYMOUS_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ALLELE_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.ARD_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
-
-    def test_NON_CODING_VARIANT_MATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "ARD_MATCH")
+        self.assertEqual(result, "PARTIAL_DRB345_SUBLOCUS_MISMATCH")
 
     def test_ALLELE_MISMATCH_and_LOCUS_MISMATCH(self):
         level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_MISMATCH")
+        self.assertEqual(
+            result, "DRB345_SUBLOCUS_MISMATCH_AND_ALLELE_MISMATCH"
+        )
 
-    def test_ALLELE_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
+    def test_ALLELE_MISMATCH_and_ANTIGEN_MISMATCH(self):
         level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+        level2 = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "ALLELE_GROUP_MISMATCH_AND_ALLELE_MISMATCH")
+        self.assertEqual(result, "ANTIGEN_MISMATCH_AND_ALLELE_MISMATCH")
 
     def test_ALLELE_MISMATCH_and_ALLELE_MISMATCH(self):
         level1 = AlleleMatchLevel.ALLELE_MISMATCH
@@ -1259,117 +1583,75 @@ class TestLociLevelMatch_high_resolution(unittest.TestCase):
         )
         self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
 
-    def test_ALLELE_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+    def test_ANTIGEN_MISMATCH_and_LOCUS_MISMATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+        self.assertEqual(
+            result, "DRB345_SUBLOCUS_MISMATCH_AND_ANTIGEN_MISMATCH"
+        )
 
-    def test_ALLELE_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_MISMATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
+    def test_ANTIGEN_MISMATCH_and_ANTIGEN_MISMATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
+        level2 = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "PARTIAL_ALLELE_MISMATCH")
+        self.assertEqual(result, "DOUBLE_ANTIGEN_MISMATCH")
 
-    def test_ALLELE_GROUP_MISMATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_GROUP_MISMATCH")
-
-    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "DOUBLE_ALLELE_GROUP_MISMATCH")
-
-    def test_ALLELE_GROUP_MISMATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_ANTIGEN_MISMATCH_and_ALLELE_MISMATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
         level2 = AlleleMatchLevel.ALLELE_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "ALLELE_GROUP_MISMATCH_AND_ALLELE_MISMATCH")
+        self.assertEqual(result, "ANTIGEN_MISMATCH_AND_ALLELE_MISMATCH")
 
-    def test_ALLELE_GROUP_MISMATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_ANTIGEN_MISMATCH_and_ARD_MATCH(self):
+        level1 = AlleleMatchLevel.ANTIGEN_MISMATCH
         level2 = AlleleMatchLevel.ARD_MATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
-
-    def test_ALLELE_GROUP_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
-
-    def test_ALLELE_GROUP_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_ALLELE_GROUP_MISMATCH")
+        self.assertEqual(result, "PARTIAL_ANTIGEN_MISMATCH")
 
     def test_LOCUS_MISMATCH_and_LOCUS_MISMATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.LOCUS_MISMATCH
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
+        level2 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "DOUBLE_LOCUS_MISMATCH")
+        self.assertEqual(result, "DOUBLE_DRB345_SUBLOCUS_MISMATCH")
 
-    def test_LOCUS_MISMATCH_and_ALLELE_GROUP_MISMATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.ALLELE_GROUP_MISMATCH
+    def test_LOCUS_MISMATCH_and_ANTIGEN_MISMATCH(self):
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
+        level2 = AlleleMatchLevel.ANTIGEN_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_GROUP_MISMATCH")
+        self.assertEqual(
+            result, "DRB345_SUBLOCUS_MISMATCH_AND_ANTIGEN_MISMATCH"
+        )
 
     def test_LOCUS_MISMATCH_and_ALLELE_MISMATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         level2 = AlleleMatchLevel.ALLELE_MISMATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "LOCUS_MISMATCH_AND_ALLELE_MISMATCH")
+        self.assertEqual(
+            result, "DRB345_SUBLOCUS_MISMATCH_AND_ALLELE_MISMATCH"
+        )
 
     def test_LOCUS_MISMATCH_and_ARD_MATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
+        level1 = AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH
         level2 = AlleleMatchLevel.ARD_MATCH
         result = dummy_MatchResult._calculate_loci_match_high_resolution(
             level1, level2
         )
-        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
-
-    def test_LOCUS_MISMATCH_and_SYNONYMOUS_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
-
-    def test_LOCUS_MISMATCH_and_NON_CODING_VARIANT_MATCH(self):
-        level1 = AlleleMatchLevel.LOCUS_MISMATCH
-        level2 = AlleleMatchLevel.NON_CODING_VARIANT_MATCH
-        result = dummy_MatchResult._calculate_loci_match_high_resolution(
-            level1, level2
-        )
-        self.assertEqual(result, "PARTIAL_LOCUS_MISMATCH")
+        self.assertEqual(result, "PARTIAL_DRB345_SUBLOCUS_MISMATCH")
 
     def test_TypeError(self):
         level1 = 1
@@ -1430,15 +1712,15 @@ class TestMultiLocusMatch(unittest.TestCase):
         self.assertEqual(
             result[0].allele_match_levels,
             (
-                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+                AlleleMatchLevel.ARD_MATCH,
+                AlleleMatchLevel.ARD_MATCH
             )
         )
         self.assertEqual(
             result[1].allele_match_levels,
             (
-                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+                AlleleMatchLevel.ARD_MATCH,
+                AlleleMatchLevel.ARD_MATCH
             )
         )
 
@@ -1475,7 +1757,7 @@ class TestMultiLocusMatch(unittest.TestCase):
             result = multi_locus_match(patient, donor)
             self.assertEqual(len(cm.output), 2)
             self.assertIn(
-                "matching will be reported as NOT_APPLICABLE",
+                "matching will be reported as NOT_ASSESSABLE",
                 cm.output[0],
             )
 
@@ -1483,8 +1765,8 @@ class TestMultiLocusMatch(unittest.TestCase):
         self.assertEqual(
             result[0].allele_match_levels,
             (
-                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH,
-                AlleleMatchLevel.SYNONYMOUS_VARIANT_MATCH
+                AlleleMatchLevel.ARD_MATCH,
+                AlleleMatchLevel.ARD_MATCH
             )
         )
 
@@ -1518,8 +1800,8 @@ class TestMultiLocusMatch(unittest.TestCase):
         self.assertEqual(
             result[0].allele_match_levels,
             (
-                AlleleMatchLevel.NOT_APPLICABLE,
-                AlleleMatchLevel.NOT_APPLICABLE
+                AlleleMatchLevel.NOT_ASSESSABLE,
+                AlleleMatchLevel.NOT_ASSESSABLE
             ),
         )
 
