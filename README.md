@@ -1,24 +1,32 @@
 # py-hla-match
 
-## Intended use and regulatory notice (non-license information)
+## Regulatory Notice
 
-Py-HLA-Match is research software intended **for research use**, such as retrospective analyses, method development, benchmarking, and in‑silico studies in immunogenetics and related fields. Py-HLA-Match is intended to be used on research data.
+The Py-HLA-Match open-source research software is not certified or conformity assessed as a medical device software or in-vitro medical device software and is intended to be used for research use only. It must therefore not be used for diagnosis or therapy of patients.
 
-Py-HLA-Match is **not** a medical device or in vitro diagnostic medical device under EU MDR/IVDR, FDA regulations, or any comparable medical device or IVD regulations, and it has **not** undergone regulatory approval or conformity assessment as such. No conformity assessment, CE marking, 510(k), De Novo, PMA, or other regulatory approval has been sought or obtained. Py-HLA-Match is **not** intended for clinical diagnosis, donor selection, patient management, or for supporting or influencing medical or transplantation decisions for individual patients.
+For more details on intended use, scope, and limitations, see the
+[Software Card for Py-HLA-Match](SOFTWARE_CARD.md).
 
-Any use of this software in a clinical, diagnostic, or patient‑related context is at the sole responsibility of the user or deploying organisation, including compliance with any applicable legal and regulatory requirements.
+## About
 
-This section is provided solely for information and risk awareness. Nothing in this section limits, extends, or modifies the rights granted under the Apache License, Version 2.0, under which Py‑HLA‑Match is distributed.
+The Py-HLA-Match open-source research software is a Python library for standardised, rule-based HLA (Human Leukocyte Antigen) matching in retrospective analyses, method development, benchmarking, and in-silico studies in immunogenetics and related fields.
 
+## License
+
+Copyright 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V.
+
+The Py-HLA-Match open-source research software is licensed under the Apache License, Version 2.0 (the "License").
+You may obtain a copy of the License in the `LICENSE` file in this repository
+or at http://www.apache.org/licenses/LICENSE-2.0.
 
 ## Terminology
 
-Py-HLA-Match uses domain terms such as *patient*, *donor* and *_score* to mirror the structure of typical transplant research datasets (e.g. HSCT
-retrospective cohorts). These terms refer exclusively to roles and fields in research data and do **not** imply that Py-HLA-Match implements, recommends, or automates any clinical donor-selection or patient-management workflow.
+The Py-HLA-Match open-source research software domain terms such as *patient*, *donor*, and *score* to mirror the structure of typical transplant research datasets (e.g. HSCT retrospective cohorts). These terms refer exclusively to roles and fields in research data and do **not** imply that Py-HLA-Match implements, recommends, or automates any clinical donor-selection or patient-management workflow.
 
-All scores, match levels, and related outputs produced by the library are intended as research metrics derived from HLA nomenclature semantics. They are **not** intended as clinical risk scores or decision criteria.
+All match levels and related outputs produced by the library are research metrics derived from HLA nomenclature semantics. They are **not** clinical risk scores or decision criteria.
 
 ![tests](https://github.com/tiadams/py-hla-match/actions/workflows/tests.yaml/badge.svg)
+
 ## Poetry Setup
 
 ```bash
