@@ -14,11 +14,19 @@
    :template: autosummary/class.rst
 
 
+   ARDMatchLevel
+
+   ARDMatchLevelCertainty
+
    AlleleMatchLevel
 
    ExpressionSuffixMatchLevel
 
    ExpressionSuffixPolicy
+
+   MolecularMatchLevel
+
+   MolecularMatchLevelCertainty
 
 
 

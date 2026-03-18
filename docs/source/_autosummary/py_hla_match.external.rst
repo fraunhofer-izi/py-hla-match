@@ -14,6 +14,8 @@
    :template: autosummary/class.rst
 
 
+   DPB1Result
+
    DPB1TCEConfig
 
    DPB1TCEStatus

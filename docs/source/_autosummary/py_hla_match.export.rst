@@ -18,3 +18,13 @@
 
 
 
+
+.. rubric:: Functions
+
+.. autosummary::
+   :toctree: .
+   :template: autosummary/function.rst
+
+
+   scan_loci
+
