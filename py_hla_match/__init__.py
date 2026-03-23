@@ -1,4 +1,4 @@
-# Copyright 2025 Fraunhofer-Gesellschaft zur Förderung der angewandten
+# Copyright 2026 Fraunhofer-Gesellschaft zur Förderung der angewandten
 # Forschung e.V.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
