@@ -1,5 +1,5 @@
 py-hla-match
-=============
+============
 
 .. toctree::
    :maxdepth: 2
