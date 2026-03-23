@@ -1,11 +1,9 @@
-# external.py
 import requests
 import logging
 from enum import Enum
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-# Set up logging
 logger = logging.getLogger(__name__)
 
 
