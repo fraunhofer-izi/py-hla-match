@@ -7,10 +7,3 @@ py-hla-match
 
    quickstart
    api
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
