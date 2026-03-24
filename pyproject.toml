@@ -1,18 +1,50 @@
 [tool.poetry]
 name = "py-hla-match"
 version = "0.1.0"
-description = "A research Python package for HLA matching in retrospective and in-silico analyses"
-authors = ["Tim Adams <tim.adams@scai.fraunhofer.de>", "Georg Popp <georg.popp@izi.fraunhofer.de>"]
+description = "Py-HLA-Match open-source research software for HLA matching."
+authors = [
+  "Tim Adams <tim.adams@scai.fraunhofer.de>",
+  "Georg Popp <georg.popp@izi.fraunhofer.de>",
+]
 license = "Apache-2.0"
 readme = "README.md"
-packages = [{include = "py_hla_match"}]
+packages = [{ include = "py_hla_match" }]
+
+include = [
+  "LICENSE",
+  "SOFTWARE_CARD.md",
+  "THIRD_PARTY_LICENSES.md",
+]
+
+keywords = ["HLA", "histocompatibility", "transplantation", "matching", "bioinformatics"]
+
+homepage = "https://github.com/fraunhofer-izi/py-hla-match"
+repository = "https://github.com/fraunhofer-izi/py-hla-match"
+documentation = "https://github.com/fraunhofer-izi/py-hla-match#readme"
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+[tool.poetry.urls]
+"Issue Tracker" = "https://github.com/fraunhofer-izi/py-hla-match/issues"
+"Regulatory Notice" = "https://github.com/fraunhofer-izi/py-hla-match/blob/main/SOFTWARE_CARD.md"
+"Third-Party Licenses" = "https://github.com/fraunhofer-izi/py-hla-match/blob/main/THIRD_PARTY_LICENSES.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
-pandas = "^2.2.2"
-py-ard = "^1.5.5"
-openpyxl = "^3.1.0"
-requests = "^2.32"
+pandas = ">=2.2.2,<3"
+py-ard = ">=1.5.5,<2"
+openpyxl = ">=3.1.0,<4"
+requests = ">=2.32.4,<3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
@@ -23,5 +55,5 @@ sphinx = "^7.4.7"
 sphinx-rtd-theme = "^2.0.0"
 
 [build-system]
-requires = ["poetry>=1.0.0"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

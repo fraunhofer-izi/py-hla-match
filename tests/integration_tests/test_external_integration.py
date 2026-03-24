@@ -1,4 +1,3 @@
-# tests/test_integration.py
 import unittest
 import os
 from py_hla_match.external import query_dpb1_tce, DPB1TCEStatus
