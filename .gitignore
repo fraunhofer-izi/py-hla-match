@@ -64,7 +64,6 @@ venv.bak/
 # Generated documentation
 docs/build/
 docs/source/autosummary/
-docs
 
 # System files
 Thumbs.db
