@@ -25,7 +25,7 @@ The Py-HLA-Match open-source research software domain terms such as *patient*, *
 
 All match levels and related outputs produced by the library are research metrics derived from HLA nomenclature semantics. They are **not** clinical risk scores or decision criteria.
 
-![tests](https://github.com/tiadams/py-hla-match/actions/workflows/tests.yaml/badge.svg)
+![tests](https://github.com/tiadams/py-hla-match/actions/workflows/test-docs.yaml/badge.svg)
 
 ## Poetry Setup
 
