@@ -194,6 +194,9 @@ class PairwiseMatch:
         Executes matching pipeline.
 
         Matches individuals from source and target datasets row-wise.
+        Assumes that both datasets are aligned by index.
+        Processes data in chunks and periodically flushes results to the
+        output file.
         Processes data in chunks (if streamed) or in memory.
 
         :raises FileExistsError: If output file exists and overwrite is False
