@@ -1,5 +1,6 @@
 # Py-HLA-Match
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19593513.svg)](https://doi.org/10.5281/zenodo.19593513)
 ![tests](https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/tests.yaml/badge.svg)
 ![docs](https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/docs.yaml/badge.svg)
 ![version](https://img.shields.io/pypi/v/py-hla-match)
