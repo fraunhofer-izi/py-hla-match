@@ -693,21 +693,22 @@ tests = ["pytest", "pytest-cov", "pytest-lazy-fixtures"]
 
 [[package]]
 name = "py-ard"
-version = "1.5.5"
+version = "2.1.0"
 description = "ARD reduction for HLA with Python"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "py-ard-1.5.5.tar.gz", hash = "sha256:0aa4c1585420adb2ae340c2ef3e0021a4a5b736c237d67a8825f85ef18812eac"},
-    {file = "py_ard-1.5.5-py2.py3-none-any.whl", hash = "sha256:82be1563b9e18132705afa5c8e1770ef4c77b4e4aeda380b7a6f0de53e1a74ac"},
+    {file = "py_ard-2.1.0-py2.py3-none-any.whl", hash = "sha256:cedf3098c847cd8689decca98541b859df1ff2ab95c83c3fd6895415e68b51f1"},
+    {file = "py_ard-2.1.0.tar.gz", hash = "sha256:ef80e8516a3f0ceb14ea6eb20c60e2f2a64bcd3c7a44842e6092707624e7708c"},
 ]
 
 [package.dependencies]
-numpy = "2.0.2"
-pandas = "2.2.2"
 setuptools = "78.1.1"
 toml = "0.10.2"
+
+[package.extras]
+script = ["pandas (>=2.0)"]
 
 [[package]]
 name = "pygments"
@@ -795,14 +796,14 @@ files = [
 
 [[package]]
 name = "requests"
-version = "2.32.4"
+version = "2.32.5"
 description = "Python HTTP for Humans."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["main", "dev"]
 files = [
-    {file = "requests-2.32.4-py3-none-any.whl", hash = "sha256:27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c"},
-    {file = "requests-2.32.4.tar.gz", hash = "sha256:27d0316682c8a29834d3264820024b62a36942083d52caf2f14c0591336d3422"},
+    {file = "requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6"},
+    {file = "requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf"},
 ]
 
 [package.dependencies]
@@ -1165,4 +1166,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "8d0fdaa2735846809f732498342b837435c68e4d8c1411c50c708ec1829b7eeb"
+content-hash = "dcd97ba5cb5c021c6518202110cb4805862435d409c27b1f22015011f33eb4bc"

@@ -42,7 +42,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 pandas = ">=2.2.2,<3"
-py-ard = ">=1.5.5,<2"
+py-ard = ">=1.5.5,<3"
 openpyxl = ">=3.1.0,<4"
 requests = ">=2.32.4,<3"
 
