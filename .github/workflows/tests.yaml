@@ -35,7 +35,7 @@ jobs:
         run: poetry install
 
       - name: Run tests
-        run: poetry run pytest --cov=py-hla-match --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+        run: poetry run pytest --cov=py_hla_match --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.12'
