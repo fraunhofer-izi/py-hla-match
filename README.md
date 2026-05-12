@@ -2,6 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19593513.svg)](https://doi.org/10.5281/zenodo.19593513)
 ![tests](https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/tests.yaml/badge.svg)
+[![codecov](https://codecov.io/gh/fraunhofer-izi/py-hla-match/branch/main/graph/badge.svg)](https://codecov.io/gh/fraunhofer-izi/py-hla-match)
 ![docs](https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/docs.yaml/badge.svg)
 ![version](https://img.shields.io/pypi/v/py-hla-match)
 ![license](https://img.shields.io/badge/license-Apache%202.0-blue)
