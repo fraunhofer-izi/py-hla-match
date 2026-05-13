@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 
 from demo.scripts.performance_benchmark import benchmark_hla_match
@@ -6,11 +7,14 @@ dataset_sizes = [1000, 10000, 100000, 200000, 500000, 1000000]
 
 # run synthetic data generation (-> "synthetic_data_generator.py")
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(SCRIPT_DIR, "..", "data", "synthetic_data")
+
 results = []
 for n in dataset_sizes:
-    patient_path = f"/../demo/data/synthetic_data/recipients_{n}.csv"
-    donor_path = f"/../demo/data/synthetic_data/donors_{n}.csv"
-    output_path = f"/../demo/data/synthetic_data/match_results_{n}.csv"
+    patient_path = os.path.join(DATA_DIR, f"recipients_{n}.csv")
+    donor_path = os.path.join(DATA_DIR, f"donors_{n}.csv")
+    output_path = os.path.join(DATA_DIR, f"match_results_{n}.csv")
 
     stats = benchmark_hla_match(
         donor_path,
