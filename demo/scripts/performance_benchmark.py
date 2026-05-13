@@ -47,6 +47,7 @@ def benchmark_hla_match(
         source=src,
         target=tgt,
         storage_filename=output_path,
+        loci=["A", "B", "C", "DRB1", "DQB1", "DPB1"],
         stream=True,
         chunk_size=chunk_size
     ).run()
