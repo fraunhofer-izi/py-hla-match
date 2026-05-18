@@ -1,0 +1,173 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>py_hla_match.exceptions &mdash; py-hla-match  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="py_hla_match.export" href="py_hla_match.export.html" />
+    <link rel="prev" title="py_hla_match.config.set_config" href="py_hla_match.config.set_config.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            py-hla-match
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.config.html">py_hla_match.config</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">py_hla_match.exceptions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.exceptions.ARDMatchRefinementError"><code class="docutils literal notranslate"><span class="pre">ARDMatchRefinementError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.exceptions.EmptyHLAStringError"><code class="docutils literal notranslate"><span class="pre">EmptyHLAStringError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.exceptions.InvalidLocusComparisonError"><code class="docutils literal notranslate"><span class="pre">InvalidLocusComparisonError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.exceptions.MalformedHLADataSourceError"><code class="docutils literal notranslate"><span class="pre">MalformedHLADataSourceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.exceptions.MalformedHLAStringError"><code class="docutils literal notranslate"><span class="pre">MalformedHLAStringError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.exceptions.PyardLibraryError"><code class="docutils literal notranslate"><span class="pre">PyardLibraryError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.export.html">py_hla_match.export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.external.html">py_hla_match.external</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.hla.html">py_hla_match.hla</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.matching.html">py_hla_match.matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.models.html">py_hla_match.models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.parser.html">py_hla_match.parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.policy.html">py_hla_match.policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.singleton.html">py_hla_match.singleton</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">py-hla-match</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">py_hla_match.exceptions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/py_hla_match.exceptions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-py_hla_match.exceptions">
+<span id="py-hla-match-exceptions"></span><h1>py_hla_match.exceptions<a class="headerlink" href="#module-py_hla_match.exceptions" title="Link to this heading"></a></h1>
+<dl class="py exception">
+<dt class="sig sig-object py" id="py_hla_match.exceptions.ARDMatchRefinementError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.exceptions.</span></span><span class="sig-name descname"><span class="pre">ARDMatchRefinementError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/exceptions.html#ARDMatchRefinementError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.exceptions.ARDMatchRefinementError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Error raised during refinement of ARD matched HLA alleles.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="py_hla_match.exceptions.EmptyHLAStringError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.exceptions.</span></span><span class="sig-name descname"><span class="pre">EmptyHLAStringError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/exceptions.html#EmptyHLAStringError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.exceptions.EmptyHLAStringError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#py_hla_match.exceptions.MalformedHLAStringError" title="py_hla_match.exceptions.MalformedHLAStringError"><code class="xref py py-class docutils literal notranslate"><span class="pre">MalformedHLAStringError</span></code></a></p>
+<p>Error raised when an HLA string is empty.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="py_hla_match.exceptions.InvalidLocusComparisonError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.exceptions.</span></span><span class="sig-name descname"><span class="pre">InvalidLocusComparisonError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">locus1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">locus2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/exceptions.html#InvalidLocusComparisonError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.exceptions.InvalidLocusComparisonError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Exception raised when attempting to compare alleles from different loci.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="py_hla_match.exceptions.MalformedHLADataSourceError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.exceptions.</span></span><span class="sig-name descname"><span class="pre">MalformedHLADataSourceError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/exceptions.html#MalformedHLADataSourceError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.exceptions.MalformedHLADataSourceError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Error raised when an HLA data source is malformed or cannot be parsed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="py_hla_match.exceptions.MalformedHLAStringError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.exceptions.</span></span><span class="sig-name descname"><span class="pre">MalformedHLAStringError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/exceptions.html#MalformedHLAStringError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.exceptions.MalformedHLAStringError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Error raised when an HLA string is malformed or cannot be parsed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="py_hla_match.exceptions.PyardLibraryError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.exceptions.</span></span><span class="sig-name descname"><span class="pre">PyardLibraryError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">details</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/exceptions.html#PyardLibraryError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.exceptions.PyardLibraryError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Error raised when the external ‘pyard’ library fails unexpectedly.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="py_hla_match.config.set_config.html" class="btn btn-neutral float-left" title="py_hla_match.config.set_config" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="py_hla_match.export.html" class="btn btn-neutral float-right" title="py_hla_match.export" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Georg Popp, Tim Adams.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

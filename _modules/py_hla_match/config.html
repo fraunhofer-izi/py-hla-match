@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>py_hla_match.config &mdash; py-hla-match  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            py-hla-match
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">py-hla-match</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">py_hla_match.config</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for py_hla_match.config</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">FrozenSet</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Pattern</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.policy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ExpressionSuffixPolicy</span>
+<span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="n">CANONICAL_HLA_LOCI</span><span class="p">:</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: standard HLA Class I loci</span>
+        <span class="s1">&#39;DRB1&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: standard HLA Class II locus</span>
+        <span class="s1">&#39;DQB1&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: standard HLA Class II locus</span>
+        <span class="s1">&#39;DPB1&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: not standard but often discussed</span>
+        <span class="s1">&#39;DQA1&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: interesting candidate</span>
+        <span class="s1">&#39;DPA1&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: interesting candidate</span>
+        <span class="s1">&#39;DRB3&#39;</span><span class="p">,</span> <span class="s1">&#39;DRB4&#39;</span><span class="p">,</span> <span class="s1">&#39;DRB5&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: interesting candidate(s)</span>
+        <span class="s1">&#39;DRB345&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: NOT A LOCUS, but used here as generic DRB3/4/5</span>
+        <span class="s1">&#39;DRBX&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: placeholder to indicate missing DRB3/4/5</span>
+        <span class="c1"># However, DRB3/4/5 may need special handling</span>
+
+        <span class="s1">&#39;MICA&#39;</span><span class="p">,</span> <span class="s1">&#39;MICB&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: interesting candidates</span>
+        <span class="s1">&#39;DMA&#39;</span><span class="p">,</span> <span class="s1">&#39;DMB&#39;</span><span class="p">,</span> <span class="s1">&#39;DOA&#39;</span><span class="p">,</span> <span class="s1">&#39;DOB&#39;</span><span class="p">,</span>  <span class="c1"># NOTE: interesting candidates</span>
+        <span class="c1"># the exhaustive list of all known HLA loci</span>
+        <span class="c1"># should be considered non-standard or experimental</span>
+
+        <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">,</span>  <span class="c1"># limited data</span>
+        <span class="s1">&#39;DQA2&#39;</span><span class="p">,</span> <span class="s1">&#39;DQB2&#39;</span><span class="p">,</span>  <span class="c1"># limited data</span>
+
+        <span class="c1"># currently not considered for matching ---</span>
+
+        <span class="c1"># &#39;MICC&#39;, &#39;MICD&#39;, &#39;MICE&#39;  # non functional related to MICA/MICB</span>
+        <span class="c1"># &#39;TAP1&#39;, &#39;TAP2&#39;,  # not direct cell-surface targets</span>
+        <span class="c1"># &#39;PSMB9&#39;, &#39;PSMB8&#39;,  # not direct cell-surface targets</span>
+        <span class="c1"># &#39;HFE&#39;,  # hemochromatosis locus, not relevant to HLA matching</span>
+        <span class="c1"># &#39;DRA&#39;,  # largely monomorphic/minimally polymorphic DR alpha chain</span>
+        <span class="c1"># likely pseudogenes ---</span>
+        <span class="c1"># &#39;DPA2&#39;, &#39;DPB2&#39;, &#39;DPA3&#39;, &#39;DQB3&#39;,</span>
+        <span class="c1"># --- likely pseudogenes</span>
+        <span class="c1"># pseudogenes ---</span>
+        <span class="c1"># &#39;DRB2&#39;, &#39;DRB6&#39;, &#39;DRB7&#39;, &#39;DRB8&#39;, &#39;DRB9&#39;,</span>
+        <span class="c1"># &#39;H&#39;, &#39;J&#39;, &#39;K&#39;, &#39;L&#39;, &#39;N&#39;, &#39;P&#39;, &#39;R&#39;, &#39;S&#39;, &#39;T&#39;,</span>
+        <span class="c1"># &#39;U&#39;, &#39;V&#39;, &#39;W&#39;, &#39;X&#39;, &#39;Y&#39;, &#39;Z&#39;,</span>
+        <span class="c1"># --- pseudogenes</span>
+
+        <span class="c1"># --- currently not considered for matching</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1"># we now support processing of DRB345</span>
+<span class="n">CANONICAL_DRB345_SUB_LOCI</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;DRB3&#39;</span><span class="p">,</span> <span class="s1">&#39;DRB4&#39;</span><span class="p">,</span> <span class="s1">&#39;DRB5&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;DRBX&#39;</span>  <span class="c1"># generic locus indicating &quot;missing&quot;</span>
+<span class="p">}</span>
+
+<span class="n">LOCUS_ALIAS_MAP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;DRB345&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;DRBX&quot;</span><span class="p">,</span> <span class="s2">&quot;DRB3&quot;</span><span class="p">,</span> <span class="s2">&quot;DRB4&quot;</span><span class="p">,</span> <span class="s2">&quot;DRB5&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="HLAMatchConfig">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.config.HLAMatchConfig.html#py_hla_match.config.HLAMatchConfig">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">HLAMatchConfig</span><span class="p">:</span>
+    <span class="c1"># ARD configuration (read once at singleton creation)</span>
+    <span class="n">ard_imgt_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Latest&quot;</span>
+    <span class="n">ard_data_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Extensions only, canonical set remains owned by the library</span>
+    <span class="n">extra_valid_loci</span><span class="p">:</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">frozenset</span><span class="p">)</span>
+    <span class="n">strict_loci</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># must be set to False, by user</span>
+
+    <span class="c1"># NA tokens normalized across datasets</span>
+    <span class="n">na_tokens</span><span class="p">:</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;NA&quot;</span><span class="p">,</span> <span class="s2">&quot;NE&quot;</span><span class="p">,</span> <span class="s2">&quot;NEW&quot;</span><span class="p">,</span> <span class="s2">&quot;UNKNOWN&quot;</span><span class="p">,</span> <span class="s2">&quot;ND&quot;</span><span class="p">,</span> <span class="s2">&quot;NULL&quot;</span><span class="p">}</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Expression suffix policy</span>
+    <span class="n">expression_suffix_policy</span><span class="p">:</span> <span class="n">ExpressionSuffixPolicy</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="n">ExpressionSuffixPolicy</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Internal caches</span>
+    <span class="n">_nomenclature_pattern</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Pattern</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+    <span class="n">_effective_valid_loci</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">effective_valid_loci</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effective_valid_loci</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="s2">&quot;_effective_valid_loci&quot;</span><span class="p">,</span>
+                <span class="nb">frozenset</span><span class="p">(</span>
+                    <span class="nb">set</span><span class="p">(</span><span class="n">CANONICAL_HLA_LOCI</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extra_valid_loci</span><span class="p">)</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_effective_valid_loci</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">drb345_sub_loci</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FrozenSet</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Placeholder: canonical DRB345 sub-loci (DRB3/DRB4/DRB5/DRBX).</span>
+<span class="sd">        Exposed via config for future adjustability without changing hla</span>
+<span class="sd">        parser logic.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">CANONICAL_DRB345_SUB_LOCI</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compile_nomenclature_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pattern</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="c1"># Build regex with configured NA tokens; match IMGT/HLA field, suffix,</span>
+        <span class="c1"># and group code constraints.</span>
+        <span class="n">na_alt</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">tok</span><span class="p">)</span> <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">na_tokens</span><span class="p">))</span>
+        <span class="n">pat</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        # optional prefix</span>
+<span class="s2">        ^ (?:HLA-)?</span>
+<span class="s2">        # locus</span>
+<span class="s2">        (?P&lt;locus&gt;[A-Z0-9]+)</span>
+<span class="s2">        # asterisk</span>
+<span class="s2">        \*</span>
+<span class="s2">        # three alternatives</span>
+<span class="s2">        (</span>
+<span class="s2">            # 1–4 fields</span>
+<span class="s2">            (?P&lt;allele_fields&gt;\d</span><span class="se">{{</span><span class="s2">2,4</span><span class="se">}}</span><span class="s2">(?::\d</span><span class="se">{{</span><span class="s2">2,4</span><span class="se">}}</span><span class="s2">)</span><span class="se">{{</span><span class="s2">0,3</span><span class="se">}}</span><span class="s2">)</span>
+<span class="s2">            # suffix AND group (error))</span>
+<span class="s2">            (?![NLSCAQ][GP]|[GP][NLSCAQ])</span>
+<span class="s2">            # optional expression suffix</span>
+<span class="s2">            (?P&lt;suffix&gt;[NLSCAQ])?</span>
+<span class="s2">            # optional group code</span>
+<span class="s2">            (?P&lt;group_code&gt;[GP])?</span>
+<span class="s2">            $</span>
+<span class="s2">        |</span>
+<span class="s2">            # configured NA tokens</span>
+<span class="s2">            (?P&lt;nan&gt;</span><span class="si">{</span><span class="n">na_alt</span><span class="si">}</span><span class="s2">)</span>
+<span class="s2">            $</span>
+<span class="s2">        |</span>
+<span class="s2">            # anything else for error message</span>
+<span class="s2">            (?P&lt;remainder&gt;.*)</span>
+<span class="s2">            $</span>
+<span class="s2">        )</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pat</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">VERBOSE</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nomenclature_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pattern</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nomenclature_pattern</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_nomenclature_pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_nomenclature_pattern</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_nomenclature_pattern</span>
+
+<div class="viewcode-block" id="HLAMatchConfig.recompile_patterns">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.config.HLAMatchConfig.html#py_hla_match.config.HLAMatchConfig.recompile_patterns">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">recompile_patterns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_nomenclature_pattern&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compile_nomenclature_pattern</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="c1"># Invalidate effective loci cache in case config changed</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_effective_valid_loci&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># local config storage from global defaults</span>
+<span class="n">_THREADLOCAL</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">local</span><span class="p">()</span>
+<span class="n">_GLOBAL_DEFAULTS</span><span class="p">:</span> <span class="n">HLAMatchConfig</span> <span class="o">=</span> <span class="n">HLAMatchConfig</span><span class="p">()</span>
+<span class="c1"># global version token for cache invalidation</span>
+<span class="n">_CONFIG_VERSION</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_threadlocal_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">HLAMatchConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get (thread-)local HLAMatchConfig, from _GLOBAL_DEFAULTS on first access</span>
+<span class="sd">    for thread.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">_THREADLOCAL</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">):</span>
+        <span class="c1"># new instance seeded from defaults</span>
+        <span class="n">_THREADLOCAL</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">HLAMatchConfig</span><span class="p">(</span>
+            <span class="n">ard_imgt_version</span><span class="o">=</span><span class="n">_GLOBAL_DEFAULTS</span><span class="o">.</span><span class="n">ard_imgt_version</span><span class="p">,</span>
+            <span class="n">ard_data_dir</span><span class="o">=</span><span class="n">_GLOBAL_DEFAULTS</span><span class="o">.</span><span class="n">ard_data_dir</span><span class="p">,</span>
+            <span class="n">extra_valid_loci</span><span class="o">=</span><span class="n">_GLOBAL_DEFAULTS</span><span class="o">.</span><span class="n">extra_valid_loci</span><span class="p">,</span>
+            <span class="n">strict_loci</span><span class="o">=</span><span class="n">_GLOBAL_DEFAULTS</span><span class="o">.</span><span class="n">strict_loci</span><span class="p">,</span>
+            <span class="n">na_tokens</span><span class="o">=</span><span class="n">_GLOBAL_DEFAULTS</span><span class="o">.</span><span class="n">na_tokens</span><span class="p">,</span>
+            <span class="n">expression_suffix_policy</span><span class="o">=</span><span class="n">_GLOBAL_DEFAULTS</span><span class="o">.</span><span class="n">expression_suffix_policy</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">_THREADLOCAL</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">recompile_patterns</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_THREADLOCAL</span><span class="o">.</span><span class="n">config</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_set_threadlocal_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">HLAMatchConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">_THREADLOCAL</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
+
+
+<div class="viewcode-block" id="get_config">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.config.get_config.html#py_hla_match.config.get_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_config</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">HLAMatchConfig</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_get_threadlocal_config</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="get_config_version">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.config.get_config_version.html#py_hla_match.config.get_config_version">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_config_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_CONFIG_VERSION</span></div>
+
+
+
+<div class="viewcode-block" id="set_config">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.config.set_config.html#py_hla_match.config.set_config">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_config</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">HLAMatchConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">global</span> <span class="n">_CONFIG_VERSION</span>
+    <span class="n">previous_config</span> <span class="o">=</span> <span class="n">_get_threadlocal_config</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">extra_valid_loci</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">strict_loci</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;extra_valid_loci not allowed in strict mode: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">extra_valid_loci</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;Using extra_valid_loci (additive to canonical set): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="nb">sorted</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">extra_valid_loci</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="c1"># new (thread-)local config</span>
+    <span class="n">_set_threadlocal_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">config</span><span class="o">.</span><span class="n">recompile_patterns</span><span class="p">()</span>
+    <span class="c1"># bump version to signal cache invalidation</span>
+    <span class="n">_CONFIG_VERSION</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="c1"># reset singleton if ARD defaults changed</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">previous_config</span><span class="o">.</span><span class="n">ard_imgt_version</span> <span class="o">!=</span> <span class="n">config</span><span class="o">.</span><span class="n">ard_imgt_version</span>
+            <span class="ow">or</span> <span class="n">previous_config</span><span class="o">.</span><span class="n">ard_data_dir</span> <span class="o">!=</span> <span class="n">config</span><span class="o">.</span><span class="n">ard_data_dir</span>
+        <span class="p">):</span>
+            <span class="c1"># late import to prevent circular import at module import</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">.singleton</span><span class="w"> </span><span class="kn">import</span> <span class="n">_reset_ard_instance</span>
+            <span class="n">_reset_ard_instance</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="c1"># log instead of fail ARD set_config on reset issues</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Optional ARD singleton reset failed.&quot;</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="config_context">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.config.config_context.html#py_hla_match.config.config_context">[docs]</a>
+<span class="nd">@contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">config_context</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">HLAMatchConfig</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Context manager to temporarily override (thread-)local config.</span>
+<span class="sd">    The previous (potentially default) config is restored on exit or exception.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">previous_config</span> <span class="o">=</span> <span class="n">_get_threadlocal_config</span><span class="p">()</span>
+    <span class="n">set_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">set_config</span><span class="p">(</span><span class="n">previous_config</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Georg Popp, Tim Adams.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

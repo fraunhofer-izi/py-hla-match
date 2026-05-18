@@ -1,0 +1,310 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>py_hla_match.external &mdash; py-hla-match  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="py_hla_match.external.DPB1Result" href="py_hla_match.external.DPB1Result.html" />
+    <link rel="prev" title="py_hla_match.export.scan_loci" href="py_hla_match.export.scan_loci.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            py-hla-match
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.config.html">py_hla_match.config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.exceptions.html">py_hla_match.exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.export.html">py_hla_match.export</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">py_hla_match.external</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.external.DPB1Result"><code class="docutils literal notranslate"><span class="pre">DPB1Result</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1Result.is_valid"><code class="docutils literal notranslate"><span class="pre">DPB1Result.is_valid</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1Result.prediction"><code class="docutils literal notranslate"><span class="pre">DPB1Result.prediction</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1Result.status"><code class="docutils literal notranslate"><span class="pre">DPB1Result.status</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.external.DPB1TCEConfig"><code class="docutils literal notranslate"><span class="pre">DPB1TCEConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEConfig.endpoints"><code class="docutils literal notranslate"><span class="pre">DPB1TCEConfig.endpoints</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEConfig.response_keys"><code class="docutils literal notranslate"><span class="pre">DPB1TCEConfig.response_keys</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.API_ERROR"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.API_ERROR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.CONFIGURATION_ERROR"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.CONFIGURATION_ERROR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.INVALID_ALLELES"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.INVALID_ALLELES</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.REQUEST_ERROR"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.REQUEST_ERROR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.SUCCESS"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.SUCCESS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.TIMEOUT_ERROR"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.TIMEOUT_ERROR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.UNEXPECTED_ERROR"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.UNEXPECTED_ERROR</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus.VALUE_ERROR"><code class="docutils literal notranslate"><span class="pre">DPB1TCEStatus.VALUE_ERROR</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.external.query_dpb1_tce"><code class="docutils literal notranslate"><span class="pre">query_dpb1_tce()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.external.DPB1Result.html">py_hla_match.external.DPB1Result</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.external.DPB1TCEConfig.html">py_hla_match.external.DPB1TCEConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.external.DPB1TCEStatus.html">py_hla_match.external.DPB1TCEStatus</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.external.query_dpb1_tce.html">py_hla_match.external.query_dpb1_tce</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.hla.html">py_hla_match.hla</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.matching.html">py_hla_match.matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.models.html">py_hla_match.models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.parser.html">py_hla_match.parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.policy.html">py_hla_match.policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.singleton.html">py_hla_match.singleton</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">py-hla-match</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">py_hla_match.external</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/py_hla_match.external.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-py_hla_match.external">
+<span id="py-hla-match-external"></span><h1>py_hla_match.external<a class="headerlink" href="#module-py_hla_match.external" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1Result">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.external.</span></span><span class="sig-name descname"><span class="pre">DPB1Result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prediction</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/external.html#DPB1Result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.external.DPB1Result" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Result object for a DPB1 TCE API query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>status</strong> – The status of the API request (Success or Error code).</p></li>
+<li><p><strong>prediction</strong> – The raw prediction string from the API (e.g.,
+‘Permissive’, ‘Non-Permissive GvH’) if successful, else None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>status</strong> (<a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus" title="py_hla_match.external.DPB1TCEStatus"><em>DPB1TCEStatus</em></a>)</p></li>
+<li><p><strong>prediction</strong> (<em>str</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1Result.is_valid">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_valid</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#py_hla_match.external.DPB1Result.is_valid" title="Link to this definition"></a></dt>
+<dd><p>Returns True if the request was successful and has a prediction.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1Result.prediction">
+<span class="sig-name descname"><span class="pre">prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#py_hla_match.external.DPB1Result.prediction" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1Result.status">
+<span class="sig-name descname"><span class="pre">status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus" title="py_hla_match.external.DPB1TCEStatus"><span class="pre">DPB1TCEStatus</span></a></em><a class="headerlink" href="#py_hla_match.external.DPB1Result.status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEConfig">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.external.</span></span><span class="sig-name descname"><span class="pre">DPB1TCEConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">endpoints</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">response_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/external.html#DPB1TCEConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.external.DPB1TCEConfig" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration for DPB1 TCE API endpoints and response keys</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>endpoints</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>response_keys</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEConfig.endpoints">
+<span class="sig-name descname"><span class="pre">endpoints</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEConfig.endpoints" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEConfig.response_keys">
+<span class="sig-name descname"><span class="pre">response_keys</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEConfig.response_keys" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.external.</span></span><span class="sig-name descname"><span class="pre">DPB1TCEStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/external.html#DPB1TCEStatus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Status codes for the DPB1 TCE API interactions.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.API_ERROR">
+<span class="sig-name descname"><span class="pre">API_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Unknown</span> <span class="pre">API</span> <span class="pre">Error'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.API_ERROR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.CONFIGURATION_ERROR">
+<span class="sig-name descname"><span class="pre">CONFIGURATION_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Configuration</span> <span class="pre">Error'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.CONFIGURATION_ERROR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.INVALID_ALLELES">
+<span class="sig-name descname"><span class="pre">INVALID_ALLELES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'API</span> <span class="pre">Invalid</span> <span class="pre">Alleles'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.INVALID_ALLELES" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.REQUEST_ERROR">
+<span class="sig-name descname"><span class="pre">REQUEST_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Request</span> <span class="pre">Error'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.REQUEST_ERROR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.SUCCESS">
+<span class="sig-name descname"><span class="pre">SUCCESS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Success'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.SUCCESS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.TIMEOUT_ERROR">
+<span class="sig-name descname"><span class="pre">TIMEOUT_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Timeout</span> <span class="pre">Error'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.TIMEOUT_ERROR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.UNEXPECTED_ERROR">
+<span class="sig-name descname"><span class="pre">UNEXPECTED_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Unexpected</span> <span class="pre">Error'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.UNEXPECTED_ERROR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.external.DPB1TCEStatus.VALUE_ERROR">
+<span class="sig-name descname"><span class="pre">VALUE_ERROR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Value</span> <span class="pre">Error'</span></em><a class="headerlink" href="#py_hla_match.external.DPB1TCEStatus.VALUE_ERROR" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="py_hla_match.external.query_dpb1_tce">
+<span class="sig-prename descclassname"><span class="pre">py_hla_match.external.</span></span><span class="sig-name descname"><span class="pre">query_dpb1_tce</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">patient_dpb1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">patient_dpb2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">donor_dpb1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">donor_dpb2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'3.0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/external.html#query_dpb1_tce"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.external.query_dpb1_tce" title="Link to this definition"></a></dt>
+<dd><p>Query the EBI DPB1 TCE API for T-Cell Epitope matching.</p>
+<p>Intended for research workflows.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>patient_dpb1</strong> (<em>str</em>) – Patient’s first DPB1 allele (e.g. “01:01”)</p></li>
+<li><p><strong>patient_dpb2</strong> (<em>str</em>) – Patient’s second DPB1 allele</p></li>
+<li><p><strong>donor_dpb1</strong> (<em>str</em>) – Donor’s first DPB1 allele</p></li>
+<li><p><strong>donor_dpb2</strong> (<em>str</em>) – Donor’s second DPB1 allele</p></li>
+<li><p><strong>version</strong> (<em>str</em>) – API version - “2.0”, “2.1”, or “3.0”</p></li>
+<li><p><strong>timeout</strong> (<em>int</em>) – API request timeout in seconds</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#py_hla_match.external.DPB1TCEConfig" title="py_hla_match.external.DPB1TCEConfig"><em>DPB1TCEConfig</em></a><em> | </em><em>None</em>) – Configuration object (default if None)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>DPB1Result object containing status and raw prediction string</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#py_hla_match.external.DPB1Result" title="py_hla_match.external.DPB1Result"><em>DPB1Result</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.external.DPB1Result" title="py_hla_match.external.DPB1Result"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DPB1Result</span></code></a>(status[, prediction])</p></td>
+<td><p>Result object for a DPB1 TCE API query.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#py_hla_match.external.DPB1TCEConfig" title="py_hla_match.external.DPB1TCEConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DPB1TCEConfig</span></code></a>([endpoints, response_keys])</p></td>
+<td><p>Configuration for DPB1 TCE API endpoints and response keys</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.external.DPB1TCEStatus" title="py_hla_match.external.DPB1TCEStatus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DPB1TCEStatus</span></code></a>(value[, names, module, ...])</p></td>
+<td><p>Status codes for the DPB1 TCE API interactions.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Functions</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.external.query_dpb1_tce" title="py_hla_match.external.query_dpb1_tce"><code class="xref py py-obj docutils literal notranslate"><span class="pre">query_dpb1_tce</span></code></a>(patient_dpb1, patient_dpb2, ...)</p></td>
+<td><p>Query the EBI DPB1 TCE API for T-Cell Epitope matching.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="py_hla_match.export.scan_loci.html" class="btn btn-neutral float-left" title="py_hla_match.export.scan_loci" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="py_hla_match.external.DPB1Result.html" class="btn btn-neutral float-right" title="py_hla_match.external.DPB1Result" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Georg Popp, Tim Adams.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

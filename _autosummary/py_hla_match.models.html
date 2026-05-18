@@ -1,0 +1,236 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>py_hla_match.models &mdash; py-hla-match  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="py_hla_match.models.Donor" href="py_hla_match.models.Donor.html" />
+    <link rel="prev" title="py_hla_match.matching.multi_locus_match" href="py_hla_match.matching.multi_locus_match.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            py-hla-match
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.config.html">py_hla_match.config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.exceptions.html">py_hla_match.exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.export.html">py_hla_match.export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.external.html">py_hla_match.external</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.hla.html">py_hla_match.hla</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.matching.html">py_hla_match.matching</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">py_hla_match.models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.models.Donor"><code class="docutils literal notranslate"><span class="pre">Donor</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.models.HLAPair"><code class="docutils literal notranslate"><span class="pre">HLAPair</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.models.HLAPair.alleles"><code class="docutils literal notranslate"><span class="pre">HLAPair.alleles</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.models.HLAPair.get_paired_resolution"><code class="docutils literal notranslate"><span class="pre">HLAPair.get_paired_resolution()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.models.Individual"><code class="docutils literal notranslate"><span class="pre">Individual</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.models.Individual.get_hla_summary"><code class="docutils literal notranslate"><span class="pre">Individual.get_hla_summary()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.models.Patient"><code class="docutils literal notranslate"><span class="pre">Patient</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.models.Donor.html">py_hla_match.models.Donor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.models.HLAPair.html">py_hla_match.models.HLAPair</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.models.Individual.html">py_hla_match.models.Individual</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.models.Patient.html">py_hla_match.models.Patient</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.parser.html">py_hla_match.parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.policy.html">py_hla_match.policy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.singleton.html">py_hla_match.singleton</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">py-hla-match</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">py_hla_match.models</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/py_hla_match.models.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-py_hla_match.models">
+<span id="py-hla-match-models"></span><h1>py_hla_match.models<a class="headerlink" href="#module-py_hla_match.models" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.models.Donor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.models.</span></span><span class="sig-name descname"><span class="pre">Donor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hla_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/models.html#Donor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.models.Donor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#py_hla_match.models.Individual" title="py_hla_match.models.Individual"><code class="xref py py-class docutils literal notranslate"><span class="pre">Individual</span></code></a></p>
+<p>Represents an individual in the ‘donor’ role in research datasets.
+Inherits from Individual.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hla_data</strong> (<em>list</em><em>[</em><a class="reference internal" href="#py_hla_match.models.HLAPair" title="py_hla_match.models.HLAPair"><em>HLAPair</em></a><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.models.HLAPair">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.models.</span></span><span class="sig-name descname"><span class="pre">HLAPair</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hla1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hla2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/models.html#HLAPair"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.models.HLAPair" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hla1</strong> (<a class="reference internal" href="py_hla_match.hla.html#py_hla_match.hla.HLA" title="py_hla_match.hla.HLA"><em>HLA</em></a>)</p></li>
+<li><p><strong>hla2</strong> (<a class="reference internal" href="py_hla_match.hla.html#py_hla_match.hla.HLA" title="py_hla_match.hla.HLA"><em>HLA</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="py_hla_match.models.HLAPair.alleles">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">alleles</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="py_hla_match.hla.html#py_hla_match.hla.HLA" title="py_hla_match.hla.HLA"><span class="pre">HLA</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="py_hla_match.hla.html#py_hla_match.hla.HLA" title="py_hla_match.hla.HLA"><span class="pre">HLA</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#py_hla_match.models.HLAPair.alleles" title="Link to this definition"></a></dt>
+<dd><p>Returns HLA objects in HLAPair.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="py_hla_match.models.HLAPair.get_paired_resolution">
+<span class="sig-name descname"><span class="pre">get_paired_resolution</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/models.html#HLAPair.get_paired_resolution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.models.HLAPair.get_paired_resolution" title="Link to this definition"></a></dt>
+<dd><p>Resolution of HLAPair.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.models.Individual">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.models.</span></span><span class="sig-name descname"><span class="pre">Individual</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hla_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/models.html#Individual"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.models.Individual" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hla_data</strong> (<em>List</em><em>[</em><a class="reference internal" href="#py_hla_match.models.HLAPair" title="py_hla_match.models.HLAPair"><em>HLAPair</em></a><em>]</em>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="py_hla_match.models.Individual.get_hla_summary">
+<span class="sig-name descname"><span class="pre">get_hla_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/models.html#Individual.get_hla_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.models.Individual.get_hla_summary" title="Link to this definition"></a></dt>
+<dd><p>Get summary of HLA data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.models.Patient">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.models.</span></span><span class="sig-name descname"><span class="pre">Patient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hla_data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/models.html#Patient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.models.Patient" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#py_hla_match.models.Individual" title="py_hla_match.models.Individual"><code class="xref py py-class docutils literal notranslate"><span class="pre">Individual</span></code></a></p>
+<p>Represents an individual in the ‘patient’ role in research datasets.
+Inherits from Individual.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hla_data</strong> (<em>list</em><em>[</em><a class="reference internal" href="#py_hla_match.models.HLAPair" title="py_hla_match.models.HLAPair"><em>HLAPair</em></a><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.models.Donor" title="py_hla_match.models.Donor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Donor</span></code></a>(hla_data)</p></td>
+<td><p>Represents an individual in the 'donor' role in research datasets.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#py_hla_match.models.HLAPair" title="py_hla_match.models.HLAPair"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HLAPair</span></code></a>(hla1, hla2)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.models.Individual" title="py_hla_match.models.Individual"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Individual</span></code></a>(hla_data)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#py_hla_match.models.Patient" title="py_hla_match.models.Patient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Patient</span></code></a>(hla_data)</p></td>
+<td><p>Represents an individual in the 'patient' role in research datasets.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="py_hla_match.matching.multi_locus_match.html" class="btn btn-neutral float-left" title="py_hla_match.matching.multi_locus_match" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="py_hla_match.models.Donor.html" class="btn btn-neutral float-right" title="py_hla_match.models.Donor" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Georg Popp, Tim Adams.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

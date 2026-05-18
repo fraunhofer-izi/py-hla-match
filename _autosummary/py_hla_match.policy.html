@@ -1,0 +1,483 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>py_hla_match.policy &mdash; py-hla-match  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="py_hla_match.policy.ARDMatchLevel" href="py_hla_match.policy.ARDMatchLevel.html" />
+    <link rel="prev" title="py_hla_match.parser.HLADataSource" href="py_hla_match.parser.HLADataSource.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            py-hla-match
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../api.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.config.html">py_hla_match.config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.exceptions.html">py_hla_match.exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.export.html">py_hla_match.export</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.external.html">py_hla_match.external</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.hla.html">py_hla_match.hla</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.matching.html">py_hla_match.matching</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.models.html">py_hla_match.models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.parser.html">py_hla_match.parser</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">py_hla_match.policy</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevel"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevel.G_GROUP_MATCH"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevel.G_GROUP_MATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevel.NOT_APPLICABLE"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevel.NOT_APPLICABLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevel.P_GROUP_MATCH"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevel.P_GROUP_MATCH</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevelCertainty"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevelCertainty</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevelCertainty.CERTAIN"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevelCertainty.CERTAIN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevelCertainty.NOT_APPLICABLE"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevelCertainty.NOT_APPLICABLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevelCertainty.UNCERTAIN"><code class="docutils literal notranslate"><span class="pre">ARDMatchLevelCertainty.UNCERTAIN</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.policy.AlleleMatchLevel"><code class="docutils literal notranslate"><span class="pre">AlleleMatchLevel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.AlleleMatchLevel.ALLELE_MISMATCH"><code class="docutils literal notranslate"><span class="pre">AlleleMatchLevel.ALLELE_MISMATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.AlleleMatchLevel.ANTIGEN_MISMATCH"><code class="docutils literal notranslate"><span class="pre">AlleleMatchLevel.ANTIGEN_MISMATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.AlleleMatchLevel.ARD_MATCH"><code class="docutils literal notranslate"><span class="pre">AlleleMatchLevel.ARD_MATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH"><code class="docutils literal notranslate"><span class="pre">AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.AlleleMatchLevel.NOT_ASSESSABLE"><code class="docutils literal notranslate"><span class="pre">AlleleMatchLevel.NOT_ASSESSABLE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixMatchLevel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.ALLELE_MISMATCH"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixMatchLevel.ALLELE_MISMATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.ANTIGEN_MISMATCH"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixMatchLevel.ANTIGEN_MISMATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.ARD_MATCH"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixMatchLevel.ARD_MATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.IGNORE"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixMatchLevel.IGNORE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.NOT_ASSESSABLE"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixMatchLevel.NOT_ASSESSABLE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy.ambiguous_suffixes"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy.ambiguous_suffixes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy.equal_risk"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy.equal_risk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy.q_present"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy.q_present</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy.risk_suffixes"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy.risk_suffixes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy.risk_vs_different_risk"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy.risk_vs_different_risk</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy.risk_vs_none"><code class="docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy.risk_vs_none</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevel</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel.ARD_MATCH_ONLY"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevel.ARD_MATCH_ONLY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel.CODING_SEQUENCE_MATCH"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevel.CODING_SEQUENCE_MATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel.EXACT_ALLELE_MATCH"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevel.EXACT_ALLELE_MATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel.FULL_PROTEIN_MATCH"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevel.FULL_PROTEIN_MATCH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel.NOT_APPLICABLE"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevel.NOT_APPLICABLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel.NOT_ASSESSABLE"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevel.NOT_ASSESSABLE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevelCertainty"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevelCertainty</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevelCertainty.CERTAIN"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevelCertainty.CERTAIN</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevelCertainty.NOT_APPLICABLE"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevelCertainty.NOT_APPLICABLE</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevelCertainty.UNCERTAIN"><code class="docutils literal notranslate"><span class="pre">MolecularMatchLevelCertainty.UNCERTAIN</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.policy.ARDMatchLevel.html">py_hla_match.policy.ARDMatchLevel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.policy.ARDMatchLevelCertainty.html">py_hla_match.policy.ARDMatchLevelCertainty</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.policy.AlleleMatchLevel.html">py_hla_match.policy.AlleleMatchLevel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.policy.ExpressionSuffixMatchLevel.html">py_hla_match.policy.ExpressionSuffixMatchLevel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.policy.ExpressionSuffixPolicy.html">py_hla_match.policy.ExpressionSuffixPolicy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.policy.MolecularMatchLevel.html">py_hla_match.policy.MolecularMatchLevel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="py_hla_match.policy.MolecularMatchLevelCertainty.html">py_hla_match.policy.MolecularMatchLevelCertainty</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="py_hla_match.singleton.html">py_hla_match.singleton</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">py-hla-match</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../api.html">API Reference</a></li>
+      <li class="breadcrumb-item active">py_hla_match.policy</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/_autosummary/py_hla_match.policy.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-py_hla_match.policy">
+<span id="py-hla-match-policy"></span><h1>py_hla_match.policy<a class="headerlink" href="#module-py_hla_match.policy" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.policy.</span></span><span class="sig-name descname"><span class="pre">ARDMatchLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/policy.html#ARDMatchLevel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>ARD refinement iff AlleleMatchLevel == ARD_MATCH.</p>
+<dl class="simple">
+<dt>G_GROUP_MATCH (2):</dt><dd><p>ARD exons identical at nucleotide level (G group)</p>
+</dd>
+<dt>P_GROUP_MATCH (1):</dt><dd><p>ARD exons identical at amino-acid level (P group)</p>
+</dd>
+<dt>NOT_APPLICABLE:</dt><dd><p>AlleleMatchLevel != ARD_MATCH</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevel.G_GROUP_MATCH">
+<span class="sig-name descname"><span class="pre">G_GROUP_MATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevel.G_GROUP_MATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevel.NOT_APPLICABLE">
+<span class="sig-name descname"><span class="pre">NOT_APPLICABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevel.NOT_APPLICABLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevel.P_GROUP_MATCH">
+<span class="sig-name descname"><span class="pre">P_GROUP_MATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevel.P_GROUP_MATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevelCertainty">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.policy.</span></span><span class="sig-name descname"><span class="pre">ARDMatchLevelCertainty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/policy.html#ARDMatchLevelCertainty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevelCertainty" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Certainty of ARD-match level.</p>
+<dl class="simple">
+<dt>NOT_APPLICABLE:</dt><dd><p>AlleleMatchLevel != ARD_MATCH</p>
+</dd>
+<dt>UNCERTAIN:</dt><dd><p>insufficient typing resolution to be sure about ARDMatchLevel
+i.e., a <em>higher</em> ARDMatchLevel <strong>is possible</strong></p>
+</dd>
+<dt>CERTAIN:</dt><dd><p>sufficient typing resolution to be sure about ARDMatchLevel
+i.e., a <em>higher</em> ARDMatchLevel <strong>is not possible</strong></p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevelCertainty.CERTAIN">
+<span class="sig-name descname"><span class="pre">CERTAIN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'certain</span> <span class="pre">about</span> <span class="pre">ARDMatchLevel</span> <span class="pre">due</span> <span class="pre">to</span> <span class="pre">sufficient</span> <span class="pre">resolution'</span></em><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevelCertainty.CERTAIN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevelCertainty.NOT_APPLICABLE">
+<span class="sig-name descname"><span class="pre">NOT_APPLICABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'not</span> <span class="pre">applicable</span> <span class="pre">for</span> <span class="pre">AlleleMatchLevel</span> <span class="pre">!=</span> <span class="pre">ARD_MATCH'</span></em><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevelCertainty.NOT_APPLICABLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ARDMatchLevelCertainty.UNCERTAIN">
+<span class="sig-name descname"><span class="pre">UNCERTAIN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'uncertain</span> <span class="pre">about</span> <span class="pre">ARDMatchLevel</span> <span class="pre">due</span> <span class="pre">to</span> <span class="pre">insufficient</span> <span class="pre">resolution'</span></em><a class="headerlink" href="#py_hla_match.policy.ARDMatchLevelCertainty.UNCERTAIN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.policy.AlleleMatchLevel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.policy.</span></span><span class="sig-name descname"><span class="pre">AlleleMatchLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/policy.html#AlleleMatchLevel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.policy.AlleleMatchLevel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>Following hla nomenclature:</p>
+<dl class="simple">
+<dt>NOT_ASSESSABLE (0):</dt><dd><p>Typing resolution insufficient</p>
+</dd>
+<dt>DRB345_SUBLOCUS_MISMATCH (-3):</dt><dd><p>DRB3/4/5 region mismatch:
+- locus normalized to DRB345
+- but underlying sub-loci differ (e.g. DRB3 vs DRB4/5 or DRBX)</p>
+</dd>
+<dt>ANTIGEN_MISMATCH (-2):</dt><dd><p>Mismatch at the group code encoding antigen</p>
+</dd>
+<dt>ALLELE_MISMATCH (-1):</dt><dd><p>Mismatch at the allele level encoding a specific allele</p>
+</dd>
+<dt>ARD_MATCH (1):</dt><dd><p>ARD level match</p>
+</dd>
+</dl>
+<p>cf.https://hla.alleles.org/nomenclature/naming.html</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.AlleleMatchLevel.ALLELE_MISMATCH">
+<span class="sig-name descname"><span class="pre">ALLELE_MISMATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-1</span></em><a class="headerlink" href="#py_hla_match.policy.AlleleMatchLevel.ALLELE_MISMATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.AlleleMatchLevel.ANTIGEN_MISMATCH">
+<span class="sig-name descname"><span class="pre">ANTIGEN_MISMATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-2</span></em><a class="headerlink" href="#py_hla_match.policy.AlleleMatchLevel.ANTIGEN_MISMATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.AlleleMatchLevel.ARD_MATCH">
+<span class="sig-name descname"><span class="pre">ARD_MATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#py_hla_match.policy.AlleleMatchLevel.ARD_MATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH">
+<span class="sig-name descname"><span class="pre">DRB345_SUBLOCUS_MISMATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-3</span></em><a class="headerlink" href="#py_hla_match.policy.AlleleMatchLevel.DRB345_SUBLOCUS_MISMATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.AlleleMatchLevel.NOT_ASSESSABLE">
+<span class="sig-name descname"><span class="pre">NOT_ASSESSABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#py_hla_match.policy.AlleleMatchLevel.NOT_ASSESSABLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixMatchLevel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.policy.</span></span><span class="sig-name descname"><span class="pre">ExpressionSuffixMatchLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/policy.html#ExpressionSuffixMatchLevel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Policy decisions about how to treat expression suffixes in matching.
+Similar to cf AlleleMatchLevel in hla.py, but for expression suffixes.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixMatchLevel.ALLELE_MISMATCH">
+<span class="sig-name descname"><span class="pre">ALLELE_MISMATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'allele_mismatch'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.ALLELE_MISMATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixMatchLevel.ANTIGEN_MISMATCH">
+<span class="sig-name descname"><span class="pre">ANTIGEN_MISMATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'antigen_mismatch'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.ANTIGEN_MISMATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixMatchLevel.ARD_MATCH">
+<span class="sig-name descname"><span class="pre">ARD_MATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ard_match'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.ARD_MATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixMatchLevel.IGNORE">
+<span class="sig-name descname"><span class="pre">IGNORE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ignore'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.IGNORE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixMatchLevel.NOT_ASSESSABLE">
+<span class="sig-name descname"><span class="pre">NOT_ASSESSABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'not_assessable'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixMatchLevel.NOT_ASSESSABLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixPolicy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.policy.</span></span><span class="sig-name descname"><span class="pre">ExpressionSuffixPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">risk_suffixes:</span> <span class="pre">'FrozenSet[str]'</span> <span class="pre">=</span> <span class="pre">frozenset({'N'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'S'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'C'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'A'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'L'})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambiguous_suffixes:</span> <span class="pre">'FrozenSet[str]'</span> <span class="pre">=</span> <span class="pre">frozenset({'Q'})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">equal_risk:</span> <span class="pre">'ExpressionSuffixMatchLevel'</span> <span class="pre">=</span> <span class="pre">&lt;ExpressionSuffixMatchLevel.NOT_ASSESSABLE:</span> <span class="pre">'not_assessable'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">risk_vs_none:</span> <span class="pre">'ExpressionSuffixMatchLevel'</span> <span class="pre">=</span> <span class="pre">&lt;ExpressionSuffixMatchLevel.ALLELE_MISMATCH:</span> <span class="pre">'allele_mismatch'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">risk_vs_different_risk:</span> <span class="pre">'ExpressionSuffixMatchLevel'</span> <span class="pre">=</span> <span class="pre">&lt;ExpressionSuffixMatchLevel.ALLELE_MISMATCH:</span> <span class="pre">'allele_mismatch'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_present:</span> <span class="pre">'ExpressionSuffixMatchLevel'</span> <span class="pre">=</span> <span class="pre">&lt;ExpressionSuffixMatchLevel.NOT_ASSESSABLE:</span> <span class="pre">'not_assessable'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/policy.html#ExpressionSuffixPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixPolicy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>risk_suffixes</strong> (<em>FrozenSet</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>ambiguous_suffixes</strong> (<em>FrozenSet</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>equal_risk</strong> (<a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><em>ExpressionSuffixMatchLevel</em></a>)</p></li>
+<li><p><strong>risk_vs_none</strong> (<a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><em>ExpressionSuffixMatchLevel</em></a>)</p></li>
+<li><p><strong>risk_vs_different_risk</strong> (<a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><em>ExpressionSuffixMatchLevel</em></a>)</p></li>
+<li><p><strong>q_present</strong> (<a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><em>ExpressionSuffixMatchLevel</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixPolicy.ambiguous_suffixes">
+<span class="sig-name descname"><span class="pre">ambiguous_suffixes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">FrozenSet</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({'Q'})</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixPolicy.ambiguous_suffixes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixPolicy.equal_risk">
+<span class="sig-name descname"><span class="pre">equal_risk</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><span class="pre">ExpressionSuffixMatchLevel</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'not_assessable'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixPolicy.equal_risk" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixPolicy.q_present">
+<span class="sig-name descname"><span class="pre">q_present</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><span class="pre">ExpressionSuffixMatchLevel</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'not_assessable'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixPolicy.q_present" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixPolicy.risk_suffixes">
+<span class="sig-name descname"><span class="pre">risk_suffixes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">FrozenSet</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({'A',</span> <span class="pre">'C',</span> <span class="pre">'L',</span> <span class="pre">'N',</span> <span class="pre">'S'})</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixPolicy.risk_suffixes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixPolicy.risk_vs_different_risk">
+<span class="sig-name descname"><span class="pre">risk_vs_different_risk</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><span class="pre">ExpressionSuffixMatchLevel</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'allele_mismatch'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixPolicy.risk_vs_different_risk" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.ExpressionSuffixPolicy.risk_vs_none">
+<span class="sig-name descname"><span class="pre">risk_vs_none</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><span class="pre">ExpressionSuffixMatchLevel</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'allele_mismatch'</span></em><a class="headerlink" href="#py_hla_match.policy.ExpressionSuffixPolicy.risk_vs_none" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.policy.</span></span><span class="sig-name descname"><span class="pre">MolecularMatchLevel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/policy.html#MolecularMatchLevel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">IntEnum</span></code></p>
+<p>Molecular (sequence-level) refinement iff AlleleMatchLevel == ARD_MATCH.</p>
+<dl class="simple">
+<dt>EXACT_ALLELE_MATCH (5):</dt><dd><p>1-4 fields identical</p>
+</dd>
+<dt>CODING_SEQUENCE_MATCH (4):</dt><dd><p>1-3 fields identical, different or untyped 4th field</p>
+</dd>
+<dt>FULL_PROTEIN_MATCH (3):</dt><dd><p>1-2 fields identical, different or untyped 3rd field</p>
+</dd>
+<dt>ARD_MATCH_ONLY (2):</dt><dd><p>2-field difference but ARD equivalent</p>
+</dd>
+<dt>NOT_ASSESSABLE (1):</dt><dd><p>Typing resolution insufficient to assess molecular match level</p>
+</dd>
+<dt>NOT_APPLICABLE (0):</dt><dd><p>AlleleMatchLevel != ARD_MATCH</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevel.ARD_MATCH_ONLY">
+<span class="sig-name descname"><span class="pre">ARD_MATCH_ONLY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevel.ARD_MATCH_ONLY" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevel.CODING_SEQUENCE_MATCH">
+<span class="sig-name descname"><span class="pre">CODING_SEQUENCE_MATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevel.CODING_SEQUENCE_MATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevel.EXACT_ALLELE_MATCH">
+<span class="sig-name descname"><span class="pre">EXACT_ALLELE_MATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevel.EXACT_ALLELE_MATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevel.FULL_PROTEIN_MATCH">
+<span class="sig-name descname"><span class="pre">FULL_PROTEIN_MATCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevel.FULL_PROTEIN_MATCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevel.NOT_APPLICABLE">
+<span class="sig-name descname"><span class="pre">NOT_APPLICABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevel.NOT_APPLICABLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevel.NOT_ASSESSABLE">
+<span class="sig-name descname"><span class="pre">NOT_ASSESSABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevel.NOT_ASSESSABLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevelCertainty">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">py_hla_match.policy.</span></span><span class="sig-name descname"><span class="pre">MolecularMatchLevelCertainty</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names=&lt;not</span> <span class="pre">given&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/py_hla_match/policy.html#MolecularMatchLevelCertainty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevelCertainty" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>Certainty of molecular level.</p>
+<dl class="simple">
+<dt>NOT_APPLICABLE:</dt><dd><p>AlleleMatchLevel != ARD_MATCH</p>
+</dd>
+<dt>UNCERTAIN:</dt><dd><p>insufficient typing resolution to be sure about MolecularMatchLevel
+i.e., a <em>higher</em> MolecularMatchLevel <strong>is possible</strong></p>
+</dd>
+<dt>CERTAIN:</dt><dd><p>sufficient typing resolution to be sure about MolecularMatchLevel
+i.e., a <em>higher</em> MolecularMatchLevel <strong>is not possible</strong></p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevelCertainty.CERTAIN">
+<span class="sig-name descname"><span class="pre">CERTAIN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'certain</span> <span class="pre">about</span> <span class="pre">MolecularMatchLevel</span> <span class="pre">due</span> <span class="pre">to</span> <span class="pre">sufficient</span> <span class="pre">resolution'</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevelCertainty.CERTAIN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevelCertainty.NOT_APPLICABLE">
+<span class="sig-name descname"><span class="pre">NOT_APPLICABLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'not</span> <span class="pre">applicable</span> <span class="pre">for</span> <span class="pre">AlleleMatchLevel</span> <span class="pre">!=</span> <span class="pre">ARD_MATCH'</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevelCertainty.NOT_APPLICABLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="py_hla_match.policy.MolecularMatchLevelCertainty.UNCERTAIN">
+<span class="sig-name descname"><span class="pre">UNCERTAIN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'uncertain</span> <span class="pre">about</span> <span class="pre">MolecularMatchLevel</span> <span class="pre">due</span> <span class="pre">to</span> <span class="pre">insufficient</span> <span class="pre">resolution'</span></em><a class="headerlink" href="#py_hla_match.policy.MolecularMatchLevelCertainty.UNCERTAIN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<p class="rubric">Classes</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevel" title="py_hla_match.policy.ARDMatchLevel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ARDMatchLevel</span></code></a>(value[, names, module, ...])</p></td>
+<td><p>ARD refinement iff AlleleMatchLevel == ARD_MATCH.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#py_hla_match.policy.ARDMatchLevelCertainty" title="py_hla_match.policy.ARDMatchLevelCertainty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ARDMatchLevelCertainty</span></code></a>(value[, names, ...])</p></td>
+<td><p>Certainty of ARD-match level.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.policy.AlleleMatchLevel" title="py_hla_match.policy.AlleleMatchLevel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AlleleMatchLevel</span></code></a>(value[, names, module, ...])</p></td>
+<td><p>Following hla nomenclature:</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixMatchLevel" title="py_hla_match.policy.ExpressionSuffixMatchLevel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExpressionSuffixMatchLevel</span></code></a>(value[, names, ...])</p></td>
+<td><p>Policy decisions about how to treat expression suffixes in matching.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.policy.ExpressionSuffixPolicy" title="py_hla_match.policy.ExpressionSuffixPolicy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExpressionSuffixPolicy</span></code></a>(risk_suffixes, ...)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevel" title="py_hla_match.policy.MolecularMatchLevel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MolecularMatchLevel</span></code></a>(value[, names, module, ...])</p></td>
+<td><p>Molecular (sequence-level) refinement iff AlleleMatchLevel == ARD_MATCH.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#py_hla_match.policy.MolecularMatchLevelCertainty" title="py_hla_match.policy.MolecularMatchLevelCertainty"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MolecularMatchLevelCertainty</span></code></a>(value[, names, ...])</p></td>
+<td><p>Certainty of molecular level.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="py_hla_match.parser.HLADataSource.html" class="btn btn-neutral float-left" title="py_hla_match.parser.HLADataSource" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="py_hla_match.policy.ARDMatchLevel.html" class="btn btn-neutral float-right" title="py_hla_match.policy.ARDMatchLevel" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Georg Popp, Tim Adams.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

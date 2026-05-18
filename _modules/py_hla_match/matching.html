@@ -1,0 +1,1220 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>py_hla_match.matching &mdash; py-hla-match  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            py-hla-match
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">py-hla-match</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">py_hla_match.matching</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for py_hla_match.matching</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">HLAPair</span><span class="p">,</span> <span class="n">Individual</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.hla</span><span class="w"> </span><span class="kn">import</span> <span class="n">HLA</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.policy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AlleleMatchLevel</span><span class="p">,</span>
+    <span class="n">ExpressionSuffixMatchLevel</span><span class="p">,</span>
+    <span class="n">ARDMatchLevel</span><span class="p">,</span>
+    <span class="n">ARDMatchLevelCertainty</span><span class="p">,</span>
+    <span class="n">MolecularMatchLevel</span><span class="p">,</span>
+    <span class="n">MolecularMatchLevelCertainty</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.config</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_config</span><span class="p">,</span>
+    <span class="n">HLAMatchConfig</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">InvalidLocusComparisonError</span><span class="p">,</span>
+    <span class="n">ARDMatchRefinementError</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.external</span><span class="w"> </span><span class="kn">import</span> <span class="n">DPB1Result</span><span class="p">,</span> <span class="n">query_dpb1_tce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">py_hla_match.singleton</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ard_instance</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MatchResult">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.matching.MatchResult.html#py_hla_match.matching.MatchResult">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MatchResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Result object for comparing two HLA genotype pairs at a single locus.</span>
+
+<span class="sd">    This class is designed for research use to describe HLA match or</span>
+<span class="sd">    mismatch categories between two individuals.</span>
+
+<span class="sd">    :ivar patient: HLA allele pair in the &#39;patient&#39; role.</span>
+<span class="sd">    :ivar donor: HLA allele pair in the &#39;donor&#39; role.</span>
+<span class="sd">    :ivar pairing_score: Internal ordinal score summarising the two</span>
+<span class="sd">        ``AlleleMatchLevel`` values.</span>
+<span class="sd">    :ivar allele_match_levels: Tuple of ``AlleleMatchLevel`` values for the</span>
+<span class="sd">        two allele-level comparisons (patient allele 1 vs donor allele X,</span>
+<span class="sd">        patient allele 2 vs donor allele Y).</span>
+<span class="sd">    :ivar ard_match_levels: Tuple of ``ARDMatchLevel`` values refining</span>
+<span class="sd">        ARD-equivalent allele pairs (``NOT_APPLICABLE`` if not ARD-matched).</span>
+<span class="sd">    :ivar ard_match_certainties: Tuple of ``ARDMatchLevelCertainty`` values</span>
+<span class="sd">        indicating how certain the ARD refinement is given typing resolution.</span>
+<span class="sd">    :ivar molecular_match_levels: Tuple of ``MolecularMatchLevel`` values</span>
+<span class="sd">        refining ARD-equivalent allele pairs at 1–4-field level</span>
+<span class="sd">        (``NOT_APPLICABLE`` if not ARD-matched).</span>
+<span class="sd">    :ivar molecular_match_certainties: Tuple of</span>
+<span class="sd">        ``MolecularMatchLevelCertainty`` values indicating how certain the</span>
+<span class="sd">        molecular refinement is given typing resolution.</span>
+<span class="sd">    :ivar dpb1_tce_status: Optional DPB1 permissive/non-permissive</span>
+<span class="sd">        classification from the EBI TCE API (only populated for DPB1 loci).</span>
+<span class="sd">    :ivar is_homozygous_patient: ``True`` if the patient is homozygous at</span>
+<span class="sd">        this locus at ARD-reduced level, ``False`` if heterozygous, or</span>
+<span class="sd">        ``None`` if ARD-reduced alleles are not available.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">patient</span><span class="p">:</span> <span class="n">HLAPair</span><span class="p">,</span>
+            <span class="n">donor</span><span class="p">:</span> <span class="n">HLAPair</span><span class="p">,</span>
+            <span class="n">pairing_score</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+            <span class="n">allele_match_levels</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">AlleleMatchLevel</span><span class="p">,</span> <span class="n">AlleleMatchLevel</span><span class="p">],</span>
+            <span class="n">ard_match_levels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">Tuple</span><span class="p">[</span><span class="n">ARDMatchLevel</span><span class="p">,</span> <span class="n">ARDMatchLevel</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">ard_match_level_certainty</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">Tuple</span><span class="p">[</span><span class="n">ARDMatchLevelCertainty</span><span class="p">,</span> <span class="n">ARDMatchLevelCertainty</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">molecular_match_levels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">Tuple</span><span class="p">[</span><span class="n">MolecularMatchLevel</span><span class="p">,</span> <span class="n">MolecularMatchLevel</span><span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">molecular_match_level_certainty</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
+                <span class="n">Tuple</span><span class="p">[</span>
+                    <span class="n">MolecularMatchLevelCertainty</span><span class="p">,</span>
+                    <span class="n">MolecularMatchLevelCertainty</span>
+                <span class="p">]</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">patient</span> <span class="o">=</span> <span class="n">patient</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">donor</span> <span class="o">=</span> <span class="n">donor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pairing_score</span> <span class="o">=</span> <span class="n">pairing_score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allele_match_levels</span> <span class="o">=</span> <span class="n">allele_match_levels</span>
+        <span class="k">if</span> <span class="n">ard_match_levels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ard_match_levels</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+                <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ard_match_levels</span> <span class="o">=</span> <span class="n">ard_match_levels</span>
+
+        <span class="k">if</span> <span class="n">ard_match_level_certainty</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ard_match_certainties</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+                <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ard_match_certainties</span> <span class="o">=</span> <span class="n">ard_match_level_certainty</span>
+        <span class="k">if</span> <span class="n">molecular_match_levels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">molecular_match_levels</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">molecular_match_levels</span> <span class="o">=</span> <span class="n">molecular_match_levels</span>
+        <span class="k">if</span> <span class="n">molecular_match_level_certainty</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">molecular_match_certainties</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">molecular_match_certainties</span> <span class="o">=</span> <span class="n">molecular_match_level_certainty</span>
+
+        <span class="c1"># optional external matching information</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dpb1_tce_result</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DPB1Result</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># check homozygous patient</span>
+        <span class="c1"># TODO: homozygosity check currently is capped at ARD which may not</span>
+        <span class="c1"># be considered *true*</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_homozygous_patient</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="c1"># get boolean if patient alleles are equal</span>
+            <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span>
+                <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span>
+            <span class="p">)</span>
+            <span class="c1"># if ard redux is available</span>
+            <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="p">)</span>
+            <span class="c1"># else None</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="MatchResult.get_match_level_for_resolution">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.matching.MatchResult.html#py_hla_match.matching.MatchResult.get_match_level_for_resolution">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_match_level_for_resolution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolution</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get locus-level match category for a given resolution.</span>
+
+<span class="sd">        :param resolution: Resolution level (``&quot;basic&quot;`` or ``&quot;high&quot;``).</span>
+<span class="sd">        :return: Match level for the given resolution as a string.</span>
+<span class="sd">        :raises ValueError: If an unknown resolution level is requested.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">resolution</span> <span class="o">==</span> <span class="s2">&quot;basic&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loci_match_basic_resolution</span>
+        <span class="k">elif</span> <span class="n">resolution</span> <span class="o">==</span> <span class="s2">&quot;high&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loci_match_high_resolution</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unknown resolution level: </span><span class="si">{</span><span class="n">resolution</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected &#39;basic&#39;, &#39;high&#39;.&quot;</span>
+            <span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loci_match_basic_resolution</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_locus_match_basic_resolution&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_locus_match_basic_resolution</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_loci_level_match</span><span class="p">(</span><span class="s1">&#39;basic_resolution&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_locus_match_basic_resolution</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loci_match_high_resolution</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_locus_match_high_resolution&#39;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_locus_match_high_resolution</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">_loci_level_match</span><span class="p">(</span><span class="s1">&#39;high_resolution&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_locus_match_high_resolution</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_loci_level_match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolution</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Locus-level match category based on AlleleMatchLevels.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">match_level_1</span><span class="p">,</span> <span class="n">match_level_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">allele_match_levels</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">match_level_1</span> <span class="ow">is</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span>
+            <span class="ow">or</span> <span class="n">match_level_2</span> <span class="ow">is</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">if</span> <span class="n">resolution</span> <span class="o">==</span> <span class="s1">&#39;basic_resolution&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_loci_match_basic_resolution</span><span class="p">(</span>
+                <span class="n">match_level_1</span><span class="p">,</span> <span class="n">match_level_2</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">resolution</span> <span class="o">==</span> <span class="s1">&#39;high_resolution&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calculate_loci_match_high_resolution</span><span class="p">(</span>
+                <span class="n">match_level_1</span><span class="p">,</span> <span class="n">match_level_2</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unknown resolution level: </span><span class="si">{</span><span class="n">resolution</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected &#39;basic_resolution&#39;, &#39;high_resolution&#39;.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_loci_match_basic_resolution</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">match_level_1</span><span class="p">,</span> <span class="n">match_level_2</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        TODO: base on domain expert</span>
+<span class="sd">        Determines the basic resolution match status based on the allele match</span>
+<span class="sd">        levels.</span>
+
+<span class="sd">        :return: &quot;ARD_MATCH&quot;, &quot;PARTIAL_ARD_MISMATCH&quot;, or &quot;ARD_MISMATCH&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># type check</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">AlleleMatchLevel</span><span class="p">)</span> <span class="k">for</span>
+                <span class="n">level</span> <span class="ow">in</span> <span class="p">[</span><span class="n">match_level_1</span><span class="p">,</span> <span class="n">match_level_2</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;match_level_1 and match_level_2 must be instances of &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AlleleMatchLevel</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">match_level_1</span><span class="p">)</span><span class="si">}</span><span class="s2"> and &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">match_level_2</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># Group AlleleMatchLevels into basic resolution match and mismatch</span>
+        <span class="c1"># levels</span>
+        <span class="n">match_levels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span>
+        <span class="p">}</span>
+        <span class="n">mismatch_levels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">DRB345_SUBLOCUS_MISMATCH</span><span class="p">,</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ANTIGEN_MISMATCH</span><span class="p">,</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ALLELE_MISMATCH</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Combine grouped basic resolution match level to &quot;MATCH&quot;</span>
+        <span class="k">if</span> <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">match_levels</span> <span class="ow">and</span> <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">match_levels</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;ARD_MATCH&quot;</span>
+        <span class="c1"># Partial mismatch if one allele is basic resolution match level and</span>
+        <span class="c1"># the other is basic resolution mismatch level</span>
+        <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">match_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">mismatch_levels</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+                <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">match_levels</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="s2">&quot;PARTIAL_ARD_MISMATCH&quot;</span>
+        <span class="c1"># Both alleles are basic mismatch level</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;ARD_MISMATCH&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_calculate_loci_match_high_resolution</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">match_level_1</span><span class="p">,</span> <span class="n">match_level_2</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        TODO: base on domain expert</span>
+<span class="sd">        Determines the high resolution match status with detailed mismatch</span>
+<span class="sd">        types.</span>
+
+<span class="sd">        :return: A string indicating the match status with high resolution</span>
+<span class="sd">            mismatches.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># type check</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+                <span class="nb">isinstance</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">AlleleMatchLevel</span><span class="p">)</span> <span class="k">for</span>
+                <span class="n">level</span> <span class="ow">in</span> <span class="p">[</span><span class="n">match_level_1</span><span class="p">,</span> <span class="n">match_level_2</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;match_level_1 and match_level_2 must be instances of &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">AlleleMatchLevel</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">match_level_1</span><span class="p">)</span><span class="si">}</span><span class="s2"> and &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">match_level_2</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Group AlleleMatchLevels into high resolution match and mismatch</span>
+        <span class="c1"># levels</span>
+        <span class="n">match_levels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span>
+        <span class="p">}</span>
+        <span class="n">mismatch_levels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">DRB345_SUBLOCUS_MISMATCH</span><span class="p">,</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ANTIGEN_MISMATCH</span><span class="p">,</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ALLELE_MISMATCH</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Combine grouped high resolution match level to &quot;MATCH&quot;</span>
+        <span class="k">if</span> <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">match_levels</span> <span class="ow">and</span> <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">match_levels</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;ARD_MATCH&quot;</span>
+        <span class="c1"># Partial mismatch if one allele is high resolution match level and</span>
+        <span class="c1"># the other is high resolution mismatch level</span>
+        <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">match_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">mismatch_levels</span>
+        <span class="p">):</span>
+            <span class="c1"># resolve high resolution mismatch level</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;PARTIAL_</span><span class="si">{</span><span class="n">match_level_2</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">match_levels</span>
+        <span class="p">):</span>
+            <span class="c1"># resolve high resolution mismatch level</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;PARTIAL_</span><span class="si">{</span><span class="n">match_level_1</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># Both alleles are high resolution mismatch level</span>
+        <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_1</span> <span class="o">&lt;</span> <span class="n">match_level_2</span>  <span class="c1"># Order of mismatch &quot;severity&quot;</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">match_level_1</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_AND_</span><span class="si">{</span><span class="n">match_level_2</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_1</span> <span class="o">&gt;</span> <span class="n">match_level_2</span>  <span class="c1"># Order of mismatch &quot;severity&quot;</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">match_level_2</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_AND_</span><span class="si">{</span><span class="n">match_level_1</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># Additional sanity check</span>
+        <span class="k">elif</span> <span class="p">(</span>
+                <span class="n">match_level_1</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_2</span> <span class="ow">in</span> <span class="n">mismatch_levels</span> <span class="ow">and</span>
+                <span class="n">match_level_1</span> <span class="ow">is</span> <span class="n">match_level_2</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;DOUBLE_</span><span class="si">{</span><span class="n">match_level_1</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># TODO: discuss terminology</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Unexpected match levels </span><span class="si">{</span><span class="n">match_level_1</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;and </span><span class="si">{</span><span class="n">match_level_2</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_api_allele</span><span class="p">(</span><span class="n">hla</span><span class="p">:</span> <span class="n">HLA</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get highest resolution string to query EBI TCE API.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">hla</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">hla</span><span class="o">.</span><span class="n">ard_redux_allele_string</span>
+        <span class="k">if</span> <span class="n">hla</span><span class="o">.</span><span class="n">allele_group</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hla</span><span class="o">.</span><span class="n">locus</span><span class="si">}</span><span class="s2">*</span><span class="si">{</span><span class="n">hla</span><span class="o">.</span><span class="n">allele_group</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="MatchResult.get_dpb1_tce_status">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.matching.MatchResult.html#py_hla_match.matching.MatchResult.get_dpb1_tce_status">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_dpb1_tce_status</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="n">api_version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;3.0&quot;</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DPB1Result</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate DPB1 permissive/non-permissive classification via EBI API.</span>
+
+<span class="sd">        Intended for research workflows.</span>
+
+<span class="sd">        WARNING: may slow things down significantly.</span>
+
+<span class="sd">        Sets self.dpb1_tce_result to one of:</span>
+<span class="sd">        - DPB1Result</span>
+
+<span class="sd">        :param api_version: The version of the EBI API to query (default &quot;3.0&quot;)</span>
+<span class="sd">        :param timeout: Time in seconds to wait for the API response</span>
+<span class="sd">        :return: The DPB1Result object, or None if the locus is not DPB1</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">locus</span> <span class="o">!=</span> <span class="s2">&quot;DPB1&quot;</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Not applicable to </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">locus</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">patient_dpb1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_allele</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">hla1</span><span class="p">)</span>
+        <span class="n">patient_dpb2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_allele</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">patient</span><span class="o">.</span><span class="n">hla2</span><span class="p">)</span>
+        <span class="n">donor_dpb1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_allele</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">donor</span><span class="o">.</span><span class="n">hla1</span><span class="p">)</span>
+        <span class="n">donor_dpb2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_allele</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">donor</span><span class="o">.</span><span class="n">hla2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">patient_dpb1</span><span class="p">,</span> <span class="n">patient_dpb2</span><span class="p">,</span> <span class="n">donor_dpb1</span><span class="p">,</span> <span class="n">donor_dpb2</span><span class="p">]</span>
+        <span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;One or more required alleles are missing for DPB1 to call &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;EBI API, got P1:&#39;</span><span class="si">{</span><span class="n">patient_dpb1</span><span class="si">}</span><span class="s2">&#39;, P2:&#39;</span><span class="si">{</span><span class="n">patient_dpb2</span><span class="si">}</span><span class="s2">&#39;, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;D1:&#39;</span><span class="si">{</span><span class="n">donor_dpb1</span><span class="si">}</span><span class="s2">&#39;, D2:&#39;</span><span class="si">{</span><span class="n">donor_dpb2</span><span class="si">}</span><span class="s2">&#39;. dpb1_tce_result &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;remains unchanged (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dpb1_tce_result</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># if we are here, the query should be valid</span>
+        <span class="n">dpb1_tce_result</span> <span class="o">=</span> <span class="n">query_dpb1_tce</span><span class="p">(</span>
+            <span class="n">patient_dpb1</span><span class="o">=</span><span class="n">patient_dpb1</span><span class="p">,</span>
+            <span class="n">patient_dpb2</span><span class="o">=</span><span class="n">patient_dpb2</span><span class="p">,</span>
+            <span class="n">donor_dpb1</span><span class="o">=</span><span class="n">donor_dpb1</span><span class="p">,</span>
+            <span class="n">donor_dpb2</span><span class="o">=</span><span class="n">donor_dpb2</span><span class="p">,</span>
+            <span class="n">version</span><span class="o">=</span><span class="n">api_version</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span>
+        <span class="p">)</span>
+        <span class="c1"># update match result and return DPB1Result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dpb1_tce_result</span> <span class="o">=</span> <span class="n">dpb1_tce_result</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dpb1_tce_result</span></div>
+</div>
+
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_PairingResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Internal result from allele pairing.</span>
+
+<span class="sd">    Intended for research workflows.</span>
+
+<span class="sd">    This dataclass stores match levels and certainties of allele pairings.</span>
+<span class="sd">    Used internally by `_get_correct_allele_pairing`.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        score (int): Sum of AlleleMatchLevel values for both allele pairs.</span>
+<span class="sd">            Used as primary criterion for selecting optimal pairing.</span>
+<span class="sd">        allele_match_levels (Tuple[AlleleMatchLevel, AlleleMatchLevel]):</span>
+<span class="sd">            ARD-based match level for each paired allele comparison.</span>
+<span class="sd">        ard_match_levels (Tuple[ARDMatchLevel, ARDMatchLevel]):</span>
+<span class="sd">            G-group vs P-group refinement for ARD-matched alleles.</span>
+<span class="sd">            NOT_APPLICABLE if AlleleMatchLevel != ARD_MATCH.</span>
+<span class="sd">        ard_match_certainties (</span>
+<span class="sd">            Tuple[ARDMatchLevelCertainty, ARDMatchLevelCertainty]</span>
+<span class="sd">        ):</span>
+<span class="sd">            Certainty of ARD match level given typing resolution.</span>
+<span class="sd">            UNCERTAIN indicates a higher ARDMatchLevel may be possible.</span>
+<span class="sd">        molecular_match_levels (</span>
+<span class="sd">            Tuple[MolecularMatchLevel, MolecularMatchLevel]</span>
+<span class="sd">        ):</span>
+<span class="sd">            Field-by-field identity refinement for ARD-matched alleles.</span>
+<span class="sd">            NOT_APPLICABLE if AlleleMatchLevel != ARD_MATCH.</span>
+<span class="sd">        molecular_match_certainties (</span>
+<span class="sd">            Tuple[MolecularMatchLevelCertainty, MolecularMatchLevelCertainty]</span>
+<span class="sd">        ):</span>
+<span class="sd">            Certainty of molecular match level given typing resolution.</span>
+<span class="sd">            UNCERTAIN indicates a higher MolecularMatchLevel may be possible.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">score</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">allele_match_levels</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">AlleleMatchLevel</span><span class="p">,</span> <span class="n">AlleleMatchLevel</span><span class="p">]</span>
+    <span class="n">ard_match_levels</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ARDMatchLevel</span><span class="p">,</span> <span class="n">ARDMatchLevel</span><span class="p">]</span>
+    <span class="n">ard_match_certainties</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">ARDMatchLevelCertainty</span><span class="p">,</span> <span class="n">ARDMatchLevelCertainty</span>
+    <span class="p">]</span>
+    <span class="n">molecular_match_levels</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">MolecularMatchLevel</span><span class="p">,</span> <span class="n">MolecularMatchLevel</span><span class="p">]</span>
+    <span class="n">molecular_match_certainties</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">MolecularMatchLevelCertainty</span><span class="p">,</span> <span class="n">MolecularMatchLevelCertainty</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_map_expression_decision</span><span class="p">(</span>
+    <span class="n">decision</span><span class="p">:</span> <span class="n">ExpressionSuffixMatchLevel</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AlleleMatchLevel</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">decision</span> <span class="ow">is</span> <span class="n">ExpressionSuffixMatchLevel</span><span class="o">.</span><span class="n">IGNORE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">ExpressionSuffixMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span><span class="p">:</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span><span class="p">,</span>
+        <span class="n">ExpressionSuffixMatchLevel</span><span class="o">.</span><span class="n">ALLELE_MISMATCH</span><span class="p">:</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ALLELE_MISMATCH</span><span class="p">,</span>
+        <span class="n">ExpressionSuffixMatchLevel</span><span class="o">.</span><span class="n">ANTIGEN_MISMATCH</span><span class="p">:</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ANTIGEN_MISMATCH</span><span class="p">,</span>
+        <span class="n">ExpressionSuffixMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">:</span>
+            <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">mapping</span><span class="p">[</span><span class="n">decision</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_apply_expression_suffix_policy</span><span class="p">(</span>
+    <span class="n">hla1</span><span class="p">:</span> <span class="n">HLA</span><span class="p">,</span> <span class="n">hla2</span><span class="p">:</span> <span class="n">HLA</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">HLAMatchConfig</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AlleleMatchLevel</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply configurable expression-suffix policy once ARD is equivalent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">suffix1</span><span class="p">,</span> <span class="n">suffix2</span> <span class="o">=</span> <span class="n">hla1</span><span class="o">.</span><span class="n">suffix</span><span class="p">,</span> <span class="n">hla2</span><span class="o">.</span><span class="n">suffix</span>
+    <span class="k">if</span> <span class="n">suffix1</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">suffix2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">rules</span> <span class="o">=</span> <span class="n">cfg</span><span class="o">.</span><span class="n">expression_suffix_policy</span>
+    <span class="c1"># Any &#39;Q&#39; present (defaults to NOT_ASSESSABLE)</span>
+    <span class="k">if</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">suffix1</span> <span class="ow">in</span> <span class="n">rules</span><span class="o">.</span><span class="n">ambiguous_suffixes</span><span class="p">)</span> <span class="ow">or</span>
+            <span class="p">(</span><span class="n">suffix2</span> <span class="ow">in</span> <span class="n">rules</span><span class="o">.</span><span class="n">ambiguous_suffixes</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="n">_map_expression_decision</span><span class="p">(</span><span class="n">rules</span><span class="o">.</span><span class="n">q_present</span><span class="p">)</span>
+    <span class="c1"># Any risk suffixes present</span>
+    <span class="n">risk</span> <span class="o">=</span> <span class="n">rules</span><span class="o">.</span><span class="n">risk_suffixes</span>
+    <span class="n">risk1</span> <span class="o">=</span> <span class="n">suffix1</span> <span class="ow">in</span> <span class="n">risk</span> <span class="k">if</span> <span class="n">suffix1</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">False</span>
+    <span class="n">risk2</span> <span class="o">=</span> <span class="n">suffix2</span> <span class="ow">in</span> <span class="n">risk</span> <span class="k">if</span> <span class="n">suffix2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">risk1</span> <span class="ow">and</span> <span class="n">risk2</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">suffix1</span> <span class="o">==</span> <span class="n">suffix2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_map_expression_decision</span><span class="p">(</span><span class="n">rules</span><span class="o">.</span><span class="n">equal_risk</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_map_expression_decision</span><span class="p">(</span><span class="n">rules</span><span class="o">.</span><span class="n">risk_vs_different_risk</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">risk1</span> <span class="ow">and</span> <span class="n">suffix2</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">risk2</span> <span class="ow">and</span> <span class="n">suffix1</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_map_expression_decision</span><span class="p">(</span><span class="n">rules</span><span class="o">.</span><span class="n">risk_vs_none</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="allele_match">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.matching.allele_match.html#py_hla_match.matching.allele_match">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">allele_match</span><span class="p">(</span><span class="n">hla1</span><span class="p">:</span> <span class="n">HLA</span><span class="p">,</span> <span class="n">hla2</span><span class="p">:</span> <span class="n">HLA</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AlleleMatchLevel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compares two HLA alleles and returns a MatchLevel</span>
+
+<span class="sd">    :param hla1: First HLA allele object</span>
+<span class="sd">    :param hla2: Second HLA allele object</span>
+
+<span class="sd">    :return: MatchLevel enum value indicating position of matches and mismatch</span>
+<span class="sd">        (cf. HLA nomenclature)</span>
+<span class="sd">    :raises TypeError: If hla1 or hla2 is not an instance of HLA</span>
+<span class="sd">    :raises InvalidLocusComparisonError: If hla1 and hla2 have incompatible</span>
+<span class="sd">        loci</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hla1</span><span class="p">,</span> <span class="n">HLA</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1 must be an instance of HLA, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">hla1</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hla2</span><span class="p">,</span> <span class="n">HLA</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2 must be an instance of HLA, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">hla2</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># (1) LOCUS and LOW-RES comparison</span>
+
+    <span class="c1"># first check if loci match (NOTE: DRB3/4/5 hard coded to locus DRB345)</span>
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">locus</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">locus</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidLocusComparisonError</span><span class="p">(</span><span class="n">hla1</span><span class="o">.</span><span class="n">locus</span><span class="p">,</span> <span class="n">hla2</span><span class="o">.</span><span class="n">locus</span><span class="p">)</span>
+
+    <span class="c1"># for locus DRB345, we still stored the original DRB3/4/5 sub-locus</span>
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">locus</span> <span class="o">==</span> <span class="s1">&#39;DRB345&#39;</span> <span class="ow">and</span> <span class="n">hla1</span><span class="o">.</span><span class="n">drb_sub_locus</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">drb_sub_locus</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">DRB345_SUBLOCUS_MISMATCH</span>
+
+    <span class="k">if</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">(),</span> <span class="n">hla2</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">()</span>
+    <span class="p">)</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># no allele fields</span>
+        <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span>
+
+    <span class="k">if</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">(),</span> <span class="n">hla2</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">()</span>
+    <span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># check if allele groups differ</span>
+        <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">allele_group</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">allele_group</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ANTIGEN_MISMATCH</span>
+        <span class="c1"># else we cannot determine a match level (missing data)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span>
+
+    <span class="c1"># --- from here on we have at least two-field resolution ---</span>
+    <span class="c1"># (2) TWO-FIELD COMPARISON</span>
+
+    <span class="c1"># check for allele group mismatch</span>
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">allele_group</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">allele_group</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ANTIGEN_MISMATCH</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="ow">or</span> <span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="c1"># NOTE: this should never happen (!)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;HLA parsing failed for &#39;</span><span class="si">{</span><span class="n">hla1</span><span class="o">.</span><span class="n">allele_string</span><span class="si">}</span><span class="s2">&#39; or &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">hla2</span><span class="o">.</span><span class="n">allele_string</span><span class="si">}</span><span class="s2">&#39;. Please report this issue.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ALLELE_MISMATCH</span>
+
+    <span class="c1"># (3) EXPRESSION COMPARISON (suffixes)</span>
+    <span class="c1"># NOTE: we may need to move expression comparison to be evaluated</span>
+    <span class="c1"># directly after locus comparison</span>
+
+    <span class="c1"># Check for suffix</span>
+    <span class="k">if</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">or</span> <span class="n">hla2</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="n">suffix_level</span> <span class="o">=</span> <span class="n">_apply_expression_suffix_policy</span><span class="p">(</span>
+            <span class="n">hla1</span><span class="p">,</span> <span class="n">hla2</span><span class="p">,</span> <span class="n">get_config</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">suffix_level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">suffix_level</span>
+
+    <span class="c1"># from here on we have at least an ARD level match that is NOT effected by</span>
+    <span class="c1"># expression differences (suffixes)</span>
+
+    <span class="c1"># (3) ARD MATCH</span>
+    <span class="k">return</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_refine_ard_match_level_by_group_association</span><span class="p">(</span>
+    <span class="n">hla1</span><span class="p">:</span> <span class="n">HLA</span><span class="p">,</span>
+    <span class="n">hla2</span><span class="p">:</span> <span class="n">HLA</span><span class="p">,</span>
+    <span class="n">allele_match_level</span><span class="p">:</span> <span class="n">AlleleMatchLevel</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">ARDMatchLevel</span><span class="p">,</span> <span class="n">ARDMatchLevelCertainty</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compares two ARD-matched HLA alleles and returns an ARDMatchLevel</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hla1: First HLA allele object</span>
+<span class="sd">        hla2: Second HLA allele object</span>
+<span class="sd">        allele_match_level: AlleleMatchLevel of hla1 and hla2</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[ARDMatchLevel, ARDMatchLevelCertainty]</span>
+<span class="sd">            ARDMatchLevel IntEnum value indicating level of ARD matching</span>
+<span class="sd">            ARDMatchLevelCertainty Enum indicating certainty of ARD match level</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If hla1 or hla2 is not an instance of HLA</span>
+<span class="sd">        InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci</span>
+
+<span class="sd">    Only applicable to AlleleMatchLevel == ARD_MATCH</span>
+<span class="sd">    Otherwise, returns NOT_APPLICABLE for both level and certainty</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># sanity checks</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hla1</span><span class="p">,</span> <span class="n">HLA</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1 must be an instance of HLA, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">hla1</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hla2</span><span class="p">,</span> <span class="n">HLA</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2 must be an instance of HLA, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">hla2</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">locus</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">locus</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidLocusComparisonError</span><span class="p">(</span><span class="n">hla1</span><span class="o">.</span><span class="n">locus</span><span class="p">,</span> <span class="n">hla2</span><span class="o">.</span><span class="n">locus</span><span class="p">)</span>
+
+    <span class="c1"># additional safeguards against misuse</span>
+    <span class="n">is_claimed_ard_match</span> <span class="o">=</span> <span class="p">(</span><span class="n">allele_match_level</span> <span class="ow">is</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">)</span>
+    <span class="c1"># HLA class guarantees valid hla two-field allele if redux worked</span>
+    <span class="n">has_ard_data</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+        <span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="c1"># still redux string must be equal to confirm ARD_MATCH</span>
+    <span class="n">is_actual_ard_match</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">has_ard_data</span> <span class="ow">and</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="o">==</span> <span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_claimed_ard_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_ard_data</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ARDMatchRefinementError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ARD_MATCH but ARD reduction data missing. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_claimed_ard_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_actual_ard_match</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ARDMatchRefinementError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ARD_MATCH but alleles differ at ARD level. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_claimed_ard_match</span> <span class="ow">and</span> <span class="n">is_actual_ard_match</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ARDMatchRefinementError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">allele_match_level</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> but alleles ARE &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;ARD-equivalent. This indicates a bug in the caller. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># (1) Valid non-ARD_MATCH: return NOT_APPLICABLE</span>
+    <span class="k">if</span> <span class="n">allele_match_level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+            <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+        <span class="p">)</span>
+
+    <span class="c1"># NOTE: specific group_code (&#39;01P&#39;, instead of &#39;P&#39;) encoded in allele field</span>
+    <span class="c1"># of HLA object (or synonymous_variant field for &#39;G&#39; group)</span>
+    <span class="c1"># TODO: imo this needs and update in the HLA parsing logic</span>
+    <span class="c1"># not a bug per se, just counterintuitive and welcomes errors</span>
+
+    <span class="c1"># (2) P-group is first exit if we lack information</span>
+    <span class="c1"># NOTE: HLA parsing **guarantees** that a given &quot;P&quot; is highest resolution</span>
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span> <span class="ow">or</span> <span class="n">hla2</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">P_GROUP_MATCH</span><span class="p">,</span>
+            <span class="c1"># could still be G-group match</span>
+            <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">UNCERTAIN</span>
+        <span class="p">)</span>
+
+    <span class="c1"># (3) G-group next</span>
+    <span class="n">min_resolution</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">(),</span> <span class="n">hla2</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="c1"># G group is more complex, we have G-group match if:</span>
+    <span class="c1"># a) hla1.synonymous_variant == hla2.synonymous_variant without G-group</span>
+    <span class="k">if</span> <span class="n">min_resolution</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">group_code</span> <span class="o">!=</span> <span class="s2">&quot;G&quot;</span>
+            <span class="ow">and</span> <span class="n">hla2</span><span class="o">.</span><span class="n">group_code</span> <span class="o">!=</span> <span class="s2">&quot;G&quot;</span>
+            <span class="ow">and</span> <span class="n">hla1</span><span class="o">.</span><span class="n">synonymous_variant</span> <span class="o">==</span> <span class="n">hla2</span><span class="o">.</span><span class="n">synonymous_variant</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">G_GROUP_MATCH</span><span class="p">,</span>
+                <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+        <span class="c1"># b) hla1.group_code == &quot;G&quot; and hla2.group_code == &quot;G&quot;</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span>
+            <span class="ow">and</span> <span class="n">hla2</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span>
+            <span class="ow">and</span> <span class="n">hla1</span><span class="o">.</span><span class="n">synonymous_variant</span> <span class="o">==</span> <span class="n">hla2</span><span class="o">.</span><span class="n">synonymous_variant</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">G_GROUP_MATCH</span><span class="p">,</span>
+                <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+        <span class="c1"># c) one allele has G-group, the other not, but both are in the same</span>
+        <span class="c1"># G-group</span>
+        <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span> <span class="ow">or</span> <span class="n">hla2</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span><span class="p">:</span>
+            <span class="n">pyard</span> <span class="o">=</span> <span class="n">get_ard_instance</span><span class="p">()</span>
+            <span class="n">pyard_g1_string</span> <span class="o">=</span> <span class="n">pyard</span><span class="o">.</span><span class="n">redux</span><span class="p">(</span><span class="n">hla1</span><span class="o">.</span><span class="n">allele_string</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">)</span>
+            <span class="n">pyard_g2_string</span> <span class="o">=</span> <span class="n">pyard</span><span class="o">.</span><span class="n">redux</span><span class="p">(</span><span class="n">hla2</span><span class="o">.</span><span class="n">allele_string</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">pyard_g1_string</span> <span class="o">==</span> <span class="n">pyard_g2_string</span>
+                <span class="ow">and</span> <span class="n">pyard_g1_string</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;G&#39;</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">pyard_g2_string</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;G&#39;</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="p">(</span>
+                    <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">G_GROUP_MATCH</span><span class="p">,</span>
+                    <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+                <span class="p">)</span>
+        <span class="c1"># d) if both are not G-group coded:</span>
+        <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">group_code</span> <span class="o">!=</span> <span class="s2">&quot;G&quot;</span> <span class="ow">and</span> <span class="n">hla2</span><span class="o">.</span><span class="n">group_code</span> <span class="o">!=</span> <span class="s2">&quot;G&quot;</span><span class="p">:</span>
+            <span class="n">pyard</span> <span class="o">=</span> <span class="n">get_ard_instance</span><span class="p">()</span>
+            <span class="n">pyard_g1_string</span> <span class="o">=</span> <span class="n">pyard</span><span class="o">.</span><span class="n">redux</span><span class="p">(</span><span class="n">hla1</span><span class="o">.</span><span class="n">allele_string</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">)</span>
+            <span class="n">pyard_g2_string</span> <span class="o">=</span> <span class="n">pyard</span><span class="o">.</span><span class="n">redux</span><span class="p">(</span><span class="n">hla2</span><span class="o">.</span><span class="n">allele_string</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">pyard_g1_string</span> <span class="o">==</span> <span class="n">pyard_g2_string</span>
+                <span class="ow">and</span> <span class="n">pyard_g1_string</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;G&#39;</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">pyard_g2_string</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;G&#39;</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="p">(</span>
+                    <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">G_GROUP_MATCH</span><span class="p">,</span>
+                    <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+                <span class="p">)</span>
+    <span class="c1"># (4) quo vadis?</span>
+    <span class="c1"># due to overlap of P- and G-groups we could actually get more info</span>
+    <span class="c1"># e.g. A*01:468 and ​A*01:471 are part of A*01:01P and A*01:01:01G</span>
+    <span class="c1"># however, py-ard&#39;s &#39;G&#39; reduction is currently not robust</span>
+    <span class="c1"># e.g., print(pyard.redux(&quot;A*01:01&quot;, &#39;G&#39;)) returns &#39;A*01:01:01G&#39;,</span>
+    <span class="c1"># but A*01:01:162 (valid allele) is not part of A*01:01:01G</span>
+
+    <span class="c1"># NOTE: so until this is resolved for now</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">P_GROUP_MATCH</span><span class="p">,</span>
+        <span class="c1"># could still be G-group match</span>
+        <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">UNCERTAIN</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_refine_ard_match_level_at_molecular_level</span><span class="p">(</span>
+    <span class="n">hla1</span><span class="p">:</span> <span class="n">HLA</span><span class="p">,</span>
+    <span class="n">hla2</span><span class="p">:</span> <span class="n">HLA</span><span class="p">,</span>
+    <span class="n">allele_match_level</span><span class="p">:</span> <span class="n">AlleleMatchLevel</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">MolecularMatchLevel</span><span class="p">,</span> <span class="n">MolecularMatchLevelCertainty</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compares two ARD-matched HLA alleles and returns a MolecularMatchLevel</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        hla1: First HLA allele object</span>
+<span class="sd">        hla2: Second HLA allele object</span>
+<span class="sd">        allele_match_level: AlleleMatchLevel of hla1 and hla2</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple[MolecularMatchLevel, MolecularMatchLevelCertainty]</span>
+<span class="sd">            MolecularMatchLevel IntEnum value indicating degree of 1–4 field</span>
+<span class="sd">            identity</span>
+<span class="sd">            MolecularMatchLevelCertainty Enum indicating whether a higher level</span>
+<span class="sd">            is still possible given typing resolution</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If hla1 or hla2 is not an instance of HLA</span>
+<span class="sd">        InvalidLocusComparisonError: If hla1 and hla2 have incompatible loci</span>
+
+<span class="sd">    Only applicable to AlleleMatchLevel == ARD_MATCH</span>
+<span class="sd">    Otherwise, returns NOT_APPLICABLE for both level and certainty</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># sanity checks</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hla1</span><span class="p">,</span> <span class="n">HLA</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1 must be an instance of HLA, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">hla1</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hla2</span><span class="p">,</span> <span class="n">HLA</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2 must be an instance of HLA, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">hla2</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">locus</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">locus</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidLocusComparisonError</span><span class="p">(</span><span class="n">hla1</span><span class="o">.</span><span class="n">locus</span><span class="p">,</span> <span class="n">hla2</span><span class="o">.</span><span class="n">locus</span><span class="p">)</span>
+
+    <span class="c1"># additional safeguards against misuse</span>
+    <span class="n">is_claimed_ard_match</span> <span class="o">=</span> <span class="p">(</span><span class="n">allele_match_level</span> <span class="ow">is</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">)</span>
+    <span class="c1"># HLA class guarantees valid hla two-field allele if redux worked</span>
+    <span class="n">has_ard_data</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span>
+        <span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">)</span>
+    <span class="c1"># still redux string must be equal to confirm ARD_MATCH</span>
+    <span class="n">is_actual_ard_match</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">has_ard_data</span> <span class="ow">and</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span> <span class="o">==</span> <span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">is_claimed_ard_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_ard_data</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ARDMatchRefinementError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ARD_MATCH but ARD reduction data missing. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_claimed_ard_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_actual_ard_match</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ARDMatchRefinementError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;ARD_MATCH but alleles differ at ARD level. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_claimed_ard_match</span> <span class="ow">and</span> <span class="n">is_actual_ard_match</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ARDMatchRefinementError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">allele_match_level</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> but alleles ARE &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;ARD-equivalent. This indicates a bug in the caller. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla1.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla1</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;hla2.ard_redux_allele_string=</span><span class="si">{</span><span class="n">hla2</span><span class="o">.</span><span class="n">ard_redux_allele_string</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># (1) Valid non-ARD_MATCH: return NOT_APPLICABLE</span>
+    <span class="c1"># e.g. A*01:01 vs A*02:01</span>
+    <span class="k">if</span> <span class="n">allele_match_level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span><span class="p">,</span>
+            <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+        <span class="p">)</span>
+
+    <span class="c1"># (2) Group code: molecular not applicable</span>
+    <span class="c1"># e.g. A*01:01P vs A*01:01:01:01</span>
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span> <span class="ow">or</span> <span class="n">hla2</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;P&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span><span class="p">,</span>
+            <span class="c1"># Could be protein/coding/exact</span>
+            <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">UNCERTAIN</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">hla1</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span> <span class="ow">or</span> <span class="n">hla2</span><span class="o">.</span><span class="n">group_code</span> <span class="o">==</span> <span class="s2">&quot;G&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span><span class="p">,</span>
+            <span class="c1"># Could be protein/coding/exact</span>
+            <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">UNCERTAIN</span>
+        <span class="p">)</span>
+
+    <span class="c1"># From here: ARD_MATCH, no P-group - let&#39;s try to refine ARD_MATCH</span>
+    <span class="c1"># we need the resolution multiple times</span>
+    <span class="n">min_resolution</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="n">hla1</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">(),</span> <span class="n">hla2</span><span class="o">.</span><span class="n">has_resolution_level</span><span class="p">()</span>
+    <span class="p">)</span>
+
+    <span class="c1"># (3) cases with res == 2</span>
+    <span class="c1"># e.g. A*01:01 vs A*01:01</span>
+    <span class="k">if</span> <span class="n">min_resolution</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># we either have full protein match:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">allele</span> <span class="o">==</span> <span class="n">hla2</span><span class="o">.</span><span class="n">allele</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">FULL_PROTEIN_MATCH</span><span class="p">,</span>
+                <span class="c1"># Could be coding/exact</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">UNCERTAIN</span>
+            <span class="p">)</span>
+        <span class="c1"># or a mismatch:</span>
+        <span class="c1"># e.g. A*01:01 vs A*01:15 (same P-group)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH_ONLY</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+
+    <span class="c1"># (4) min_resolution == 3: we know the 3rd field (synonymous variant)</span>
+    <span class="k">if</span> <span class="n">min_resolution</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">allele</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">allele</span>
+        <span class="p">):</span>
+            <span class="c1"># 2nd fields differ</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH_ONLY</span><span class="p">,</span>
+                <span class="c1"># Could still be EXACT_ALLELE_MATCH if 4th field also equal</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="c1"># hla1.allele == hla2.allele</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">synonymous_variant</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">synonymous_variant</span>
+        <span class="p">):</span>
+            <span class="c1"># 3rd fields differ</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">FULL_PROTEIN_MATCH</span><span class="p">,</span>
+                <span class="c1"># Could still be coding/exact if 3rd-4th field also equal</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># 1–3 fields identical, unknown 4th field</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">CODING_SEQUENCE_MATCH</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">UNCERTAIN</span>
+            <span class="p">)</span>
+
+    <span class="c1"># (5) min_resolution == 4: both alleles have 4-field resolution</span>
+    <span class="k">if</span> <span class="n">min_resolution</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">allele</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">allele</span>
+        <span class="p">):</span>
+            <span class="c1"># second fields differ</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH_ONLY</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">synonymous_variant</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">synonymous_variant</span>
+        <span class="p">):</span>
+            <span class="c1"># third firlds differ</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">FULL_PROTEIN_MATCH</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+        <span class="c1"># Third field identical -&gt; check non-coding (4th) field</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="n">hla1</span><span class="o">.</span><span class="n">non_coding_variant</span> <span class="o">!=</span> <span class="n">hla2</span><span class="o">.</span><span class="n">non_coding_variant</span>
+        <span class="p">):</span>
+            <span class="c1"># 1–3 fields identical, 4th differs</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">CODING_SEQUENCE_MATCH</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># All 1–4 fields identical</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">EXACT_ALLELE_MATCH</span><span class="p">,</span>
+                <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">CERTAIN</span>
+            <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_correct_allele_pairing</span><span class="p">(</span>
+        <span class="n">patient_alleles</span><span class="p">:</span> <span class="n">HLAPair</span><span class="p">,</span> <span class="n">donor_alleles</span><span class="p">:</span> <span class="n">HLAPair</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_PairingResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Determines the correct pairing of patient and donor HLA alleles by</span>
+<span class="sd">    evaluating all possible combinations.</span>
+
+<span class="sd">    Intended for research workflows.</span>
+
+<span class="sd">    :param patient_alleles: ``HLAPair`` containing two patient HLA alleles.</span>
+<span class="sd">    :param donor_alleles: ``HLAPair`` containing two donor HLA alleles.</span>
+<span class="sd">    :return: A ``_PairingResult`` instance containing allele-, ARD- and</span>
+<span class="sd">        molecular-level match classifications and certainties for the</span>
+<span class="sd">        optimal pairing.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        - Considers two possible pairings:</span>
+<span class="sd">            1. (patient_hla1, donor_hla1) and (patient_hla2, donor_hla2)</span>
+<span class="sd">            2. (patient_hla1, donor_hla2) and (patient_hla2, donor_hla1)</span>
+<span class="sd">        - Selection uses three-level lexicographic scoring:</span>
+<span class="sd">            1. Primary: AlleleMatchLevel sum (match vs mismatch)</span>
+<span class="sd">            2. Secondary: MolecularMatchLevel sum (field identity)</span>
+<span class="sd">            3. Tertiary: ARDMatchLevel sum (G-group vs P-group in ARD)</span>
+<span class="sd">        - If all scores are equal, the first pairing is returned</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pairings</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span>
+            <span class="n">patient_alleles</span><span class="o">.</span><span class="n">hla1</span><span class="p">,</span> <span class="n">donor_alleles</span><span class="o">.</span><span class="n">hla1</span><span class="p">,</span>
+            <span class="n">patient_alleles</span><span class="o">.</span><span class="n">hla2</span><span class="p">,</span> <span class="n">donor_alleles</span><span class="o">.</span><span class="n">hla2</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="n">patient_alleles</span><span class="o">.</span><span class="n">hla1</span><span class="p">,</span> <span class="n">donor_alleles</span><span class="o">.</span><span class="n">hla2</span><span class="p">,</span>
+            <span class="n">patient_alleles</span><span class="o">.</span><span class="n">hla2</span><span class="p">,</span> <span class="n">donor_alleles</span><span class="o">.</span><span class="n">hla1</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Lexicographic comparison: (allele, molecular, ard)</span>
+    <span class="n">best_score</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;-inf&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">best_result</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">_PairingResult</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">for</span> <span class="n">pairing</span> <span class="ow">in</span> <span class="n">pairings</span><span class="p">:</span>
+        <span class="n">patient_hla1</span><span class="p">,</span> <span class="n">donor_hla1</span><span class="p">,</span> <span class="n">patient_hla2</span><span class="p">,</span> <span class="n">donor_hla2</span> <span class="o">=</span> <span class="n">pairing</span>
+
+        <span class="c1"># (1) Primary: AlleleMatchLevel</span>
+        <span class="n">allele_match1</span> <span class="o">=</span> <span class="n">allele_match</span><span class="p">(</span><span class="n">patient_hla1</span><span class="p">,</span> <span class="n">donor_hla1</span><span class="p">)</span>
+        <span class="n">allele_match2</span> <span class="o">=</span> <span class="n">allele_match</span><span class="p">(</span><span class="n">patient_hla2</span><span class="p">,</span> <span class="n">donor_hla2</span><span class="p">)</span>
+        <span class="n">allele_score</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">allele_match1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">allele_match2</span><span class="p">)</span>
+
+        <span class="c1"># (2) Refinements if ARD_MATCH</span>
+        <span class="k">if</span> <span class="n">allele_match1</span> <span class="ow">is</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">:</span>
+            <span class="n">ard_match1</span><span class="p">,</span> <span class="n">ard_certainty1</span> <span class="o">=</span> \
+                <span class="n">_refine_ard_match_level_by_group_association</span><span class="p">(</span>
+                    <span class="n">patient_hla1</span><span class="p">,</span> <span class="n">donor_hla1</span><span class="p">,</span> <span class="n">allele_match1</span>
+                <span class="p">)</span>
+            <span class="n">molecular_match1</span><span class="p">,</span> <span class="n">molecular_certainty1</span> <span class="o">=</span> \
+                <span class="n">_refine_ard_match_level_at_molecular_level</span><span class="p">(</span>
+                    <span class="n">patient_hla1</span><span class="p">,</span> <span class="n">donor_hla1</span><span class="p">,</span> <span class="n">allele_match1</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ard_match1</span> <span class="o">=</span> <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+            <span class="n">ard_certainty1</span> <span class="o">=</span> <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+            <span class="n">molecular_match1</span> <span class="o">=</span> <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+            <span class="n">molecular_certainty1</span> <span class="o">=</span> <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+
+        <span class="c1"># Same allele_match2</span>
+        <span class="k">if</span> <span class="n">allele_match2</span> <span class="ow">is</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">ARD_MATCH</span><span class="p">:</span>
+            <span class="n">ard_match2</span><span class="p">,</span> <span class="n">ard_certainty2</span> <span class="o">=</span> \
+                <span class="n">_refine_ard_match_level_by_group_association</span><span class="p">(</span>
+                    <span class="n">patient_hla2</span><span class="p">,</span> <span class="n">donor_hla2</span><span class="p">,</span> <span class="n">allele_match2</span>
+                <span class="p">)</span>
+            <span class="n">molecular_match2</span><span class="p">,</span> <span class="n">molecular_certainty2</span> <span class="o">=</span> \
+                <span class="n">_refine_ard_match_level_at_molecular_level</span><span class="p">(</span>
+                    <span class="n">patient_hla2</span><span class="p">,</span> <span class="n">donor_hla2</span><span class="p">,</span> <span class="n">allele_match2</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ard_match2</span> <span class="o">=</span> <span class="n">ARDMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+            <span class="n">ard_certainty2</span> <span class="o">=</span> <span class="n">ARDMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+            <span class="n">molecular_match2</span> <span class="o">=</span> <span class="n">MolecularMatchLevel</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+            <span class="n">molecular_certainty2</span> <span class="o">=</span> <span class="n">MolecularMatchLevelCertainty</span><span class="o">.</span><span class="n">NOT_APPLICABLE</span>
+
+        <span class="c1"># (3) Tie-breaker scores</span>
+        <span class="n">molecular_score</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">molecular_match1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">molecular_match2</span><span class="p">)</span>
+        <span class="n">ard_score</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ard_match1</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">ard_match2</span><span class="p">)</span>
+
+        <span class="c1"># (4) Lexicographic comparison: (allele, molecular, ard)</span>
+        <span class="n">current_score</span> <span class="o">=</span> <span class="p">(</span><span class="n">allele_score</span><span class="p">,</span> <span class="n">molecular_score</span><span class="p">,</span> <span class="n">ard_score</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">current_score</span> <span class="o">&gt;</span> <span class="n">best_score</span><span class="p">:</span>
+            <span class="n">best_score</span> <span class="o">=</span> <span class="n">current_score</span>
+            <span class="n">best_result</span> <span class="o">=</span> <span class="n">_PairingResult</span><span class="p">(</span>
+                <span class="n">score</span><span class="o">=</span><span class="n">allele_score</span><span class="p">,</span>
+                <span class="n">allele_match_levels</span><span class="o">=</span><span class="p">(</span><span class="n">allele_match1</span><span class="p">,</span> <span class="n">allele_match2</span><span class="p">),</span>
+                <span class="n">ard_match_levels</span><span class="o">=</span><span class="p">(</span><span class="n">ard_match1</span><span class="p">,</span> <span class="n">ard_match2</span><span class="p">),</span>
+                <span class="n">ard_match_certainties</span><span class="o">=</span><span class="p">(</span><span class="n">ard_certainty1</span><span class="p">,</span> <span class="n">ard_certainty2</span><span class="p">),</span>
+                <span class="n">molecular_match_levels</span><span class="o">=</span><span class="p">(</span><span class="n">molecular_match1</span><span class="p">,</span> <span class="n">molecular_match2</span><span class="p">),</span>
+                <span class="n">molecular_match_certainties</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">molecular_certainty1</span><span class="p">,</span> <span class="n">molecular_certainty2</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+    <span class="c1"># Cannot be None: we always have exactly 2 pairings</span>
+    <span class="k">return</span> <span class="n">best_result</span>  <span class="c1"># type: ignore[return-value]</span>
+
+
+<div class="viewcode-block" id="allele_pair_match">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.matching.allele_pair_match.html#py_hla_match.matching.allele_pair_match">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">allele_pair_match</span><span class="p">(</span><span class="n">patient</span><span class="p">:</span> <span class="n">HLAPair</span><span class="p">,</span> <span class="n">donor</span><span class="p">:</span> <span class="n">HLAPair</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MatchResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute research match/mismatch levels for two HLA allele pairs, one in</span>
+<span class="sd">    the &#39;patient&#39; role and one in the &#39;donor&#39; role.</span>
+
+<span class="sd">    Intended for research workflows.</span>
+
+<span class="sd">    :param patient: Patient ``HLAPair`` containing two HLA alleles.</span>
+<span class="sd">    :param donor: Donor ``HLAPair`` containing two HLA alleles.</span>
+<span class="sd">    :return: ``MatchResult`` object storing allele-level match categories</span>
+<span class="sd">        and all ARD and molecular refinements for the optimal pairing.</span>
+
+<span class="sd">    Notes:</span>
+<span class="sd">        - The function assumes that both patient and donor have exactly two</span>
+
+<span class="sd">          HLA alleles</span>
+<span class="sd">        - Uses `_get_correct_allele_pairing` to evaluate all possible</span>
+
+<span class="sd">          allele pairings and selects the one with the highest score</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_get_correct_allele_pairing</span><span class="p">(</span><span class="n">patient</span><span class="p">,</span> <span class="n">donor</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">MatchResult</span><span class="p">(</span>
+        <span class="n">patient</span><span class="o">=</span><span class="n">patient</span><span class="p">,</span>
+        <span class="n">donor</span><span class="o">=</span><span class="n">donor</span><span class="p">,</span>
+        <span class="n">pairing_score</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+        <span class="n">allele_match_levels</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">allele_match_levels</span><span class="p">,</span>
+        <span class="n">ard_match_levels</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">ard_match_levels</span><span class="p">,</span>
+        <span class="n">ard_match_level_certainty</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">ard_match_certainties</span><span class="p">,</span>
+        <span class="n">molecular_match_levels</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">molecular_match_levels</span><span class="p">,</span>
+        <span class="n">molecular_match_level_certainty</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">molecular_match_certainties</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="multi_locus_match">
+<a class="viewcode-back" href="../../_autosummary/py_hla_match.matching.multi_locus_match.html#py_hla_match.matching.multi_locus_match">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">multi_locus_match</span><span class="p">(</span>
+        <span class="n">patient</span><span class="p">:</span> <span class="n">Individual</span><span class="p">,</span>
+        <span class="n">donor</span><span class="p">:</span> <span class="n">Individual</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">MatchResult</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute HLA match/mismatch categories between two Individuals for all loci</span>
+<span class="sd">    that are typed in the first Individual.</span>
+
+<span class="sd">    Intended for research workflows.</span>
+
+<span class="sd">    :param patient: Patient object</span>
+<span class="sd">    :param donor: Donor object</span>
+
+<span class="sd">    :return: List of MatchResult objects for each locus</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">results</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">MatchResult</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># quick lookup for donor pairs by locus</span>
+    <span class="n">donor_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">pair</span><span class="o">.</span><span class="n">locus</span><span class="p">:</span> <span class="n">pair</span> <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">donor</span><span class="o">.</span><span class="n">hla_data</span><span class="p">}</span>
+
+    <span class="k">for</span> <span class="n">patient_pair</span> <span class="ow">in</span> <span class="n">patient</span><span class="o">.</span><span class="n">hla_data</span><span class="p">:</span>
+        <span class="n">locus</span> <span class="o">=</span> <span class="n">patient_pair</span><span class="o">.</span><span class="n">locus</span>
+
+        <span class="k">if</span> <span class="n">locus</span> <span class="ow">in</span> <span class="n">donor_dict</span><span class="p">:</span>
+            <span class="n">donor_pair</span> <span class="o">=</span> <span class="n">donor_dict</span><span class="p">[</span><span class="n">locus</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Locus </span><span class="si">{</span><span class="n">locus</span><span class="si">}</span><span class="s2"> not found in donor data – &quot;</span>
+                <span class="s2">&quot;matching will be reported as NOT_ASSESSABLE.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">locus</span> <span class="o">==</span> <span class="s2">&quot;DRB345&quot;</span><span class="p">:</span>
+                <span class="n">donor_pair</span> <span class="o">=</span> <span class="n">HLAPair</span><span class="p">(</span><span class="n">HLA</span><span class="p">(</span><span class="s2">&quot;DRBX*NA&quot;</span><span class="p">),</span> <span class="n">HLA</span><span class="p">(</span><span class="s2">&quot;DRBX*NA&quot;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">donor_pair</span> <span class="o">=</span> <span class="n">HLAPair</span><span class="p">(</span><span class="n">HLA</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">locus</span><span class="si">}</span><span class="s2">*NA&quot;</span><span class="p">),</span> <span class="n">HLA</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">locus</span><span class="si">}</span><span class="s2">*NA&quot;</span><span class="p">))</span>
+
+        <span class="c1"># compute match (missing donor pair will propagate NOT_ASSESSABLE)</span>
+        <span class="n">match_result</span> <span class="o">=</span> <span class="n">allele_pair_match</span><span class="p">(</span><span class="n">patient_pair</span><span class="p">,</span> <span class="n">donor_pair</span><span class="p">)</span>
+
+        <span class="c1"># additional diagnostics</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">level</span> <span class="o">==</span> <span class="n">AlleleMatchLevel</span><span class="o">.</span><span class="n">NOT_ASSESSABLE</span>
+               <span class="k">for</span> <span class="n">level</span> <span class="ow">in</span> <span class="n">match_result</span><span class="o">.</span><span class="n">allele_match_levels</span><span class="p">):</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Typing resolution insufficient for locus </span><span class="si">{</span><span class="n">locus</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(patient </span><span class="si">{</span><span class="n">patient_pair</span><span class="si">}</span><span class="s2"> / donor </span><span class="si">{</span><span class="n">donor_pair</span><span class="si">}</span><span class="s2">).&quot;</span>
+            <span class="p">)</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">match_result</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Georg Popp, Tim Adams.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
