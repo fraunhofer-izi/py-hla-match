@@ -856,14 +856,14 @@ tests = ["pytest", "pytest-cov", "pytest-lazy-fixtures"]
 
 [[package]]
 name = "py-ard"
-version = "2.1.0"
+version = "2.1.1"
 description = "ARD reduction for HLA with Python"
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "py_ard-2.1.0-py2.py3-none-any.whl", hash = "sha256:cedf3098c847cd8689decca98541b859df1ff2ab95c83c3fd6895415e68b51f1"},
-    {file = "py_ard-2.1.0.tar.gz", hash = "sha256:ef80e8516a3f0ceb14ea6eb20c60e2f2a64bcd3c7a44842e6092707624e7708c"},
+    {file = "py_ard-2.1.1-py2.py3-none-any.whl", hash = "sha256:51788431b3de381a182bc6114a1687bbb19a9f8462af4bb69f2e421f268b078d"},
+    {file = "py_ard-2.1.1.tar.gz", hash = "sha256:c37617745d1bf47587d734449896509aa001496fbba96587fa337dee6613e1cd"},
 ]
 
 [package.dependencies]
