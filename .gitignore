@@ -74,10 +74,3 @@ Desktop.ini
 
 # python files
 py_hla_match/main.py
-
-# data files
-py_hla_match/demo
-demo
-
-# output files
-output

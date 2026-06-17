@@ -14,9 +14,9 @@ Use the synthetic patient and donor CSVs and write results to a new file:
    from py_hla_match.parser import HLADataSource
    from py_hla_match.export import PairwiseMatch
 
-   data_path = "py_hla_match/demo/data/random_data/synthetic_patients.csv"
-   donor_path = "py_hla_match/demo/data/random_data/synthetic_donors.csv"
-   output_path = "py_hla_match/demo/data/random_data/match_results.csv"
+   data_path = "demo/data/random_data/synthetic_patients.csv"
+   donor_path = "demo/data/random_data/synthetic_donors.csv"
+   output_path = "demo/data/random_data/match_results.csv"
 
    src = HLADataSource(
        data_path,
@@ -36,17 +36,22 @@ Use the synthetic patient and donor CSVs and write results to a new file:
        source=src,
        target=tgt,
        storage_filename=output_path,
-       resolution="high",
+       include_ard_details=True,
+       include_molecular_details=True,
+       include_dpb1_tce=False,
+       include_homozygosity=False,
+       overwrite=True,
    )
 
    matcher.run()
 
-Inspect raw allele-level results
---------------------------------
+Explore results
+---------------
 
-Convert raw match levels to a DataFrame and write to CSV:
+Results are written to ``output_path`` during ``matcher.run()``. To inspect
+in-memory:
 
 .. code-block:: python
 
-   raw_output_path = "py_hla_match/demo/data/random_data/match_results_raw.csv"
-   matcher.raw_to_df().to_csv(raw_output_path, index=False)
+   df = matcher.to_df()
+   print(df.head())
