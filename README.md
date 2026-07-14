@@ -1,12 +1,6 @@
 # Py-HLA-Match
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19593513.svg)](https://doi.org/10.5281/zenodo.19593513)
-![tests](https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/tests.yaml/badge.svg)
-[![codecov](https://codecov.io/gh/fraunhofer-izi/py-hla-match/branch/main/graph/badge.svg)](https://codecov.io/gh/fraunhofer-izi/py-hla-match)
-![docs](https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/docs.yaml/badge.svg)
-![version](https://img.shields.io/pypi/v/py-hla-match)
-![license](https://img.shields.io/badge/license-Apache%202.0-blue)
-
+<a href="https://doi.org/10.5281/zenodo.19593513"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.19593513-blue.svg" alt="DOI"></a>&nbsp;<a href="https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/tests.yaml"><img src="https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/tests.yaml/badge.svg" alt="tests"></a>&nbsp;<a href="https://codecov.io/gh/fraunhofer-izi/py-hla-match"><img src="https://codecov.io/gh/fraunhofer-izi/py-hla-match/branch/main/graph/badge.svg" alt="codecov"></a>&nbsp;<a href="https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/docs.yaml"><img src="https://github.com/fraunhofer-izi/py-hla-match/actions/workflows/docs.yaml/badge.svg" alt="docs"></a>&nbsp;<a href="https://pypi.org/project/py-hla-match/"><img src="https://img.shields.io/pypi/v/py-hla-match" alt="version"></a>&nbsp;<a href="https://github.com/fraunhofer-izi/py-hla-match/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="license"></a>
 ## About
 
 Py-HLA-Match is a Python library for standardised, rule-based HLA (Human Leukocyte Antigen) matching in retrospective analyses, method development, benchmarking, and in-silico studies in immunogenetics and related fields.
